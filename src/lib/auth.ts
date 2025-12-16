@@ -5,8 +5,10 @@ import { PrismaClient } from "@/generated/prisma";
 const prisma = new PrismaClient();
 
 export const auth = betterAuth({
+  secret: process.env.BETTER_AUTH_SECRET,
+  baseURL: process.env.BETTER_AUTH_URL,
   database: prismaAdapter(prisma, {
-    provider: "sqlite",
+    provider: "mysql",
   }),
   emailAndPassword: {
     enabled: true,
