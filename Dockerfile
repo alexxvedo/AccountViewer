@@ -35,14 +35,10 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Crear usuario no-root
-RUN adduser --system --uid 1001 nodejs
-RUN mkdir .next && chown nodejs:bun .next
-
 # Copiar archivos necesarios
 COPY --from=builder /app/public ./public
-COPY --from=builder --chown=nodejs:bun /app/.next/standalone ./
-COPY --from=builder --chown=nodejs:bun /app/.next/static ./.next/static
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/generated ./generated
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/server ./server
@@ -51,8 +47,6 @@ COPY --from=builder /app/package.json ./package.json
 
 # Script de entrada
 COPY --chmod=755 docker-entrypoint.sh ./docker-entrypoint.sh
-
-USER nodejs
 
 # Exponer puertos
 EXPOSE 3000
