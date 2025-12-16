@@ -459,6 +459,14 @@ void CheckPendingCommands()
    int cmdStart = StringFind(response, "\"commands\":[");
    if(cmdStart < 0) return;
    
+   // Buscar sync_history
+   if(StringFind(response, "\"type\":\"sync_history\"") >= 0)
+   {
+      Log("Comando recibido: SINCRONIZAR HISTORIAL");
+      SendHistorySync();
+      return;
+   }
+   
    // Buscar close_all
    if(StringFind(response, "\"type\":\"close_all\"") >= 0)
    {
@@ -560,4 +568,112 @@ bool ClosePositionByTicket(int ticket)
    Log("Resultado cierre: " + IntegerToString((int)result.retcode));
    return false;
 }
+
 //+------------------------------------------------------------------+
+//| Enviar historial completo de trades al servidor                   |
+//+------------------------------------------------------------------+
+void SendHistorySync()
+{
+   // Seleccionar historial completo (últimos 365 días)
+   datetime fromTime = TimeCurrent() - 365 * 24 * 60 * 60;
+   
+   if(!HistorySelect(fromTime, TimeCurrent()))
+   {
+      Log("ERROR: No se pudo seleccionar historial");
+      return;
+   }
+   
+   int totalDeals = HistoryDealsTotal();
+   Log("Sincronizando " + IntegerToString(totalDeals) + " deals del historial...");
+   
+   // Construir JSON con todos los trades
+   string json = "{";
+   json += "\"msg_type\":\"sync_history\",";
+   json += "\"token\":\"" + InpConnectionToken + "\",";
+   json += "\"trades\":[";
+   
+   int tradesCount = 0;
+   
+   for(int i = 0; i < totalDeals; i++)
+   {
+      ulong dealTicket = HistoryDealGetTicket(i);
+      if(dealTicket <= 0) continue;
+      
+      ENUM_DEAL_ENTRY entry = (ENUM_DEAL_ENTRY)HistoryDealGetInteger(dealTicket, DEAL_ENTRY);
+      
+      // Solo procesar deals de salida (trades cerrados)
+      if(entry != DEAL_ENTRY_OUT) continue;
+      
+      string symbol = HistoryDealGetString(dealTicket, DEAL_SYMBOL);
+      if(StringLen(symbol) == 0) continue;
+      
+      if(tradesCount > 0) json += ",";
+      
+      int type = (int)HistoryDealGetInteger(dealTicket, DEAL_TYPE);
+      double volume = HistoryDealGetDouble(dealTicket, DEAL_VOLUME);
+      double price = HistoryDealGetDouble(dealTicket, DEAL_PRICE);
+      double profit = HistoryDealGetDouble(dealTicket, DEAL_PROFIT);
+      double swap = HistoryDealGetDouble(dealTicket, DEAL_SWAP);
+      double commission = HistoryDealGetDouble(dealTicket, DEAL_COMMISSION);
+      datetime dealTime = (datetime)HistoryDealGetInteger(dealTicket, DEAL_TIME);
+      int magicNumber = (int)HistoryDealGetInteger(dealTicket, DEAL_MAGIC);
+      string comment = HistoryDealGetString(dealTicket, DEAL_COMMENT);
+      
+      // Buscar el deal de entrada correspondiente para obtener el precio de apertura
+      double openPrice = 0;
+      datetime openTime = dealTime - 3600; // Aproximación por defecto
+      
+      // Buscar el position ID para encontrar el deal de entrada
+      long positionId = HistoryDealGetInteger(dealTicket, DEAL_POSITION_ID);
+      if(positionId > 0)
+      {
+         for(int j = 0; j < i; j++)
+         {
+            ulong entryTicket = HistoryDealGetTicket(j);
+            if(HistoryDealGetInteger(entryTicket, DEAL_POSITION_ID) == positionId &&
+               (ENUM_DEAL_ENTRY)HistoryDealGetInteger(entryTicket, DEAL_ENTRY) == DEAL_ENTRY_IN)
+            {
+               openPrice = HistoryDealGetDouble(entryTicket, DEAL_PRICE);
+               openTime = (datetime)HistoryDealGetInteger(entryTicket, DEAL_TIME);
+               break;
+            }
+         }
+      }
+      
+      json += "{";
+      json += "\"ticket\":" + IntegerToString((int)dealTicket) + ",";
+      json += "\"symbol\":\"" + symbol + "\",";
+      json += "\"type\":\"" + (type == DEAL_TYPE_BUY ? "buy" : "sell") + "\",";
+      json += "\"volume\":" + DoubleToString(volume, 2) + ",";
+      json += "\"open_price\":" + DoubleToString(openPrice, 5) + ",";
+      json += "\"close_price\":" + DoubleToString(price, 5) + ",";
+      json += "\"sl\":0,";
+      json += "\"tp\":0,";
+      json += "\"profit\":" + DoubleToString(profit, 2) + ",";
+      json += "\"swap\":" + DoubleToString(swap, 2) + ",";
+      json += "\"commission\":" + DoubleToString(commission, 2) + ",";
+      json += "\"open_time\":" + IntegerToString((long)openTime * 1000) + ",";
+      json += "\"close_time\":" + IntegerToString((long)dealTime * 1000) + ",";
+      json += "\"magic_number\":" + IntegerToString(magicNumber) + ",";
+      json += "\"comment\":\"" + EscapeJSON(comment) + "\"";
+      json += "}";
+      
+      tradesCount++;
+   }
+   
+   json += "]}";
+   
+   Log("Enviando " + IntegerToString(tradesCount) + " trades cerrados al servidor...");
+   
+   string url = InpServerURL + "/ea/sync-history";
+   if(SendHTTPPost(url, json))
+   {
+      Log("Historial sincronizado exitosamente");
+   }
+   else
+   {
+      Log("ERROR: No se pudo enviar historial");
+   }
+}
+//+------------------------------------------------------------------+
+

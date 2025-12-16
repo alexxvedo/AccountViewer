@@ -29,6 +29,7 @@ import {
   Percent,
   Target,
   Scale,
+  RefreshCw,
 } from "lucide-react";
 import {
   XAxis,
@@ -126,6 +127,7 @@ export default function AccountPage() {
   const [activeTab, setActiveTab] = useState<TabType>("stats");
   const [positionsPage, setPositionsPage] = useState(1);
   const [historyPage, setHistoryPage] = useState(1);
+  const [syncing, setSyncing] = useState(false);
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -221,6 +223,31 @@ export default function AccountPage() {
     }
   };
 
+  const syncHistory = async () => {
+    if (!isLive) {
+      alert("El EA debe estar conectado para sincronizar el historial");
+      return;
+    }
+    setSyncing(true);
+    try {
+      const res = await fetch(`/api/accounts/${accountId}/sync-history`, { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        // Esperar unos segundos para que el EA envíe los datos y luego refrescar
+        setTimeout(() => {
+          fetchTrades();
+          setSyncing(false);
+        }, 5000);
+      } else {
+        alert("Error al sincronizar: " + data.error);
+        setSyncing(false);
+      }
+    } catch (error) {
+      console.error("Error syncing history:", error);
+      setSyncing(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -308,20 +335,33 @@ export default function AccountPage() {
           </div>
         </div>
         
-        {/* Token compacto */}
-        <div className="ml-12 flex items-center gap-2 rounded-lg bg-zinc-900 px-3 py-2 sm:ml-0">
-          <span className="text-xs text-zinc-400">Token:</span>
-          <code className="font-mono text-xs text-emerald-400">
-            {account.connectionToken.slice(0, 8)}...
-          </code>
+        {/* Token compacto y botón sync */}
+        <div className="ml-12 flex items-center gap-2 sm:ml-0">
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
-            onClick={copyToken}
-            className="h-6 w-6 p-0 text-zinc-400 hover:text-white"
+            onClick={syncHistory}
+            disabled={syncing || !isLive}
+            className="border-zinc-700 text-zinc-300 hover:text-white"
+            title="Sincronizar historial de trades"
           >
-            {copiedToken ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+            <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />
+            <span className="hidden sm:inline">Sincronizar</span>
           </Button>
+          <div className="flex items-center gap-2 rounded-lg bg-zinc-900 px-3 py-2">
+            <span className="text-xs text-zinc-400">Token:</span>
+            <code className="font-mono text-xs text-emerald-400">
+              {account.connectionToken.slice(0, 8)}...
+            </code>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={copyToken}
+              className="h-6 w-6 p-0 text-zinc-400 hover:text-white"
+            >
+              {copiedToken ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+            </Button>
+          </div>
         </div>
       </div>
 

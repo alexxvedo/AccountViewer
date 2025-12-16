@@ -588,6 +588,120 @@ const app = new Elysia({ prefix: "/api" })
         token: t.String(),
       }),
     }
+  )
+
+  // ============================================
+  // Solicitar sincronización de historial
+  // ============================================
+  .post(
+    "/accounts/:id/sync-history",
+    async ({ params }) => {
+      const accountId = params.id;
+      
+      const account = await prisma.tradingAccount.findUnique({
+        where: { id: accountId },
+      });
+      
+      if (!account) {
+        return { success: false, error: "Cuenta no encontrada" };
+      }
+      
+      // Añadir comando de sincronización a la cola
+      const queue = commandQueue.get(accountId) || { commands: [] };
+      queue.commands.push({
+        id: crypto.randomUUID(),
+        type: "sync_history",
+        createdAt: Date.now(),
+      });
+      commandQueue.set(accountId, queue);
+      
+      return { success: true, message: "Comando de sincronización enviado al EA" };
+    },
+    {
+      params: t.Object({
+        id: t.String(),
+      }),
+    }
+  )
+
+  // ============================================
+  // EA envía historial de trades en batch
+  // ============================================
+  .post(
+    "/ea/sync-history",
+    async ({ body }) => {
+      const account = await prisma.tradingAccount.findUnique({
+        where: { connectionToken: body.token },
+      });
+
+      if (!account) {
+        return { success: false, error: "Token inválido", imported: 0 };
+      }
+
+      const { trades } = body;
+      let imported = 0;
+      let skipped = 0;
+
+      for (const trade of trades) {
+        try {
+          await prisma.tradeHistory.upsert({
+            where: { ticket: BigInt(trade.ticket) },
+            update: {}, // No actualizar si ya existe
+            create: {
+              accountId: account.id,
+              ticket: BigInt(trade.ticket),
+              symbol: trade.symbol,
+              type: trade.type,
+              volume: trade.volume,
+              openPrice: trade.open_price,
+              closePrice: trade.close_price,
+              stopLoss: trade.sl || 0,
+              takeProfit: trade.tp || 0,
+              profit: trade.profit,
+              swap: trade.swap || 0,
+              commission: trade.commission || 0,
+              openTime: new Date(trade.open_time),
+              closeTime: new Date(trade.close_time),
+              magicNumber: trade.magic_number || 0,
+              comment: trade.comment || "",
+            },
+          });
+          imported++;
+        } catch (error) {
+          skipped++;
+        }
+      }
+
+      return { 
+        success: true, 
+        message: `Historial sincronizado: ${imported} importados, ${skipped} omitidos`,
+        imported,
+        skipped,
+      };
+    },
+    {
+      body: t.Object({
+        msg_type: t.Literal("sync_history"),
+        token: t.String(),
+        trades: t.Array(t.Object({
+          ticket: t.Number(),
+          symbol: t.String(),
+          type: t.String(),
+          volume: t.Number(),
+          open_price: t.Number(),
+          close_price: t.Number(),
+          sl: t.Optional(t.Number()),
+          tp: t.Optional(t.Number()),
+          profit: t.Number(),
+          swap: t.Optional(t.Number()),
+          commission: t.Optional(t.Number()),
+          open_time: t.Number(),
+          close_time: t.Number(),
+          magic_number: t.Optional(t.Number()),
+          comment: t.Optional(t.String()),
+        })),
+      }),
+    }
   );
 
 // ============================================
@@ -601,3 +715,4 @@ export const PATCH = app.fetch;
 
 // Exportar tipo para Eden
 export type App = typeof app;
+
