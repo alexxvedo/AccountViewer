@@ -216,10 +216,54 @@ export default function AccountPage() {
   };
 
   const copyToken = () => {
-    if (account) {
-      navigator.clipboard.writeText(account.connectionToken);
-      setCopiedToken(true);
-      setTimeout(() => setCopiedToken(false), 2000);
+    if (!account) return;
+    
+    const text = account.connectionToken;
+
+    // Intentar usar la API moderna (requiere HTTPS o localhost)
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text)
+        .then(() => {
+          setCopiedToken(true);
+          setTimeout(() => setCopiedToken(false), 2000);
+        })
+        .catch((err) => {
+          console.warn("Clipboard API failed, trying fallback...", err);
+          fallbackCopy(text);
+        });
+    } else {
+      // Fallback para HTTP (execCommand)
+      fallbackCopy(text);
+    }
+  };
+
+  const fallbackCopy = (text: string) => {
+    try {
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      
+      // Asegurar que no sea visible ni afecte el layout
+      textArea.style.top = "0";
+      textArea.style.left = "0";
+      textArea.style.position = "fixed";
+      textArea.style.opacity = "0";
+
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
+
+      if (successful) {
+        setCopiedToken(true);
+        setTimeout(() => setCopiedToken(false), 2000);
+      } else {
+        alert("No se pudo copiar. Por favor selecciona y copia manualmente.");
+      }
+    } catch (err) {
+      console.error("Fallback copy failed:", err);
+      alert("Error al copiar. Por favor selecciona y copia manualmente.");
     }
   };
 
