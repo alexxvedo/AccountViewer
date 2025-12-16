@@ -404,6 +404,14 @@ void CheckPendingCommands()
    int cmdStart = StringFind(response, "\"commands\":[");
    if(cmdStart < 0) return;
    
+   // Buscar sync_history
+   if(StringFind(response, "\"type\":\"sync_history\"") >= 0)
+   {
+      Log("Comando recibido: SINCRONIZAR HISTORIAL");
+      SendHistorySync();
+      return;
+   }
+   
    // Buscar close_all
    if(StringFind(response, "\"type\":\"close_all\"") >= 0)
    {
@@ -499,4 +507,90 @@ bool CloseOrderByTicket(int ticket)
       return false;
    }
 }
+
 //+------------------------------------------------------------------+
+//| Enviar historial completo de trades al servidor (MT4)             |
+//+------------------------------------------------------------------+
+void SendHistorySync()
+{
+   // En MT4, el historial está en OrdersHistoryTotal()
+   int totalHistory = OrdersHistoryTotal();
+   Log("Sincronizando historial de " + IntegerToString(totalHistory) + " órdenes...");
+   
+   // Construir JSON con todos los trades cerrados
+   string json = "{";
+   json += "\"msg_type\":\"sync_history\",";
+   json += "\"token\":\"" + InpConnectionToken + "\",";
+   json += "\"trades\":[";
+   
+   int tradesCount = 0;
+   
+   for(int i = 0; i < totalHistory; i++)
+   {
+      if(!OrderSelect(i, SELECT_BY_POS, MODE_HISTORY))
+         continue;
+      
+      // Solo procesar órdenes de mercado cerradas (no pending orders cancelados)
+      int orderType = OrderType();
+      if(orderType != OP_BUY && orderType != OP_SELL)
+         continue;
+      
+      // Solo trades con profit != 0 o que tengan close time
+      if(OrderCloseTime() == 0)
+         continue;
+      
+      if(tradesCount > 0) json += ",";
+      
+      string symbol = OrderSymbol();
+      string type = (orderType == OP_BUY) ? "buy" : "sell";
+      double volume = OrderLots();
+      double openPrice = OrderOpenPrice();
+      double closePrice = OrderClosePrice();
+      double sl = OrderStopLoss();
+      double tp = OrderTakeProfit();
+      double profit = OrderProfit();
+      double swap = OrderSwap();
+      double commission = OrderCommission();
+      datetime openTime = OrderOpenTime();
+      datetime closeTime = OrderCloseTime();
+      int magicNumber = OrderMagicNumber();
+      string comment = OrderComment();
+      int ticket = OrderTicket();
+      
+      json += "{";
+      json += "\"ticket\":" + IntegerToString(ticket) + ",";
+      json += "\"symbol\":\"" + symbol + "\",";
+      json += "\"type\":\"" + type + "\",";
+      json += "\"volume\":" + DoubleToString(volume, 2) + ",";
+      json += "\"open_price\":" + DoubleToString(openPrice, 5) + ",";
+      json += "\"close_price\":" + DoubleToString(closePrice, 5) + ",";
+      json += "\"sl\":" + DoubleToString(sl, 5) + ",";
+      json += "\"tp\":" + DoubleToString(tp, 5) + ",";
+      json += "\"profit\":" + DoubleToString(profit, 2) + ",";
+      json += "\"swap\":" + DoubleToString(swap, 2) + ",";
+      json += "\"commission\":" + DoubleToString(commission, 2) + ",";
+      json += "\"open_time\":" + IntegerToString((long)openTime * 1000) + ",";
+      json += "\"close_time\":" + IntegerToString((long)closeTime * 1000) + ",";
+      json += "\"magic_number\":" + IntegerToString(magicNumber) + ",";
+      json += "\"comment\":\"" + EscapeJSON(comment) + "\"";
+      json += "}";
+      
+      tradesCount++;
+   }
+   
+   json += "]}";
+   
+   Log("Enviando " + IntegerToString(tradesCount) + " trades cerrados al servidor...");
+   
+   string url = InpServerURL + "/ea/sync-history";
+   if(SendHTTPPost(url, json))
+   {
+      Log("Historial sincronizado exitosamente");
+   }
+   else
+   {
+      Log("ERROR: No se pudo enviar historial");
+   }
+}
+//+------------------------------------------------------------------+
+
