@@ -298,56 +298,65 @@ string BuildUpdateJSON()
 //+------------------------------------------------------------------+
 bool SendHTTPPost(string url, string jsonData)
 {
-   string cookie = "", headers = "";
    char post[], result[];
-   int timeout = 5000;
+   string resultHeaders;
+   int timeout = 10000; // Aumentar timeout a 10 segundos
    
-   // Preparar headers
-   headers = "Content-Type: application/json\r\n";
+   // Headers
+   string headers = "Content-Type: application/json\r\n";
+   headers += "Accept: application/json\r\n";
+   headers += "User-Agent: MT4-AccountViewer/1.0\r\n";
    
    // Convertir JSON a array de bytes
-   ArrayResize(post, StringToCharArray(jsonData, post, 0, WHOLE_ARRAY, CP_UTF8) - 1);
+   int jsonLen = StringLen(jsonData);
+   ArrayResize(post, jsonLen);
+   StringToCharArray(jsonData, post, 0, jsonLen, CP_UTF8);
    
    ResetLastError();
    
-   // Usar la versión de WebRequest compatible con MT4
+   // WebRequest con 7 parámetros (versión recomendada para MT4)
    int res = WebRequest(
       "POST",           // método
       url,              // URL
       headers,          // headers
       timeout,          // timeout
-      post,             // data
+      post,             // data a enviar
       result,           // resultado
-      headers           // headers de respuesta (reusamos variable)
+      resultHeaders     // headers de respuesta
    );
+   
+   int error = GetLastError();
    
    if(res == -1)
    {
-      int error = GetLastError();
       if(error == 4014)
       {
          Log("ERROR: URL no permitida. Añade a Herramientas > Opciones > Expert Advisors:");
-         Log("  " + InpServerURL);
+         Log("  " + url);
       }
-      else if(error == 5200)
+      else if(error == 5200 || error == 5203)
       {
-         Log("ERROR 5200: WebRequest falló. Verificar que URL está en lista permitida.");
+         Log("ERROR " + IntegerToString(error) + ": Problema de conexión/SSL con el servidor");
+         Log("  URL: " + url);
+         Log("  Tip: Verifica que la URL esté en la lista permitida y reinicia MT4");
       }
       else
       {
-         Log("ERROR WebRequest: " + IntegerToString(error));
+         Log("ERROR WebRequest: " + IntegerToString(error) + " - URL: " + url);
       }
       return false;
    }
    
-   if(res != 200)
+   if(res != 200 && res != 201)
    {
-      Log("HTTP Error: " + IntegerToString(res));
+      string responseStr = CharArrayToString(result, 0, WHOLE_ARRAY, CP_UTF8);
+      Log("HTTP " + IntegerToString(res) + ": " + responseStr);
       return false;
    }
    
    return true;
 }
+
 
 //+------------------------------------------------------------------+
 //| Escapa caracteres especiales para JSON                           |
