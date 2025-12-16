@@ -1,0 +1,191 @@
+// Prisma Schema para Trading Platform SaaS
+// Base de datos: SQLite (desarrollo local)
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+// Generador de modelos Elysia desde Prisma
+generator prismabox {
+  provider                    = "prismabox"
+  typeboxImportDependencyName = "elysia"
+  typeboxImportVariableName   = "t"
+  inputModel                  = true
+  output                      = "../generated/prismabox"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// ============================================
+// Modelos Better Auth
+// ============================================
+model User {
+  id            String   @id
+  email         String   @unique
+  name          String?
+  emailVerified Boolean  @default(false)
+  image         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  sessions        Session[]
+  accounts        Account[]
+  tradingAccounts TradingAccount[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  userId    String
+  expiresAt DateTime
+  token     String   @unique
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  userId                String
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("verification")
+}
+
+// ============================================
+// Cuenta de Trading (MT4/MT5)
+// ============================================
+model TradingAccount {
+  id     String @id @default(cuid())
+  userId String
+
+  // Token único para conexión del EA
+  connectionToken String @unique @default(cuid())
+
+  // Información de la cuenta MT
+  accountNumber Int
+  broker        String
+  server        String
+  platform      String  @default("MT5") // MT4 o MT5
+  nickname      String? // Nombre personalizado
+
+  // Estado
+  isConnected Boolean   @default(false)
+  lastSeen    DateTime?
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relaciones
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trades    TradeHistory[]
+  snapshots EquitySnapshot[]
+
+  @@index([userId])
+  @@index([connectionToken])
+  @@map("trading_accounts")
+}
+
+// ============================================
+// Historial de Trades Cerrados
+// ============================================
+model TradeHistory {
+  id        String @id @default(cuid())
+  accountId String
+
+  // Identificador del trade en MT
+  ticket BigInt @unique
+
+  // Detalles del trade
+  symbol     String
+  type       String // "buy" o "sell"
+  volume     Float
+  openPrice  Float
+  closePrice Float
+  stopLoss   Float?
+  takeProfit Float?
+
+  // Resultados
+  profit     Float
+  swap       Float @default(0)
+  commission Float @default(0)
+
+  // Timestamps del trade
+  openTime  DateTime
+  closeTime DateTime
+
+  // Comentarios/Magic number
+  comment     String?
+  magicNumber Int?
+
+  // Timestamps del registro
+  createdAt DateTime @default(now())
+
+  // Relaciones
+  account TradingAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId])
+  @@index([closeTime])
+  @@map("trade_history")
+}
+
+// ============================================
+// Snapshots de Equidad (cada hora)
+// ============================================
+model EquitySnapshot {
+  id        String @id @default(cuid())
+  accountId String
+
+  // Datos del snapshot
+  balance     Float
+  equity      Float
+  margin      Float
+  freeMargin  Float
+  marginLevel Float?
+
+  // Número de posiciones abiertas en ese momento
+  openPositions Int @default(0)
+
+  // Timestamp del snapshot
+  timestamp DateTime @default(now())
+
+  // Relaciones
+  account TradingAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId])
+  @@index([timestamp])
+  @@map("equity_snapshots")
+}
