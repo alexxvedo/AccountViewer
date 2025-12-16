@@ -1,5 +1,5 @@
 // Prisma Schema para Trading Platform SaaS
-// Base de datos: SQLite (desarrollo local)
+// Base de datos: MySQL
 
 generator client {
   provider = "prisma-client-js"
@@ -16,8 +16,8 @@ generator prismabox {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "mysql"
+  url      = env("DATABASE_URL")
 }
 
 // ============================================

@@ -114,6 +114,9 @@ Prisma.NullTypes = {
  */
 
 exports.Prisma.TransactionIsolationLevel = makeStrictEnum({
+  ReadUncommitted: 'ReadUncommitted',
+  ReadCommitted: 'ReadCommitted',
+  RepeatableRead: 'RepeatableRead',
   Serializable: 'Serializable'
 });
 
@@ -218,6 +221,61 @@ exports.Prisma.SortOrder = {
 exports.Prisma.NullsOrder = {
   first: 'first',
   last: 'last'
+};
+
+exports.Prisma.UserOrderByRelevanceFieldEnum = {
+  id: 'id',
+  email: 'email',
+  name: 'name',
+  image: 'image'
+};
+
+exports.Prisma.SessionOrderByRelevanceFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  token: 'token',
+  ipAddress: 'ipAddress',
+  userAgent: 'userAgent'
+};
+
+exports.Prisma.AccountOrderByRelevanceFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  accountId: 'accountId',
+  providerId: 'providerId',
+  accessToken: 'accessToken',
+  refreshToken: 'refreshToken',
+  scope: 'scope',
+  password: 'password'
+};
+
+exports.Prisma.VerificationOrderByRelevanceFieldEnum = {
+  id: 'id',
+  identifier: 'identifier',
+  value: 'value'
+};
+
+exports.Prisma.TradingAccountOrderByRelevanceFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  connectionToken: 'connectionToken',
+  broker: 'broker',
+  server: 'server',
+  platform: 'platform',
+  nickname: 'nickname'
+};
+
+exports.Prisma.TradeHistoryOrderByRelevanceFieldEnum = {
+  id: 'id',
+  accountId: 'accountId',
+  symbol: 'symbol',
+  type: 'type',
+  comment: 'comment'
+};
+
+exports.Prisma.EquitySnapshotOrderByRelevanceFieldEnum = {
+  id: 'id',
+  accountId: 'accountId'
 };
 
 

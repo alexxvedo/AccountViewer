@@ -48,6 +48,9 @@ COPY --from=builder /app/server ./server
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 
+# Script de entrada
+COPY --chmod=755 docker-entrypoint.sh ./docker-entrypoint.sh
+
 USER nodejs
 
 # Exponer puertos
@@ -57,5 +60,5 @@ EXPOSE 3001
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Script de inicio que ejecuta ambos servicios
-CMD ["sh", "-c", "bun run server/websocket.ts & node server.js"]
+# Usar el script de entrada
+ENTRYPOINT ["./docker-entrypoint.sh"]

@@ -87,6 +87,9 @@ Prisma.NullTypes = {
  * Enums
  */
 exports.Prisma.TransactionIsolationLevel = makeStrictEnum({
+  ReadUncommitted: 'ReadUncommitted',
+  ReadCommitted: 'ReadCommitted',
+  RepeatableRead: 'RepeatableRead',
   Serializable: 'Serializable'
 });
 
@@ -193,6 +196,61 @@ exports.Prisma.NullsOrder = {
   last: 'last'
 };
 
+exports.Prisma.UserOrderByRelevanceFieldEnum = {
+  id: 'id',
+  email: 'email',
+  name: 'name',
+  image: 'image'
+};
+
+exports.Prisma.SessionOrderByRelevanceFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  token: 'token',
+  ipAddress: 'ipAddress',
+  userAgent: 'userAgent'
+};
+
+exports.Prisma.AccountOrderByRelevanceFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  accountId: 'accountId',
+  providerId: 'providerId',
+  accessToken: 'accessToken',
+  refreshToken: 'refreshToken',
+  scope: 'scope',
+  password: 'password'
+};
+
+exports.Prisma.VerificationOrderByRelevanceFieldEnum = {
+  id: 'id',
+  identifier: 'identifier',
+  value: 'value'
+};
+
+exports.Prisma.TradingAccountOrderByRelevanceFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  connectionToken: 'connectionToken',
+  broker: 'broker',
+  server: 'server',
+  platform: 'platform',
+  nickname: 'nickname'
+};
+
+exports.Prisma.TradeHistoryOrderByRelevanceFieldEnum = {
+  id: 'id',
+  accountId: 'accountId',
+  symbol: 'symbol',
+  type: 'type',
+  comment: 'comment'
+};
+
+exports.Prisma.EquitySnapshotOrderByRelevanceFieldEnum = {
+  id: 'id',
+  accountId: 'accountId'
+};
+
 
 exports.Prisma.ModelName = {
   User: 'User',
@@ -232,7 +290,8 @@ const config = {
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
-    "rootEnvPath": null
+    "rootEnvPath": null,
+    "schemaEnvPath": "../../.env"
   },
   "relativePath": "../../prisma",
   "clientVersion": "6.7.0",
@@ -240,17 +299,17 @@ const config = {
   "datasourceNames": [
     "db"
   ],
-  "activeProvider": "sqlite",
+  "activeProvider": "mysql",
   "inlineDatasources": {
     "db": {
       "url": {
-        "fromEnvVar": null,
-        "value": "file:./dev.db"
+        "fromEnvVar": "DATABASE_URL",
+        "value": "mysql://mysql:qinemkbox8kbpdk0@109.199.107.101:3306/database"
       }
     }
   },
-  "inlineSchema": "// Prisma Schema para Trading Platform SaaS\n// Base de datos: SQLite (desarrollo local)\n\ngenerator client {\n  provider = \"prisma-client-js\"\n  output   = \"../generated/prisma\"\n}\n\n// Generador de modelos Elysia desde Prisma\ngenerator prismabox {\n  provider                    = \"prismabox\"\n  typeboxImportDependencyName = \"elysia\"\n  typeboxImportVariableName   = \"t\"\n  inputModel                  = true\n  output                      = \"../generated/prismabox\"\n}\n\ndatasource db {\n  provider = \"sqlite\"\n  url      = \"file:./dev.db\"\n}\n\n// ============================================\n// Modelos Better Auth\n// ============================================\nmodel User {\n  id            String   @id\n  email         String   @unique\n  name          String?\n  emailVerified Boolean  @default(false)\n  image         String?\n  createdAt     DateTime @default(now())\n  updatedAt     DateTime @updatedAt\n\n  sessions        Session[]\n  accounts        Account[]\n  tradingAccounts TradingAccount[]\n\n  @@map(\"user\")\n}\n\nmodel Session {\n  id        String   @id\n  userId    String\n  expiresAt DateTime\n  token     String   @unique\n  ipAddress String?\n  userAgent String?\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n\n  user User @relation(fields: [userId], references: [id], onDelete: Cascade)\n\n  @@map(\"session\")\n}\n\nmodel Account {\n  id                    String    @id\n  userId                String\n  accountId             String\n  providerId            String\n  accessToken           String?\n  refreshToken          String?\n  accessTokenExpiresAt  DateTime?\n  refreshTokenExpiresAt DateTime?\n  scope                 String?\n  password              String?\n  createdAt             DateTime  @default(now())\n  updatedAt             DateTime  @updatedAt\n\n  user User @relation(fields: [userId], references: [id], onDelete: Cascade)\n\n  @@map(\"account\")\n}\n\nmodel Verification {\n  id         String   @id\n  identifier String\n  value      String\n  expiresAt  DateTime\n  createdAt  DateTime @default(now())\n  updatedAt  DateTime @updatedAt\n\n  @@map(\"verification\")\n}\n\n// ============================================\n// Cuenta de Trading (MT4/MT5)\n// ============================================\nmodel TradingAccount {\n  id     String @id @default(cuid())\n  userId String\n\n  // Token único para conexión del EA\n  connectionToken String @unique @default(cuid())\n\n  // Información de la cuenta MT\n  accountNumber Int\n  broker        String\n  server        String\n  platform      String  @default(\"MT5\") // MT4 o MT5\n  nickname      String? // Nombre personalizado\n\n  // Estado\n  isConnected Boolean   @default(false)\n  lastSeen    DateTime?\n\n  // Timestamps\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n\n  // Relaciones\n  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)\n  trades    TradeHistory[]\n  snapshots EquitySnapshot[]\n\n  @@index([userId])\n  @@index([connectionToken])\n  @@map(\"trading_accounts\")\n}\n\n// ============================================\n// Historial de Trades Cerrados\n// ============================================\nmodel TradeHistory {\n  id        String @id @default(cuid())\n  accountId String\n\n  // Identificador del trade en MT\n  ticket BigInt @unique\n\n  // Detalles del trade\n  symbol     String\n  type       String // \"buy\" o \"sell\"\n  volume     Float\n  openPrice  Float\n  closePrice Float\n  stopLoss   Float?\n  takeProfit Float?\n\n  // Resultados\n  profit     Float\n  swap       Float @default(0)\n  commission Float @default(0)\n\n  // Timestamps del trade\n  openTime  DateTime\n  closeTime DateTime\n\n  // Comentarios/Magic number\n  comment     String?\n  magicNumber Int?\n\n  // Timestamps del registro\n  createdAt DateTime @default(now())\n\n  // Relaciones\n  account TradingAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)\n\n  @@index([accountId])\n  @@index([closeTime])\n  @@map(\"trade_history\")\n}\n\n// ============================================\n// Snapshots de Equidad (cada hora)\n// ============================================\nmodel EquitySnapshot {\n  id        String @id @default(cuid())\n  accountId String\n\n  // Datos del snapshot\n  balance     Float\n  equity      Float\n  margin      Float\n  freeMargin  Float\n  marginLevel Float?\n\n  // Número de posiciones abiertas en ese momento\n  openPositions Int @default(0)\n\n  // Timestamp del snapshot\n  timestamp DateTime @default(now())\n\n  // Relaciones\n  account TradingAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)\n\n  @@index([accountId])\n  @@index([timestamp])\n  @@map(\"equity_snapshots\")\n}\n",
-  "inlineSchemaHash": "6fbb6b6efc8e6489fab52d4d4f6a974e88d18a99eef6028d8842b86c7478f541",
+  "inlineSchema": "// Prisma Schema para Trading Platform SaaS\n// Base de datos: MySQL\n\ngenerator client {\n  provider = \"prisma-client-js\"\n  output   = \"../generated/prisma\"\n}\n\n// Generador de modelos Elysia desde Prisma\ngenerator prismabox {\n  provider                    = \"prismabox\"\n  typeboxImportDependencyName = \"elysia\"\n  typeboxImportVariableName   = \"t\"\n  inputModel                  = true\n  output                      = \"../generated/prismabox\"\n}\n\ndatasource db {\n  provider = \"mysql\"\n  url      = env(\"DATABASE_URL\")\n}\n\n// ============================================\n// Modelos Better Auth\n// ============================================\nmodel User {\n  id            String   @id\n  email         String   @unique\n  name          String?\n  emailVerified Boolean  @default(false)\n  image         String?\n  createdAt     DateTime @default(now())\n  updatedAt     DateTime @updatedAt\n\n  sessions        Session[]\n  accounts        Account[]\n  tradingAccounts TradingAccount[]\n\n  @@map(\"user\")\n}\n\nmodel Session {\n  id        String   @id\n  userId    String\n  expiresAt DateTime\n  token     String   @unique\n  ipAddress String?\n  userAgent String?\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n\n  user User @relation(fields: [userId], references: [id], onDelete: Cascade)\n\n  @@map(\"session\")\n}\n\nmodel Account {\n  id                    String    @id\n  userId                String\n  accountId             String\n  providerId            String\n  accessToken           String?\n  refreshToken          String?\n  accessTokenExpiresAt  DateTime?\n  refreshTokenExpiresAt DateTime?\n  scope                 String?\n  password              String?\n  createdAt             DateTime  @default(now())\n  updatedAt             DateTime  @updatedAt\n\n  user User @relation(fields: [userId], references: [id], onDelete: Cascade)\n\n  @@map(\"account\")\n}\n\nmodel Verification {\n  id         String   @id\n  identifier String\n  value      String\n  expiresAt  DateTime\n  createdAt  DateTime @default(now())\n  updatedAt  DateTime @updatedAt\n\n  @@map(\"verification\")\n}\n\n// ============================================\n// Cuenta de Trading (MT4/MT5)\n// ============================================\nmodel TradingAccount {\n  id     String @id @default(cuid())\n  userId String\n\n  // Token único para conexión del EA\n  connectionToken String @unique @default(cuid())\n\n  // Información de la cuenta MT\n  accountNumber Int\n  broker        String\n  server        String\n  platform      String  @default(\"MT5\") // MT4 o MT5\n  nickname      String? // Nombre personalizado\n\n  // Estado\n  isConnected Boolean   @default(false)\n  lastSeen    DateTime?\n\n  // Timestamps\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n\n  // Relaciones\n  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)\n  trades    TradeHistory[]\n  snapshots EquitySnapshot[]\n\n  @@index([userId])\n  @@index([connectionToken])\n  @@map(\"trading_accounts\")\n}\n\n// ============================================\n// Historial de Trades Cerrados\n// ============================================\nmodel TradeHistory {\n  id        String @id @default(cuid())\n  accountId String\n\n  // Identificador del trade en MT\n  ticket BigInt @unique\n\n  // Detalles del trade\n  symbol     String\n  type       String // \"buy\" o \"sell\"\n  volume     Float\n  openPrice  Float\n  closePrice Float\n  stopLoss   Float?\n  takeProfit Float?\n\n  // Resultados\n  profit     Float\n  swap       Float @default(0)\n  commission Float @default(0)\n\n  // Timestamps del trade\n  openTime  DateTime\n  closeTime DateTime\n\n  // Comentarios/Magic number\n  comment     String?\n  magicNumber Int?\n\n  // Timestamps del registro\n  createdAt DateTime @default(now())\n\n  // Relaciones\n  account TradingAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)\n\n  @@index([accountId])\n  @@index([closeTime])\n  @@map(\"trade_history\")\n}\n\n// ============================================\n// Snapshots de Equidad (cada hora)\n// ============================================\nmodel EquitySnapshot {\n  id        String @id @default(cuid())\n  accountId String\n\n  // Datos del snapshot\n  balance     Float\n  equity      Float\n  margin      Float\n  freeMargin  Float\n  marginLevel Float?\n\n  // Número de posiciones abiertas en ese momento\n  openPositions Int @default(0)\n\n  // Timestamp del snapshot\n  timestamp DateTime @default(now())\n\n  // Relaciones\n  account TradingAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)\n\n  @@index([accountId])\n  @@index([timestamp])\n  @@map(\"equity_snapshots\")\n}\n",
+  "inlineSchemaHash": "b4f39e87ddbe0e6920875886f26772421481464ecb90c817220b7def75b5da18",
   "copyEngine": true
 }
 

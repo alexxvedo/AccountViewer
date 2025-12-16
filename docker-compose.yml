@@ -1,28 +1,9 @@
 # ============================================
-# Docker Compose para AccountViewer
-# Incluye la app y MySQL
+# Docker Compose - Solo para desarrollo local
+# La BD MySQL ya está en Dokploy
 # ============================================
 
 services:
-  # Base de datos MySQL
-  db:
-    image: mysql:8.0
-    container_name: accountviewer-db
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-secretpassword}
-      MYSQL_DATABASE: accountviewer
-    volumes:
-      - mysql_data:/var/lib/mysql
-    ports:
-      - "3306:3306"
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # Aplicación principal
   app:
     build:
       context: .
@@ -33,12 +14,7 @@ services:
       - "${FRONTEND_PORT:-3000}:3000"
       - "${WS_PORT:-3001}:3001"
     environment:
-      - DATABASE_URL=mysql://root:${MYSQL_ROOT_PASSWORD:-secretpassword}@db:3306/accountviewer
+      - DATABASE_URL=${DATABASE_URL}
       - NODE_ENV=production
       - WS_PORT=3001
-    depends_on:
-      db:
-        condition: service_healthy
-
-volumes:
-  mysql_data:
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
