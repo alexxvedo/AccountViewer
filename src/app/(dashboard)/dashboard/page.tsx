@@ -288,9 +288,29 @@ export default function DashboardPage() {
       <Card className="cursor-pointer border-zinc-800 bg-zinc-900 transition-all hover:border-zinc-700 hover:bg-zinc-800/50">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-base text-white">
-              {account.nickname || `Cuenta ${account.accountNumber}`}
-            </CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-base text-white">
+                {account.nickname || `Cuenta ${account.accountNumber}`}
+              </CardTitle>
+              <button
+                onClick={(e) => { 
+                  e.preventDefault(); 
+                  e.stopPropagation();
+                  setEditingAccount(account);
+                  setAccountForm({ 
+                    accountNumber: String(account.accountNumber),
+                    broker: account.broker,
+                    server: account.server,
+                    platform: account.platform,
+                    nickname: account.nickname || "",
+                    sectionId: account.sectionId || "",
+                  });
+                }}
+                className="text-zinc-500 hover:text-white transition-colors"
+              >
+                <Edit className="h-3.5 w-3.5" />
+              </button>
+            </div>
             <div className={`flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${
               account.isConnected ? "bg-green-500/10 text-green-400" : "bg-zinc-500/10 text-zinc-400"
             }`}>
@@ -331,35 +351,16 @@ export default function DashboardPage() {
           )}
           <div className="flex items-center justify-between rounded-lg bg-zinc-800/50 p-2">
             <span className="text-xs text-zinc-400">Token</span>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={(e) => { e.preventDefault(); copyToken(account.connectionToken); }}
-                className="flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300"
-              >
-                {copiedToken === account.connectionToken ? (
-                  <><Check className="h-3 w-3" />Copiado</>
-                ) : (
-                  <><Copy className="h-3 w-3" />Copiar</>
-                )}
-              </button>
-              <button
-                onClick={(e) => { 
-                  e.preventDefault(); 
-                  setEditingAccount(account);
-                  setAccountForm({ 
-                    accountNumber: String(account.accountNumber),
-                    broker: account.broker,
-                    server: account.server,
-                    platform: account.platform,
-                    nickname: account.nickname || "",
-                    sectionId: account.sectionId || "",
-                  });
-                }}
-                className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300"
-              >
-                <Edit className="h-3 w-3" />Editar
-              </button>
-            </div>
+            <button
+              onClick={(e) => { e.preventDefault(); copyToken(account.connectionToken); }}
+              className="flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300"
+            >
+              {copiedToken === account.connectionToken ? (
+                <><Check className="h-3 w-3" />Copiado</>
+              ) : (
+                <><Copy className="h-3 w-3" />Copiar</>
+              )}
+            </button>
           </div>
         </CardContent>
       </Card>
@@ -668,12 +669,12 @@ export default function DashboardPage() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label className="text-zinc-300">Sección</Label>
-                  <Select value={accountForm.sectionId} onValueChange={(v) => setAccountForm({ ...accountForm, sectionId: v })}>
+                  <Select value={accountForm.sectionId || "_none_"} onValueChange={(v) => setAccountForm({ ...accountForm, sectionId: v === "_none_" ? "" : v })}>
                     <SelectTrigger className="w-full border-zinc-700 bg-zinc-800 text-white">
                       <SelectValue placeholder="Sin sección" />
                     </SelectTrigger>
                     <SelectContent className="border-zinc-700 bg-zinc-800">
-                      <SelectItem value="" className="text-zinc-300">Sin sección</SelectItem>
+                      <SelectItem value="_none_" className="text-zinc-300">Sin sección</SelectItem>
                       {sections.map(s => (
                         <SelectItem key={s.id} value={s.id} className="text-white">
                           <div className="flex items-center gap-2">
