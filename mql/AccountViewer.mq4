@@ -162,6 +162,10 @@ bool HasSignificantChanges()
    if(MathAbs(currentBalance - g_lastBalance) > 0.01)
    {
       Log("Cambio: Balance " + DoubleToString(g_lastBalance, 2) + " -> " + DoubleToString(currentBalance, 2));
+      
+      // Detectar y enviar trades cerrados ANTES de actualizar el estado
+      CheckAndSendClosedTrades();
+      
       CaptureCurrentState();
       return true;
    }
