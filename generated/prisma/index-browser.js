@@ -165,9 +165,19 @@ exports.Prisma.VerificationScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.SectionScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  name: 'name',
+  color: 'color',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.TradingAccountScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
+  sectionId: 'sectionId',
   connectionToken: 'connectionToken',
   accountNumber: 'accountNumber',
   broker: 'broker',
@@ -176,6 +186,8 @@ exports.Prisma.TradingAccountScalarFieldEnum = {
   nickname: 'nickname',
   isConnected: 'isConnected',
   lastSeen: 'lastSeen',
+  balance: 'balance',
+  equity: 'equity',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -255,9 +267,17 @@ exports.Prisma.VerificationOrderByRelevanceFieldEnum = {
   value: 'value'
 };
 
+exports.Prisma.SectionOrderByRelevanceFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  name: 'name',
+  color: 'color'
+};
+
 exports.Prisma.TradingAccountOrderByRelevanceFieldEnum = {
   id: 'id',
   userId: 'userId',
+  sectionId: 'sectionId',
   connectionToken: 'connectionToken',
   broker: 'broker',
   server: 'server',
@@ -284,6 +304,7 @@ exports.Prisma.ModelName = {
   Session: 'Session',
   Account: 'Account',
   Verification: 'Verification',
+  Section: 'Section',
   TradingAccount: 'TradingAccount',
   TradeHistory: 'TradeHistory',
   EquitySnapshot: 'EquitySnapshot'

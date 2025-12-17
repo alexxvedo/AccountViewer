@@ -36,6 +36,7 @@ model User {
   sessions        Session[]
   accounts        Account[]
   tradingAccounts TradingAccount[]
+  sections        Section[]
 
   @@map("user")
 }
@@ -86,11 +87,30 @@ model Verification {
 }
 
 // ============================================
+// Secciones para agrupar cuentas (AXI, FTMO, etc.)
+// ============================================
+model Section {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String   // "AXI", "FTMO", "The Trading PIT"
+  color     String?  // Color opcional para UI (hex)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accounts  TradingAccount[]
+  
+  @@index([userId])
+  @@map("sections")
+}
+
+// ============================================
 // Cuenta de Trading (MT4/MT5)
 // ============================================
 model TradingAccount {
   id              String   @id @default(cuid())
   userId          String
+  sectionId       String?  // Sección opcional
   
   // Token único para conexión del EA
   connectionToken String   @unique @default(cuid())
@@ -105,6 +125,8 @@ model TradingAccount {
   // Estado
   isConnected     Boolean  @default(false)
   lastSeen        DateTime?
+  balance         Float    @default(0)
+  equity          Float    @default(0)
   
   // Timestamps
   createdAt       DateTime @default(now())
@@ -112,10 +134,12 @@ model TradingAccount {
 
   // Relaciones
   user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  section         Section?        @relation(fields: [sectionId], references: [id], onDelete: SetNull)
   trades          TradeHistory[]
   snapshots       EquitySnapshot[]
 
   @@index([userId])
+  @@index([sectionId])
   @@index([connectionToken])
   @@map("trading_accounts")
 }

@@ -34,6 +34,7 @@ export const TradeHistoryRelations = t.Object(
       {
         id: t.String(),
         userId: t.String(),
+        sectionId: __nullable__(t.String()),
         connectionToken: t.String(),
         accountNumber: t.Integer(),
         broker: t.String(),
@@ -42,6 +43,8 @@ export const TradeHistoryRelations = t.Object(
         nickname: __nullable__(t.String()),
         isConnected: t.Boolean(),
         lastSeen: __nullable__(t.Date()),
+        balance: t.Number(),
+        equity: t.Number(),
         createdAt: t.Date(),
         updatedAt: t.Date(),
       },

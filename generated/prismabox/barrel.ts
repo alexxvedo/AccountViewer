@@ -2,6 +2,7 @@ export * from "./User";
 export * from "./Session";
 export * from "./Account";
 export * from "./Verification";
+export * from "./Section";
 export * from "./TradingAccount";
 export * from "./TradeHistory";
 export * from "./EquitySnapshot";

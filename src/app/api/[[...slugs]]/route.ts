@@ -74,6 +74,9 @@ const app = new Elysia({ prefix: "/api" })
           createdAt: true,
           updatedAt: true,
           userId: true,
+          sectionId: true,
+          balance: true,
+          equity: true,
         },
       });
 
@@ -165,11 +168,145 @@ const app = new Elysia({ prefix: "/api" })
         server: t.String(),
         platform: t.Optional(t.String()),
         nickname: t.Optional(t.String()),
+        sectionId: t.Optional(t.String()),
       }),
       response: t.Object({
         id: t.String(),
         connectionToken: t.String(),
         message: t.String(),
+      }),
+    }
+  )
+
+  // ============================================
+  // SECCIONES - Listar por usuario
+  // ============================================
+  .get(
+    "/users/:id/sections",
+    async ({ params }) => {
+      const sections = await prisma.section.findMany({
+        where: { userId: params.id },
+        include: {
+          accounts: {
+            select: {
+              id: true,
+              accountNumber: true,
+              broker: true,
+              server: true,
+              platform: true,
+              nickname: true,
+              isConnected: true,
+              connectionToken: true,
+            },
+          },
+        },
+        orderBy: { createdAt: "asc" },
+      });
+
+      // Enriquecer con datos en vivo
+      return sections.map(section => ({
+        ...section,
+        accounts: section.accounts.map(account => {
+          const cached = liveDataCache.get(account.id);
+          const isLive = cached && (Date.now() - cached.timestamp < 30000);
+          return {
+            ...account,
+            isConnected: isLive,
+            liveData: isLive ? {
+              balance: cached.data?.account?.balance || 0,
+              equity: cached.data?.account?.equity || 0,
+              floatingPL: (cached.data?.account?.equity || 0) - (cached.data?.account?.balance || 0),
+              lastUpdate: cached.timestamp,
+            } : null,
+          };
+        }),
+      }));
+    },
+    {
+      params: t.Object({
+        id: t.String(),
+      }),
+    }
+  )
+
+  // ============================================
+  // SECCIONES - Crear
+  // ============================================
+  .post(
+    "/sections",
+    async ({ body }) => {
+      const section = await prisma.section.create({
+        data: {
+          userId: body.userId,
+          name: body.name,
+          color: body.color,
+        },
+      });
+      return { id: section.id, message: "Sección creada" };
+    },
+    {
+      body: t.Object({
+        userId: t.String(),
+        name: t.String(),
+        color: t.Optional(t.String()),
+      }),
+    }
+  )
+
+  // ============================================
+  // SECCIONES - Actualizar
+  // ============================================
+  .put(
+    "/sections/:id",
+    async ({ params, body }) => {
+      const section = await prisma.section.update({
+        where: { id: params.id },
+        data: {
+          name: body.name,
+          color: body.color,
+        },
+      });
+      return { id: section.id, message: "Sección actualizada" };
+    },
+    {
+      params: t.Object({ id: t.String() }),
+      body: t.Object({
+        name: t.Optional(t.String()),
+        color: t.Optional(t.String()),
+      }),
+    }
+  )
+
+  // ============================================
+  // SECCIONES - Eliminar
+  // ============================================
+  .delete(
+    "/sections/:id",
+    async ({ params }) => {
+      await prisma.section.delete({ where: { id: params.id } });
+      return { message: "Sección eliminada" };
+    },
+    {
+      params: t.Object({ id: t.String() }),
+    }
+  )
+
+  // ============================================
+  // CUENTAS - Mover a sección
+  // ============================================
+  .put(
+    "/accounts/:id/section",
+    async ({ params, body }) => {
+      await prisma.tradingAccount.update({
+        where: { id: params.id },
+        data: { sectionId: body.sectionId },
+      });
+      return { message: "Cuenta movida" };
+    },
+    {
+      params: t.Object({ id: t.String() }),
+      body: t.Object({
+        sectionId: t.Union([t.String(), t.Null()]),
       }),
     }
   )

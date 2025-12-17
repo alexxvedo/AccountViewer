@@ -60,6 +60,7 @@ export const UserRelations = t.Object(
         {
           id: t.String(),
           userId: t.String(),
+          sectionId: __nullable__(t.String()),
           connectionToken: t.String(),
           accountNumber: t.Integer(),
           broker: t.String(),
@@ -68,6 +69,22 @@ export const UserRelations = t.Object(
           nickname: __nullable__(t.String()),
           isConnected: t.Boolean(),
           lastSeen: __nullable__(t.Date()),
+          balance: t.Number(),
+          equity: t.Number(),
+          createdAt: t.Date(),
+          updatedAt: t.Date(),
+        },
+        { additionalProperties: false },
+      ),
+      { additionalProperties: false },
+    ),
+    sections: t.Array(
+      t.Object(
+        {
+          id: t.String(),
+          userId: t.String(),
+          name: t.String(),
+          color: __nullable__(t.String()),
           createdAt: t.Date(),
           updatedAt: t.Date(),
         },
@@ -149,6 +166,22 @@ export const UserRelationsInputCreate = t.Object(
         { additionalProperties: false },
       ),
     ),
+    sections: t.Optional(
+      t.Object(
+        {
+          connect: t.Array(
+            t.Object(
+              {
+                id: t.String({ additionalProperties: false }),
+              },
+              { additionalProperties: false },
+            ),
+            { additionalProperties: false },
+          ),
+        },
+        { additionalProperties: false },
+      ),
+    ),
   },
   { additionalProperties: false },
 );
@@ -207,6 +240,31 @@ export const UserRelationsInputUpdate = t.Partial(
         ),
       ),
       tradingAccounts: t.Partial(
+        t.Object(
+          {
+            connect: t.Array(
+              t.Object(
+                {
+                  id: t.String({ additionalProperties: false }),
+                },
+                { additionalProperties: false },
+              ),
+              { additionalProperties: false },
+            ),
+            disconnect: t.Array(
+              t.Object(
+                {
+                  id: t.String({ additionalProperties: false }),
+                },
+                { additionalProperties: false },
+              ),
+              { additionalProperties: false },
+            ),
+          },
+          { additionalProperties: false },
+        ),
+      ),
+      sections: t.Partial(
         t.Object(
           {
             connect: t.Array(
@@ -320,6 +378,7 @@ export const UserSelect = t.Partial(
       sessions: t.Boolean(),
       accounts: t.Boolean(),
       tradingAccounts: t.Boolean(),
+      sections: t.Boolean(),
       _count: t.Boolean(),
     },
     { additionalProperties: false },
@@ -332,6 +391,7 @@ export const UserInclude = t.Partial(
       sessions: t.Boolean(),
       accounts: t.Boolean(),
       tradingAccounts: t.Boolean(),
+      sections: t.Boolean(),
       _count: t.Boolean(),
     },
     { additionalProperties: false },
