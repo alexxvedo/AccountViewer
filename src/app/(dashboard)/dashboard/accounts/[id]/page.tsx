@@ -5,6 +5,13 @@ import { useSession } from "@/lib/auth-client";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Card,
   CardContent,
   CardHeader,
@@ -1107,17 +1114,18 @@ export default function AccountPage() {
                     {/* Período */}
                     <div className="space-y-1">
                       <label className="text-xs text-zinc-400">Período</label>
-                      <select
-                        value={periodFilter}
-                        onChange={(e) => setPeriodFilter(e.target.value as typeof periodFilter)}
-                        className="h-9 rounded-lg border border-zinc-700 bg-zinc-800 px-3 text-sm text-white"
-                      >
-                        <option value="all">Todo</option>
-                        <option value="today">Hoy</option>
-                        <option value="week">Última semana</option>
-                        <option value="month">Último mes</option>
-                        <option value="custom">Personalizado</option>
-                      </select>
+                      <Select value={periodFilter} onValueChange={(v) => setPeriodFilter(v as typeof periodFilter)}>
+                        <SelectTrigger className="h-9 w-[140px] border-zinc-700 bg-zinc-800 text-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="border-zinc-700 bg-zinc-800">
+                          <SelectItem value="all">Todo</SelectItem>
+                          <SelectItem value="today">Hoy</SelectItem>
+                          <SelectItem value="week">Última semana</SelectItem>
+                          <SelectItem value="month">Último mes</SelectItem>
+                          <SelectItem value="custom">Personalizado</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     
                     {/* Fechas personalizadas */}
@@ -1147,44 +1155,47 @@ export default function AccountPage() {
                     {/* Símbolo */}
                     <div className="space-y-1">
                       <label className="text-xs text-zinc-400">Símbolo</label>
-                      <select
-                        value={symbolFilter}
-                        onChange={(e) => setSymbolFilter(e.target.value)}
-                        className="h-9 rounded-lg border border-zinc-700 bg-zinc-800 px-3 text-sm text-white"
-                      >
-                        <option value="">Todos</option>
-                        {uniqueSymbols.map(s => <option key={s} value={s}>{s}</option>)}
-                      </select>
+                      <Select value={symbolFilter || "all"} onValueChange={(v) => setSymbolFilter(v === "all" ? "" : v)}>
+                        <SelectTrigger className="h-9 w-[130px] border-zinc-700 bg-zinc-800 text-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="border-zinc-700 bg-zinc-800">
+                          <SelectItem value="all">Todos</SelectItem>
+                          {uniqueSymbols.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
                     </div>
                     
                     {/* Tipo */}
                     <div className="space-y-1">
                       <label className="text-xs text-zinc-400">Tipo</label>
-                      <select
-                        value={typeFilter}
-                        onChange={(e) => setTypeFilter(e.target.value as typeof typeFilter)}
-                        className="h-9 rounded-lg border border-zinc-700 bg-zinc-800 px-3 text-sm text-white"
-                      >
-                        <option value="all">Todos</option>
-                        <option value="buy">Buy</option>
-                        <option value="sell">Sell</option>
-                      </select>
+                      <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as typeof typeFilter)}>
+                        <SelectTrigger className="h-9 w-[100px] border-zinc-700 bg-zinc-800 text-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="border-zinc-700 bg-zinc-800">
+                          <SelectItem value="all">Todos</SelectItem>
+                          <SelectItem value="buy">Buy</SelectItem>
+                          <SelectItem value="sell">Sell</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     
                     {/* Paginación */}
                     <div className="space-y-1">
                       <label className="text-xs text-zinc-400">Mostrar</label>
-                      <select
-                        value={historyPerPage}
-                        onChange={(e) => setHistoryPerPage(Number(e.target.value))}
-                        className="h-9 rounded-lg border border-zinc-700 bg-zinc-800 px-3 text-sm text-white"
-                      >
-                        <option value={0}>Todos</option>
-                        <option value={10}>10</option>
-                        <option value={25}>25</option>
-                        <option value={50}>50</option>
-                        <option value={100}>100</option>
-                      </select>
+                      <Select value={String(historyPerPage)} onValueChange={(v) => setHistoryPerPage(Number(v))}>
+                        <SelectTrigger className="h-9 w-[90px] border-zinc-700 bg-zinc-800 text-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="border-zinc-700 bg-zinc-800">
+                          <SelectItem value="0">Todos</SelectItem>
+                          <SelectItem value="10">10</SelectItem>
+                          <SelectItem value="25">25</SelectItem>
+                          <SelectItem value="50">50</SelectItem>
+                          <SelectItem value="100">100</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                   

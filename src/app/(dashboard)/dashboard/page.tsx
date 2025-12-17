@@ -7,6 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Card,
   CardContent,
   CardDescription,
@@ -70,6 +77,7 @@ export default function DashboardPage() {
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const [editingSection, setEditingSection] = useState<Section | null>(null);
+  const [editingAccount, setEditingAccount] = useState<TradingAccount | null>(null);
 
   // Form state
   const [accountForm, setAccountForm] = useState({
@@ -191,6 +199,29 @@ export default function DashboardPage() {
     }
   };
 
+  const handleUpdateAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingAccount) return;
+    setFormLoading(true);
+    try {
+      // Actualizar sección si cambió
+      if (accountForm.sectionId !== (editingAccount.sectionId || "")) {
+        await fetch(`/api/accounts/${editingAccount.id}/section`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sectionId: accountForm.sectionId || null }),
+        });
+      }
+      setEditingAccount(null);
+      setAccountForm({ accountNumber: "", broker: "", server: "", platform: "MT5", nickname: "", sectionId: "" });
+      fetchData();
+    } catch (error) {
+      console.error("Error updating account:", error);
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
   const handleDeleteSection = async (id: string) => {
     if (!confirm("¿Eliminar esta sección? Las cuentas quedarán sin sección.")) return;
     try {
@@ -300,16 +331,35 @@ export default function DashboardPage() {
           )}
           <div className="flex items-center justify-between rounded-lg bg-zinc-800/50 p-2">
             <span className="text-xs text-zinc-400">Token</span>
-            <button
-              onClick={(e) => { e.preventDefault(); copyToken(account.connectionToken); }}
-              className="flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300"
-            >
-              {copiedToken === account.connectionToken ? (
-                <><Check className="h-3 w-3" />Copiado</>
-              ) : (
-                <><Copy className="h-3 w-3" />Copiar</>
-              )}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={(e) => { e.preventDefault(); copyToken(account.connectionToken); }}
+                className="flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300"
+              >
+                {copiedToken === account.connectionToken ? (
+                  <><Check className="h-3 w-3" />Copiado</>
+                ) : (
+                  <><Copy className="h-3 w-3" />Copiar</>
+                )}
+              </button>
+              <button
+                onClick={(e) => { 
+                  e.preventDefault(); 
+                  setEditingAccount(account);
+                  setAccountForm({ 
+                    accountNumber: String(account.accountNumber),
+                    broker: account.broker,
+                    server: account.server,
+                    platform: account.platform,
+                    nickname: account.nickname || "",
+                    sectionId: account.sectionId || "",
+                  });
+                }}
+                className="flex items-center gap-1 text-xs text-zinc-400 hover:text-white"
+              >
+                <Edit className="h-3 w-3" />
+              </button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -592,6 +642,68 @@ export default function DashboardPage() {
                 <Button type="button" variant="outline" onClick={() => { setShowSectionModal(false); setEditingSection(null); }} className="flex-1 border-zinc-700 text-zinc-300">Cancelar</Button>
                 <Button type="submit" disabled={formLoading} className="flex-1 bg-gradient-to-r from-emerald-500 to-cyan-500">
                   {formLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : (editingSection ? "Guardar" : "Crear")}
+                </Button>
+              </div>
+            </form>
+          </Card>
+        </div>
+      )}
+
+      {/* Edit Account Modal */}
+      {editingAccount && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <Card className="w-full max-w-sm border-zinc-800 bg-zinc-900">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-white">Editar Cuenta</CardTitle>
+                <button onClick={() => { setEditingAccount(null); }} className="text-zinc-400 hover:text-white">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <CardDescription className="text-zinc-400">
+                {editingAccount.nickname || `Cuenta ${editingAccount.accountNumber}`}
+              </CardDescription>
+            </CardHeader>
+            <form onSubmit={handleUpdateAccount}>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-zinc-300">Sección</Label>
+                  <Select value={accountForm.sectionId} onValueChange={(v) => setAccountForm({ ...accountForm, sectionId: v })}>
+                    <SelectTrigger className="w-full border-zinc-700 bg-zinc-800 text-white">
+                      <SelectValue placeholder="Sin sección" />
+                    </SelectTrigger>
+                    <SelectContent className="border-zinc-700 bg-zinc-800">
+                      <SelectItem value="" className="text-zinc-300">Sin sección</SelectItem>
+                      {sections.map(s => (
+                        <SelectItem key={s.id} value={s.id} className="text-white">
+                          <div className="flex items-center gap-2">
+                            <div className="h-3 w-3 rounded-full" style={{ backgroundColor: s.color || "#10b981" }} />
+                            {s.name}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="rounded-lg bg-zinc-800/50 p-3 space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-zinc-400">Broker</span>
+                    <span className="text-white">{editingAccount.broker}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-400">Servidor</span>
+                    <span className="text-white">{editingAccount.server}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-400">Plataforma</span>
+                    <span className="text-white">{editingAccount.platform}</span>
+                  </div>
+                </div>
+              </CardContent>
+              <div className="flex gap-3 p-6 pt-0">
+                <Button type="button" variant="outline" onClick={() => setEditingAccount(null)} className="flex-1 border-zinc-700 text-zinc-300">Cancelar</Button>
+                <Button type="submit" disabled={formLoading} className="flex-1 bg-gradient-to-r from-emerald-500 to-cyan-500">
+                  {formLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Guardar"}
                 </Button>
               </div>
             </form>
