@@ -295,6 +295,36 @@ const app = new Elysia({ prefix: "/api" })
   )
 
   // ============================================
+  // CUENTAS - Actualizar cuenta completa
+  // ============================================
+  .put(
+    "/accounts/:id",
+    async ({ params, body }) => {
+      await prisma.tradingAccount.update({
+        where: { id: params.id },
+        data: {
+          nickname: body.nickname || null,
+          broker: body.broker,
+          server: body.server,
+          platform: body.platform,
+          sectionId: body.sectionId || null,
+        },
+      });
+      return { message: "Cuenta actualizada" };
+    },
+    {
+      params: t.Object({ id: t.String() }),
+      body: t.Object({
+        nickname: t.Optional(t.String()),
+        broker: t.String(),
+        server: t.String(),
+        platform: t.String(),
+        sectionId: t.Optional(t.Union([t.String(), t.Null()])),
+      }),
+    }
+  )
+
+  // ============================================
   // CUENTAS - Mover a sección
   // ============================================
   .put(

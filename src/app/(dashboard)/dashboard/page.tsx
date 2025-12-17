@@ -204,14 +204,17 @@ export default function DashboardPage() {
     if (!editingAccount) return;
     setFormLoading(true);
     try {
-      // Actualizar sección si cambió
-      if (accountForm.sectionId !== (editingAccount.sectionId || "")) {
-        await fetch(`/api/accounts/${editingAccount.id}/section`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sectionId: accountForm.sectionId || null }),
-        });
-      }
+      await fetch(`/api/accounts/${editingAccount.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nickname: accountForm.nickname,
+          broker: accountForm.broker,
+          server: accountForm.server,
+          platform: accountForm.platform,
+          sectionId: accountForm.sectionId || null,
+        }),
+      });
       setEditingAccount(null);
       setAccountForm({ accountNumber: "", broker: "", server: "", platform: "MT5", nickname: "", sectionId: "" });
       fetchData();
@@ -661,44 +664,44 @@ export default function DashboardPage() {
                   <X className="h-5 w-5" />
                 </button>
               </div>
-              <CardDescription className="text-zinc-400">
-                {editingAccount.nickname || `Cuenta ${editingAccount.accountNumber}`}
-              </CardDescription>
             </CardHeader>
             <form onSubmit={handleUpdateAccount}>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label className="text-zinc-300">Sección</Label>
-                  <Select value={accountForm.sectionId || "_none_"} onValueChange={(v) => setAccountForm({ ...accountForm, sectionId: v === "_none_" ? "" : v })}>
-                    <SelectTrigger className="w-full border-zinc-700 bg-zinc-800 text-white">
-                      <SelectValue placeholder="Sin sección" />
-                    </SelectTrigger>
-                    <SelectContent className="border-zinc-700 bg-zinc-800">
-                      <SelectItem value="_none_" className="text-zinc-300">Sin sección</SelectItem>
-                      {sections.map(s => (
-                        <SelectItem key={s.id} value={s.id} className="text-white">
-                          <div className="flex items-center gap-2">
-                            <div className="h-3 w-3 rounded-full" style={{ backgroundColor: s.color || "#10b981" }} />
-                            {s.name}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label className="text-zinc-300">Sección (opcional)</Label>
+                  <select
+                    value={accountForm.sectionId}
+                    onChange={(e) => setAccountForm({ ...accountForm, sectionId: e.target.value })}
+                    className="flex h-10 w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white"
+                  >
+                    <option value="">Sin sección</option>
+                    {sections.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
                 </div>
-                <div className="rounded-lg bg-zinc-800/50 p-3 space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-zinc-400">Broker</span>
-                    <span className="text-white">{editingAccount.broker}</span>
+                <div className="space-y-2">
+                  <Label className="text-zinc-300">Nombre (opcional)</Label>
+                  <Input placeholder="Mi cuenta principal" value={accountForm.nickname} onChange={(e) => setAccountForm({ ...accountForm, nickname: e.target.value })} className="border-zinc-700 bg-zinc-800 text-white" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-zinc-300">Número de Cuenta</Label>
+                    <Input type="number" value={accountForm.accountNumber} onChange={(e) => setAccountForm({ ...accountForm, accountNumber: e.target.value })} required className="border-zinc-700 bg-zinc-800 text-white" />
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-zinc-400">Servidor</span>
-                    <span className="text-white">{editingAccount.server}</span>
+                  <div className="space-y-2">
+                    <Label className="text-zinc-300">Plataforma</Label>
+                    <select value={accountForm.platform} onChange={(e) => setAccountForm({ ...accountForm, platform: e.target.value })} className="flex h-10 w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white">
+                      <option value="MT4">MetaTrader 4</option>
+                      <option value="MT5">MetaTrader 5</option>
+                    </select>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-zinc-400">Plataforma</span>
-                    <span className="text-white">{editingAccount.platform}</span>
-                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-zinc-300">Broker</Label>
+                  <Input value={accountForm.broker} onChange={(e) => setAccountForm({ ...accountForm, broker: e.target.value })} required className="border-zinc-700 bg-zinc-800 text-white" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-zinc-300">Servidor</Label>
+                  <Input value={accountForm.server} onChange={(e) => setAccountForm({ ...accountForm, server: e.target.value })} required className="border-zinc-700 bg-zinc-800 text-white" />
                 </div>
               </CardContent>
               <div className="flex gap-3 p-6 pt-0">
