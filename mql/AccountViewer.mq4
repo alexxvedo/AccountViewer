@@ -31,6 +31,10 @@ int    g_lastOrdersCount = 0;
 string g_lastOrdersHash = "";
 datetime g_lastUpdateTime = 0;
 
+// Tracking de tickets abiertos para detectar cierres
+int g_openTickets[];
+int g_openTicketsCount = 0;
+
 // Contador de tiempo
 int g_tickCounter = 0;
 
@@ -122,6 +126,9 @@ void CaptureCurrentState()
    g_lastMargin = AccountMargin();
    g_lastOrdersCount = CountOpenOrders();
    g_lastOrdersHash = GetOrdersHash();
+   
+   // Guardar tickets actuales
+   SaveCurrentOpenTickets();
 }
 
 //+------------------------------------------------------------------+
@@ -171,6 +178,18 @@ bool HasSignificantChanges()
    if(currentOrdersCount != g_lastOrdersCount)
    {
       Log("Cambio: Órdenes " + IntegerToString(g_lastOrdersCount) + " -> " + IntegerToString(currentOrdersCount));
+      
+      // Si se redujo el número de órdenes, detectar y enviar trades cerrados
+      if(currentOrdersCount < g_lastOrdersCount)
+      {
+         CheckAndSendClosedTrades();
+      }
+      else
+      {
+         // Si se abrieron nuevas órdenes, solo actualizar tracking
+         SaveCurrentOpenTickets();
+      }
+      
       CaptureCurrentState();
       return true;
    }
@@ -601,5 +620,151 @@ void SendHistorySync()
       Log("ERROR: No se pudo enviar historial");
    }
 }
-//+------------------------------------------------------------------+
 
+//+------------------------------------------------------------------+
+//| Guardar tickets actualmente abiertos                              |
+//+------------------------------------------------------------------+
+void SaveCurrentOpenTickets()
+{
+   // Contar órdenes abiertas
+   int count = 0;
+   for(int i = 0; i < OrdersTotal(); i++)
+   {
+      if(OrderSelect(i, SELECT_BY_POS, MODE_TRADES))
+      {
+         if(OrderType() == OP_BUY || OrderType() == OP_SELL)
+            count++;
+      }
+   }
+   
+   // Redimensionar array
+   ArrayResize(g_openTickets, count);
+   g_openTicketsCount = count;
+   
+   // Guardar tickets
+   int idx = 0;
+   for(int i = 0; i < OrdersTotal(); i++)
+   {
+      if(OrderSelect(i, SELECT_BY_POS, MODE_TRADES))
+      {
+         if(OrderType() == OP_BUY || OrderType() == OP_SELL)
+         {
+            g_openTickets[idx] = OrderTicket();
+            idx++;
+         }
+      }
+   }
+}
+
+//+------------------------------------------------------------------+
+//| Detectar y enviar trades cerrados                                 |
+//+------------------------------------------------------------------+
+void CheckAndSendClosedTrades()
+{
+   // Obtener tickets actuales
+   int currentTickets[];
+   int currentCount = 0;
+   
+   for(int i = 0; i < OrdersTotal(); i++)
+   {
+      if(OrderSelect(i, SELECT_BY_POS, MODE_TRADES))
+      {
+         if(OrderType() == OP_BUY || OrderType() == OP_SELL)
+         {
+            ArrayResize(currentTickets, currentCount + 1);
+            currentTickets[currentCount] = OrderTicket();
+            currentCount++;
+         }
+      }
+   }
+   
+   // Buscar tickets que ya no están abiertos
+   for(int i = 0; i < g_openTicketsCount; i++)
+   {
+      int ticket = g_openTickets[i];
+      bool stillOpen = false;
+      
+      for(int j = 0; j < currentCount; j++)
+      {
+         if(currentTickets[j] == ticket)
+         {
+            stillOpen = true;
+            break;
+         }
+      }
+      
+      // Si el ticket ya no está abierto, buscar en historial y enviar
+      if(!stillOpen)
+      {
+         Log("Trade cerrado detectado: #" + IntegerToString(ticket));
+         SendTradeClosed(ticket);
+      }
+   }
+   
+   // Actualizar lista de tickets abiertos
+   ArrayResize(g_openTickets, currentCount);
+   g_openTicketsCount = currentCount;
+   for(int i = 0; i < currentCount; i++)
+   {
+      g_openTickets[i] = currentTickets[i];
+   }
+}
+
+//+------------------------------------------------------------------+
+//| Enviar trade cerrado al servidor                                  |
+//+------------------------------------------------------------------+
+void SendTradeClosed(int ticket)
+{
+   // Buscar el trade en el historial
+   if(!OrderSelect(ticket, SELECT_BY_TICKET))
+   {
+      Log("ERROR: No se encontró el ticket #" + IntegerToString(ticket) + " en historial");
+      return;
+   }
+   
+   // Verificar que es un trade cerrado (tiene close time)
+   if(OrderCloseTime() == 0)
+   {
+      Log("Ticket #" + IntegerToString(ticket) + " aún no está cerrado");
+      return;
+   }
+   
+   // Solo procesar market orders
+   int orderType = OrderType();
+   if(orderType != OP_BUY && orderType != OP_SELL)
+      return;
+   
+   // Construir JSON
+   string json = "{";
+   json += "\"msg_type\":\"trade_closed\",";
+   json += "\"token\":\"" + InpConnectionToken + "\",";
+   json += "\"timestamp\":" + IntegerToString(GetTickCount()) + ",";
+   json += "\"trade\":{";
+   json += "\"ticket\":" + IntegerToString(ticket) + ",";
+   json += "\"symbol\":\"" + OrderSymbol() + "\",";
+   json += "\"type\":\"" + (orderType == OP_BUY ? "buy" : "sell") + "\",";
+   json += "\"volume\":" + DoubleToString(OrderLots(), 2) + ",";
+   json += "\"open_price\":" + DoubleToString(OrderOpenPrice(), 5) + ",";
+   json += "\"close_price\":" + DoubleToString(OrderClosePrice(), 5) + ",";
+   json += "\"sl\":" + DoubleToString(OrderStopLoss(), 5) + ",";
+   json += "\"tp\":" + DoubleToString(OrderTakeProfit(), 5) + ",";
+   json += "\"profit\":" + DoubleToString(OrderProfit(), 2) + ",";
+   json += "\"swap\":" + DoubleToString(OrderSwap(), 2) + ",";
+   json += "\"commission\":" + DoubleToString(OrderCommission(), 2) + ",";
+   json += "\"open_time\":" + IntegerToString((long)OrderOpenTime() * 1000) + ",";
+   json += "\"close_time\":" + IntegerToString((long)OrderCloseTime() * 1000) + ",";
+   json += "\"magic_number\":" + IntegerToString(OrderMagicNumber()) + ",";
+   json += "\"comment\":\"" + EscapeJSON(OrderComment()) + "\"";
+   json += "}}";
+   
+   string url = InpServerURL + "/ea/trade-closed";
+   if(SendHTTPPost(url, json))
+   {
+      Log("Trade #" + IntegerToString(ticket) + " enviado al servidor");
+   }
+   else
+   {
+      Log("ERROR: No se pudo enviar trade #" + IntegerToString(ticket));
+   }
+}
+//+------------------------------------------------------------------+

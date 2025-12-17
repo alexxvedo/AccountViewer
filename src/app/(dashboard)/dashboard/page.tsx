@@ -37,6 +37,11 @@ interface TradingAccount {
   isConnected: boolean;
   lastSeen: string | null;
   connectionToken: string;
+  liveData: {
+    balance: number;
+    equity: number;
+    lastUpdate: number;
+  } | null;
 }
 
 export default function DashboardPage() {
@@ -59,13 +64,16 @@ export default function DashboardPage() {
   useEffect(() => {
     if (session?.user?.id) {
       fetchAccounts();
+      // Polling cada 5 segundos para mantener estado actualizado
+      const interval = setInterval(fetchAccounts, 5000);
+      return () => clearInterval(interval);
     }
   }, [session?.user?.id]);
 
   const fetchAccounts = async () => {
     if (!session?.user?.id) return;
     try {
-      const res = await fetch(`/api/users/${session.user.id}/accounts`);
+      const res = await fetch(`/api/users/${session.user.id}/accounts-live`);
       const data = await res.json();
       setAccounts(data);
     } catch (error) {
@@ -74,6 +82,11 @@ export default function DashboardPage() {
       setLoading(false);
     }
   };
+
+  // Calcular balance total de cuentas conectadas
+  const totalBalance = accounts
+    .filter(a => a.isConnected && a.liveData)
+    .reduce((sum, a) => sum + (a.liveData?.balance || 0), 0);
 
   const handleCreateAccount = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -197,7 +210,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-zinc-400">Balance Total</p>
-                <p className="text-2xl font-bold text-white">$0.00</p>
+                <p className="text-2xl font-bold text-white">${totalBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
               </div>
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-500/10">
                 <DollarSign className="h-5 w-5 text-cyan-400" />

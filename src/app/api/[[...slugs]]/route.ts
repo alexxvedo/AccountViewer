@@ -88,6 +88,53 @@ const app = new Elysia({ prefix: "/api" })
   )
 
   // ============================================
+  // Cuentas de Trading - Listar con datos en vivo
+  // ============================================
+  .get(
+    "/users/:id/accounts-live",
+    async ({ params }) => {
+      const accounts = await prisma.tradingAccount.findMany({
+        where: { userId: params.id },
+        select: {
+          id: true,
+          accountNumber: true,
+          broker: true,
+          server: true,
+          platform: true,
+          nickname: true,
+          isConnected: true,
+          lastSeen: true,
+          connectionToken: true,
+          createdAt: true,
+          updatedAt: true,
+          userId: true,
+        },
+      });
+
+      // Enriquecer con datos en vivo del caché
+      return accounts.map(account => {
+        const cached = liveDataCache.get(account.id);
+        const isLive = cached && (Date.now() - cached.timestamp < 30000);
+        
+        return {
+          ...account,
+          isConnected: isLive, // Estado real basado en caché
+          liveData: isLive ? {
+            balance: cached.data?.account?.balance || 0,
+            equity: cached.data?.account?.equity || 0,
+            lastUpdate: cached.timestamp,
+          } : null,
+        };
+      });
+    },
+    {
+      params: t.Object({
+        id: t.String(),
+      }),
+    }
+  )
+
+  // ============================================
   // Crear nueva cuenta
   // ============================================
   .post(

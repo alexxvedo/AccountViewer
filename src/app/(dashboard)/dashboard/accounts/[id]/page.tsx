@@ -429,26 +429,12 @@ export default function AccountPage() {
       </div>
 
       {/* Contenido de Tabs */}
-      {!liveData && activeTab !== "history" ? (
-        <Card className="border-zinc-800 bg-zinc-900">
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-zinc-800">
-              <WifiOff className="h-8 w-8 text-zinc-500" />
-            </div>
-            <h3 className="mt-4 text-lg font-medium text-white">
-              Esperando conexión del EA
-            </h3>
-            <p className="mt-2 text-center text-sm text-zinc-400">
-              Conecta tu Expert Advisor con el token de arriba
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <>
-          {/* Tab: Estadísticas */}
-          {activeTab === "stats" && liveData && (
-            <div className="space-y-4 sm:space-y-6">
-              {/* Stats Grid */}
+      <>
+        {/* Tab: Estadísticas */}
+        {activeTab === "stats" && (
+          <div className="space-y-4 sm:space-y-6">
+            {/* Stats Grid - Solo cuando hay datos en vivo */}
+            {liveData ? (
               <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
                 <Card className="border-zinc-800 bg-zinc-900">
                   <CardContent className="p-3 sm:p-5">
@@ -511,9 +497,20 @@ export default function AccountPage() {
                   </CardContent>
                 </Card>
               </div>
+            ) : (
+              <Card className="border-zinc-800 bg-zinc-900/50 border-dashed">
+                <CardContent className="flex items-center gap-3 p-4">
+                  <WifiOff className="h-5 w-5 text-zinc-500" />
+                  <div>
+                    <p className="text-sm text-zinc-400">Datos en tiempo real no disponibles</p>
+                    <p className="text-xs text-zinc-500">Conecta el EA para ver balance, equidad y margen actual</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
-              {/* Stats adicionales */}
-              <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+            {/* Stats adicionales - siempre visibles basados en historial */}
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
                 <Card className="border-zinc-800 bg-zinc-900">
                   <CardContent className="p-3 sm:p-5">
                     <div className="flex items-center justify-between">
@@ -563,13 +560,13 @@ export default function AccountPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-xs text-zinc-400">Apalancamiento</p>
-                        <p className="text-xl font-bold text-white">1:{liveData.account.leverage || 100}</p>
+                        <p className="text-xl font-bold text-white">1:{liveData?.account?.leverage || 100}</p>
                       </div>
                       <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-rose-500/10">
                         <Activity className="h-4 w-4 text-rose-400" />
                       </div>
                     </div>
-                    <p className="mt-1 text-xs text-zinc-500">{liveData.account.currency || "USD"}</p>
+                    <p className="mt-1 text-xs text-zinc-500">{liveData?.account?.currency || "USD"}</p>
                   </CardContent>
                 </Card>
               </div>
@@ -1139,7 +1136,6 @@ export default function AccountPage() {
             </Card>
           )}
         </>
-      )}
     </div>
   );
 }
