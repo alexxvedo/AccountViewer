@@ -128,8 +128,8 @@ export default function DashboardPage() {
     if (!session?.user?.id) return;
     try {
       const [sectionsRes, accountsRes] = await Promise.all([
-        fetch(`/api/users/${session.user.id}/sections`),
-        fetch(`/api/users/${session.user.id}/accounts-live`),
+        fetch(`/api/users/${session.user.id}/sections`, { cache: "no-store" }),
+        fetch(`/api/users/${session.user.id}/accounts-live`, { cache: "no-store" }),
       ]);
       const sectionsData = await sectionsRes.json();
       const accountsData = await accountsRes.json();
@@ -261,10 +261,17 @@ export default function DashboardPage() {
   const handleDeleteSection = async (id: string) => {
     if (!confirm("¿Eliminar esta sección? Las cuentas quedarán sin sección.")) return;
     try {
-      await fetch(`/api/sections/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/sections/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!res.ok) {
+        throw new Error(`Error ${res.status}: ${await res.text()}`);
+      }
       fetchStructure();
     } catch (error) {
       console.error("Error deleting section:", error);
+      alert("No se pudo eliminar la sección. Revisa la consola.");
     }
   };
 
