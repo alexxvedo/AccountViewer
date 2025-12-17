@@ -128,7 +128,17 @@ export default function AccountPage() {
   const [positionsPage, setPositionsPage] = useState(1);
   const [historyPage, setHistoryPage] = useState(1);
   const [syncing, setSyncing] = useState(false);
-  const itemsPerPage = 10;
+  
+  // Opciones de paginación (0 = mostrar todos)
+  const [historyPerPage, setHistoryPerPage] = useState(0);
+  const [positionsPerPage, setPositionsPerPage] = useState(0);
+  
+  // Filtros del historial
+  const [periodFilter, setPeriodFilter] = useState<"all" | "today" | "week" | "month" | "custom">("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [symbolFilter, setSymbolFilter] = useState("");
+  const [typeFilter, setTypeFilter] = useState<"all" | "buy" | "sell">("all");
 
   useEffect(() => {
     if (session?.user?.id) {
@@ -332,11 +342,59 @@ export default function AccountPage() {
   const profitFactor = avgLoss > 0 ? avgWin / avgLoss : 0;
   const positions = liveData?.positions || [];
 
-  // Paginación
-  const totalPositionPages = Math.ceil(positions.length / itemsPerPage);
-  const totalHistoryPages = Math.ceil(allTrades.length / itemsPerPage);
-  const paginatedPositions = positions.slice((positionsPage - 1) * itemsPerPage, positionsPage * itemsPerPage);
-  const paginatedTrades = allTrades.slice((historyPage - 1) * itemsPerPage, historyPage * itemsPerPage);
+  // Filtrar trades según filtros seleccionados
+  const filteredTrades = allTrades.filter(trade => {
+    // Filtro por tipo
+    if (typeFilter !== "all" && trade.type !== typeFilter) return false;
+    
+    // Filtro por símbolo
+    if (symbolFilter && !trade.symbol.toLowerCase().includes(symbolFilter.toLowerCase())) return false;
+    
+    // Filtro por período
+    const tradeDate = new Date(trade.closeTime);
+    const now = new Date();
+    
+    if (periodFilter === "today") {
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      if (tradeDate < today) return false;
+    } else if (periodFilter === "week") {
+      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      if (tradeDate < weekAgo) return false;
+    } else if (periodFilter === "month") {
+      const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      if (tradeDate < monthAgo) return false;
+    } else if (periodFilter === "custom") {
+      if (dateFrom && tradeDate < new Date(dateFrom)) return false;
+      if (dateTo && tradeDate > new Date(dateTo + "T23:59:59")) return false;
+    }
+    
+    return true;
+  });
+
+  // Calcular totales de trades filtrados
+  const filteredTotalProfit = filteredTrades.reduce((sum, t) => sum + t.profit + t.swap + t.commission, 0);
+  const filteredWinning = filteredTrades.filter(t => t.profit + t.swap + t.commission > 0).length;
+  const filteredLosing = filteredTrades.filter(t => t.profit + t.swap + t.commission < 0).length;
+
+  // Obtener símbolos únicos para el filtro
+  const uniqueSymbols = [...new Set(allTrades.map(t => t.symbol))].sort();
+
+  // Paginación con opciones dinámicas
+  const effectiveHistoryPerPage = historyPerPage === 0 ? filteredTrades.length : historyPerPage;
+  const effectivePositionsPerPage = positionsPerPage === 0 ? positions.length : positionsPerPage;
+  
+  const totalPositionPages = effectivePositionsPerPage > 0 ? Math.ceil(positions.length / effectivePositionsPerPage) : 1;
+  const totalHistoryPages = effectiveHistoryPerPage > 0 ? Math.ceil(filteredTrades.length / effectiveHistoryPerPage) : 1;
+  
+  const paginatedPositions = positionsPerPage === 0 
+    ? positions 
+    : positions.slice((positionsPage - 1) * positionsPerPage, positionsPage * positionsPerPage);
+  const paginatedTrades = historyPerPage === 0 
+    ? filteredTrades 
+    : filteredTrades.slice((historyPage - 1) * historyPerPage, historyPage * historyPerPage);
+
+  // Reset de página cuando cambian filtros
+  useEffect(() => { setHistoryPage(1); }, [periodFilter, dateFrom, dateTo, symbolFilter, typeFilter, historyPerPage]);
 
   const tabs = [
     { id: "stats" as TabType, label: "Estadísticas", icon: BarChart3 },
@@ -1043,8 +1101,115 @@ export default function AccountPage() {
           {activeTab === "history" && (
             <Card className="border-zinc-800 bg-zinc-900">
               <CardContent className="p-0">
-                {allTrades.length === 0 ? (
-                  <p className="py-16 text-center text-zinc-400">No hay trades cerrados</p>
+                {/* Filtros */}
+                <div className="border-b border-zinc-800 p-4 space-y-3">
+                  <div className="flex flex-wrap gap-3 items-end">
+                    {/* Período */}
+                    <div className="space-y-1">
+                      <label className="text-xs text-zinc-400">Período</label>
+                      <select
+                        value={periodFilter}
+                        onChange={(e) => setPeriodFilter(e.target.value as typeof periodFilter)}
+                        className="h-9 rounded-lg border border-zinc-700 bg-zinc-800 px-3 text-sm text-white"
+                      >
+                        <option value="all">Todo</option>
+                        <option value="today">Hoy</option>
+                        <option value="week">Última semana</option>
+                        <option value="month">Último mes</option>
+                        <option value="custom">Personalizado</option>
+                      </select>
+                    </div>
+                    
+                    {/* Fechas personalizadas */}
+                    {periodFilter === "custom" && (
+                      <>
+                        <div className="space-y-1">
+                          <label className="text-xs text-zinc-400">Desde</label>
+                          <input
+                            type="date"
+                            value={dateFrom}
+                            onChange={(e) => setDateFrom(e.target.value)}
+                            className="h-9 rounded-lg border border-zinc-700 bg-zinc-800 px-3 text-sm text-white"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-xs text-zinc-400">Hasta</label>
+                          <input
+                            type="date"
+                            value={dateTo}
+                            onChange={(e) => setDateTo(e.target.value)}
+                            className="h-9 rounded-lg border border-zinc-700 bg-zinc-800 px-3 text-sm text-white"
+                          />
+                        </div>
+                      </>
+                    )}
+                    
+                    {/* Símbolo */}
+                    <div className="space-y-1">
+                      <label className="text-xs text-zinc-400">Símbolo</label>
+                      <select
+                        value={symbolFilter}
+                        onChange={(e) => setSymbolFilter(e.target.value)}
+                        className="h-9 rounded-lg border border-zinc-700 bg-zinc-800 px-3 text-sm text-white"
+                      >
+                        <option value="">Todos</option>
+                        {uniqueSymbols.map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </div>
+                    
+                    {/* Tipo */}
+                    <div className="space-y-1">
+                      <label className="text-xs text-zinc-400">Tipo</label>
+                      <select
+                        value={typeFilter}
+                        onChange={(e) => setTypeFilter(e.target.value as typeof typeFilter)}
+                        className="h-9 rounded-lg border border-zinc-700 bg-zinc-800 px-3 text-sm text-white"
+                      >
+                        <option value="all">Todos</option>
+                        <option value="buy">Buy</option>
+                        <option value="sell">Sell</option>
+                      </select>
+                    </div>
+                    
+                    {/* Paginación */}
+                    <div className="space-y-1">
+                      <label className="text-xs text-zinc-400">Mostrar</label>
+                      <select
+                        value={historyPerPage}
+                        onChange={(e) => setHistoryPerPage(Number(e.target.value))}
+                        className="h-9 rounded-lg border border-zinc-700 bg-zinc-800 px-3 text-sm text-white"
+                      >
+                        <option value={0}>Todos</option>
+                        <option value={10}>10</option>
+                        <option value={25}>25</option>
+                        <option value={50}>50</option>
+                        <option value={100}>100</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  {/* Resumen de filtro */}
+                  <div className="flex flex-wrap items-center gap-4 text-sm">
+                    <span className="text-zinc-400">
+                      <span className="text-white font-medium">{filteredTrades.length}</span> operaciones
+                      {filteredTrades.length !== allTrades.length && ` (de ${allTrades.length})`}
+                    </span>
+                    <span className="text-zinc-600">|</span>
+                    <span className="text-zinc-400">
+                      Ganadas: <span className="text-green-400 font-medium">{filteredWinning}</span>
+                    </span>
+                    <span className="text-zinc-400">
+                      Perdidas: <span className="text-red-400 font-medium">{filteredLosing}</span>
+                    </span>
+                    <span className="text-zinc-600">|</span>
+                    <span className={`font-bold ${filteredTotalProfit >= 0 ? "text-green-400" : "text-red-400"}`}>
+                      Total: {filteredTotalProfit >= 0 ? "+" : ""}${filteredTotalProfit.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+                
+                {filteredTrades.length === 0 ? (
+                  <p className="py-16 text-center text-zinc-400">No hay trades con los filtros seleccionados</p>
                 ) : (
                   <>
                     {/* Vista móvil: tarjetas */}
