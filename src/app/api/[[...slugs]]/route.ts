@@ -111,6 +111,7 @@ const app = new Elysia({ prefix: "/api" })
           createdAt: true,
           updatedAt: true,
           userId: true,
+          sectionId: true,
         },
       });
 
@@ -200,6 +201,7 @@ const app = new Elysia({ prefix: "/api" })
               nickname: true,
               isConnected: true,
               connectionToken: true,
+              sectionId: true,
             },
           },
         },
