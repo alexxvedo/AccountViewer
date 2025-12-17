@@ -6,6 +6,7 @@
 import { Elysia, t } from "elysia";
 import { cors } from "@elysiajs/cors";
 import { PrismaClient } from "@/generated/prisma";
+import { auth } from "@/lib/auth"; // Importar sistema de auth
 
 // Importar modelos generados por Prismabox
 import {
@@ -23,6 +24,17 @@ const globalForPrisma = globalThis as unknown as {
 
 const prisma = globalForPrisma.prisma ?? new PrismaClient();
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+
+/**
+ * Helper para verificar sesión y evitar IDOR
+ * Valida que el ID en la URL corresponda al usuario autenticado
+ */
+const verifySession = async (headers: Headers, targetUserId: string) => {
+  const session = await auth.api.getSession({ headers });
+  if (!session || session.user.id !== targetUserId) {
+    throw new Error("Unauthorized Access: IDOR Protected");
+  }
+};
 
 // Caché en memoria para datos en vivo de las cuentas
 const liveDataCache = globalForPrisma.liveDataCache ?? new Map<string, { data: any; timestamp: number }>();
@@ -58,7 +70,8 @@ const app = new Elysia({ prefix: "/api" })
   // ============================================
   .get(
     "/users/:id/accounts",
-    async ({ params }) => {
+    async ({ params, request }) => {
+      await verifySession(request.headers, params.id);
       const accounts = await prisma.tradingAccount.findMany({
         where: { userId: params.id },
         select: {
@@ -95,7 +108,8 @@ const app = new Elysia({ prefix: "/api" })
   // ============================================
   .get(
     "/users/:id/accounts-live",
-    async ({ params }) => {
+    async ({ params, request }) => {
+      await verifySession(request.headers, params.id);
       const accounts = await prisma.tradingAccount.findMany({
         where: { userId: params.id },
         select: {
@@ -146,7 +160,8 @@ const app = new Elysia({ prefix: "/api" })
   // ============================================
   .get(
     "/users/:id/fast-live",
-    async ({ params }) => {
+    async ({ params, request }) => {
+      await verifySession(request.headers, params.id);
       // 1. Obtener solo IDs (búsqueda rápida en índice)
       const accounts = await prisma.tradingAccount.findMany({
         where: { userId: params.id },
@@ -183,7 +198,8 @@ const app = new Elysia({ prefix: "/api" })
   // ============================================
   .post(
     "/accounts",
-    async ({ body }) => {
+    async ({ body, request }) => {
+      await verifySession(request.headers, body.userId);
       const account = await prisma.tradingAccount.create({
         data: {
           userId: body.userId,
@@ -224,7 +240,8 @@ const app = new Elysia({ prefix: "/api" })
   // ============================================
   .get(
     "/users/:id/sections",
-    async ({ params }) => {
+    async ({ params, request }) => {
+      await verifySession(request.headers, params.id);
       const sections = await prisma.section.findMany({
         where: { userId: params.id },
         include: {
@@ -276,7 +293,8 @@ const app = new Elysia({ prefix: "/api" })
   // ============================================
   .post(
     "/sections",
-    async ({ body }) => {
+    async ({ body, request }) => {
+      await verifySession(request.headers, body.userId);
       const section = await prisma.section.create({
         data: {
           userId: body.userId,
