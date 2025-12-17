@@ -318,15 +318,22 @@ const app = new Elysia({ prefix: "/api" })
   // ============================================
   .put(
     "/sections/:id",
-    async ({ params, body }) => {
-      const section = await prisma.section.update({
+    async ({ params, body, request }) => {
+      // 1. Buscar sección para validar dueño
+      const section = await prisma.section.findUnique({ where: { id: params.id } });
+      if (!section) throw new Error("Section not found");
+      
+      // 2. Seguridad: Verificar que la sección pertenece al usuario de la sesión
+      await verifySession(request.headers, section.userId);
+
+      const updated = await prisma.section.update({
         where: { id: params.id },
         data: {
           name: body.name,
           color: body.color,
         },
       });
-      return { id: section.id, message: "Sección actualizada" };
+      return { id: updated.id, message: "Sección actualizada" };
     },
     {
       params: t.Object({ id: t.String() }),
@@ -342,7 +349,21 @@ const app = new Elysia({ prefix: "/api" })
   // ============================================
   .delete(
     "/sections/:id",
-    async ({ params }) => {
+    async ({ params, request }) => {
+      // 1. Buscar sección para validar dueño
+      const section = await prisma.section.findUnique({ where: { id: params.id } });
+      if (!section) return { message: "Sección no encontrada" };
+
+      // 2. Seguridad
+      await verifySession(request.headers, section.userId);
+
+      // 3. Desvincular cuentas explícitamente (Cumplir requerimiento usuario)
+      await prisma.tradingAccount.updateMany({
+        where: { sectionId: params.id },
+        data: { sectionId: null }
+      });
+
+      // 4. Eliminar
       await prisma.section.delete({ where: { id: params.id } });
       return { message: "Sección eliminada" };
     },
@@ -356,7 +377,12 @@ const app = new Elysia({ prefix: "/api" })
   // ============================================
   .put(
     "/accounts/:id",
-    async ({ params, body }) => {
+    async ({ params, body, request }) => {
+      // Buscar cuenta para validar dueño
+      const account = await prisma.tradingAccount.findUnique({ where: { id: params.id } });
+      if (!account) throw new Error("Account not found");
+      await verifySession(request.headers, account.userId);
+
       await prisma.tradingAccount.update({
         where: { id: params.id },
         data: {
@@ -386,7 +412,12 @@ const app = new Elysia({ prefix: "/api" })
   // ============================================
   .put(
     "/accounts/:id/section",
-    async ({ params, body }) => {
+    async ({ params, body, request }) => {
+      // Buscar cuenta para validar dueño
+      const account = await prisma.tradingAccount.findUnique({ where: { id: params.id } });
+      if (!account) throw new Error("Account not found");
+      await verifySession(request.headers, account.userId);
+
       await prisma.tradingAccount.update({
         where: { id: params.id },
         data: { sectionId: body.sectionId },
@@ -406,7 +437,7 @@ const app = new Elysia({ prefix: "/api" })
   // ============================================
   .get(
     "/accounts/:id",
-    async ({ params }) => {
+    async ({ params, request }) => {
       const account = await prisma.tradingAccount.findUnique({
         where: { id: params.id },
         select: {
@@ -424,6 +455,10 @@ const app = new Elysia({ prefix: "/api" })
           userId: true,
         },
       });
+
+      if (account) {
+        await verifySession(request.headers, account.userId);
+      }
 
       return account;
     },
