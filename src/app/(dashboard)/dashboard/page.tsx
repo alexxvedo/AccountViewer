@@ -21,6 +21,16 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Plus,
   Wifi,
   WifiOff,
@@ -83,6 +93,7 @@ export default function DashboardPage() {
   const [editingSection, setEditingSection] = useState<Section | null>(null);
   const [editingAccount, setEditingAccount] = useState<TradingAccount | null>(null);
   const [liveDataMap, setLiveDataMap] = useState<LiveDataMap>({});
+  const [deletingSectionId, setDeletingSectionId] = useState<string | null>(null);
 
   // Form state
   const [accountForm, setAccountForm] = useState({
@@ -258,10 +269,10 @@ export default function DashboardPage() {
     }
   };
 
-  const handleDeleteSection = async (id: string) => {
-    if (!confirm("¿Eliminar esta sección? Las cuentas quedarán sin sección.")) return;
+  const handleDeleteSection = async () => {
+    if (!deletingSectionId) return;
     try {
-      const res = await fetch(`/api/sections/${id}`, {
+      const res = await fetch(`/api/sections/${deletingSectionId}`, {
         method: "DELETE",
         credentials: "include",
       });
@@ -271,7 +282,8 @@ export default function DashboardPage() {
       fetchStructure();
     } catch (error) {
       console.error("Error deleting section:", error);
-      alert("No se pudo eliminar la sección. Revisa la consola.");
+    } finally {
+      setDeletingSectionId(null);
     }
   };
 
@@ -538,7 +550,7 @@ export default function DashboardPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleDeleteSection(section.id)}
+                    onClick={() => setDeletingSectionId(section.id)}
                     className="h-7 w-7 p-0 text-zinc-400 hover:text-red-400"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
@@ -754,6 +766,30 @@ export default function DashboardPage() {
           </Card>
         </div>
       )}
+
+      {/* Delete Section Confirmation Modal */}
+      <AlertDialog open={!!deletingSectionId} onOpenChange={(open) => !open && setDeletingSectionId(null)}>
+        <AlertDialogContent className="border-zinc-800 bg-zinc-900">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">¿Eliminar sección?</AlertDialogTitle>
+            <AlertDialogDescription className="text-zinc-400">
+              Las cuentas de esta sección pasarán a estar en "Sin sección".
+              Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-zinc-700 bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white">
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteSection}
+              className="bg-red-600 text-white hover:bg-red-700"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
