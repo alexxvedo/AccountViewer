@@ -147,6 +147,9 @@ export default function AccountPage() {
     }
   }, [session?.user?.id, accountId]);
 
+  // Reset de página cuando cambian filtros (antes de returns condicionales)
+  useEffect(() => { setHistoryPage(1); }, [periodFilter, dateFrom, dateTo, symbolFilter, typeFilter, historyPerPage]);
+
   // Polling para datos en vivo
   useEffect(() => {
     if (!accountId) return;
@@ -392,9 +395,6 @@ export default function AccountPage() {
   const paginatedTrades = historyPerPage === 0 
     ? filteredTrades 
     : filteredTrades.slice((historyPage - 1) * historyPerPage, historyPage * historyPerPage);
-
-  // Reset de página cuando cambian filtros
-  useEffect(() => { setHistoryPage(1); }, [periodFilter, dateFrom, dateTo, symbolFilter, typeFilter, historyPerPage]);
 
   const tabs = [
     { id: "stats" as TabType, label: "Estadísticas", icon: BarChart3 },
