@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useSession } from "@/lib/auth-client";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Select,
   SelectContent,
@@ -142,8 +143,8 @@ export default function AccountPage() {
   
   // Filtros del historial
   const [periodFilter, setPeriodFilter] = useState<"all" | "today" | "week" | "month" | "custom">("all");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
+  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   const [symbolFilter, setSymbolFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState<"all" | "buy" | "sell">("all");
 
@@ -374,8 +375,12 @@ export default function AccountPage() {
       const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       if (tradeDate < monthAgo) return false;
     } else if (periodFilter === "custom") {
-      if (dateFrom && tradeDate < new Date(dateFrom)) return false;
-      if (dateTo && tradeDate > new Date(dateTo + "T23:59:59")) return false;
+      if (dateFrom && tradeDate < dateFrom) return false;
+      if (dateTo) {
+        const endOfDay = new Date(dateTo);
+        endOfDay.setHours(23, 59, 59, 999);
+        if (tradeDate > endOfDay) return false;
+      }
     }
     
     return true;
@@ -1133,21 +1138,11 @@ export default function AccountPage() {
                       <>
                         <div className="space-y-1">
                           <label className="text-xs text-zinc-400">Desde</label>
-                          <input
-                            type="date"
-                            value={dateFrom}
-                            onChange={(e) => setDateFrom(e.target.value)}
-                            className="h-9 rounded-lg border border-zinc-700 bg-zinc-800 px-3 text-sm text-white"
-                          />
+                          <DatePicker date={dateFrom} onDateChange={setDateFrom} placeholder="Inicio" />
                         </div>
                         <div className="space-y-1">
                           <label className="text-xs text-zinc-400">Hasta</label>
-                          <input
-                            type="date"
-                            value={dateTo}
-                            onChange={(e) => setDateTo(e.target.value)}
-                            className="h-9 rounded-lg border border-zinc-700 bg-zinc-800 px-3 text-sm text-white"
-                          />
+                          <DatePicker date={dateTo} onDateChange={setDateTo} placeholder="Fin" />
                         </div>
                       </>
                     )}

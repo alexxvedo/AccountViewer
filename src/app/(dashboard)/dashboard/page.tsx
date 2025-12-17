@@ -355,9 +355,9 @@ export default function DashboardPage() {
                     sectionId: account.sectionId || "",
                   });
                 }}
-                className="flex items-center gap-1 text-xs text-zinc-400 hover:text-white"
+                className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300"
               >
-                <Edit className="h-3 w-3" />
+                <Edit className="h-3 w-3" />Editar
               </button>
             </div>
           </div>
