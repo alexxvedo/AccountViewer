@@ -15,9 +15,10 @@
 //+------------------------------------------------------------------+
 input string   InpConnectionToken = "";                      // Token de Conexión
 input string   InpServerURL = "http://127.0.0.1:3000/api";   // URL del servidor API
-input int      InpTimerInterval = 500;                       // Intervalo del timer (ms)
-input int      InpUpdateInterval = 5;                        // Intervalo de actualización (segundos)
-input double   InpEquityThreshold = 0.50;                    // Umbral de cambio de equity ($)
+input int      InpTimerInterval = 100;                       // Intervalo del timer (ms)
+input int      InpUpdateInterval = 5;                        // Intervalo de actualización (segundos) - Fallback
+input int      InpMinRequestInterval = 100;                  // Mínimo tiempo entre requests (ms)
+input double   InpEquityThreshold = 0.0;                     // Umbral de cambio de equity ($)
 input bool     InpLogEnabled = true;                         // Habilitar logs
 
 //+------------------------------------------------------------------+
@@ -31,7 +32,10 @@ int    g_lastPositionsCount = 0;
 string g_lastPositionsHash = "";
 datetime g_lastUpdateTime = 0;
 
-// Contador de tiempo
+// Control de Throttling
+ulong g_lastRequestTime = 0;
+
+// Contador de tiempo para fallback
 int g_secondsCounter = 0;
 
 //+------------------------------------------------------------------+
@@ -48,10 +52,10 @@ int OnInit()
    }
    
    Log("==============================================");
-   Log("AccountViewer EA v1.00 (HTTP) iniciando...");
+   Log("AccountViewer EA v1.10 (Real-Time) iniciando...");
    Log("Token: " + StringSubstr(InpConnectionToken, 0, 8) + "...");
    Log("Server: " + InpServerURL);
-   Log("Update each: " + IntegerToString(InpUpdateInterval) + "s");
+   Log("Modo: Smart Tick (Instantáneo)");
    Log("==============================================");
    
    // IMPORTANTE: Añadir URL a la lista permitida
@@ -61,7 +65,7 @@ int OnInit()
    // Inicializar estado
    CaptureCurrentState();
    
-   // Configurar timer
+   // Configurar timer (Backup y heartbeat)
    if(!EventSetMillisecondTimer(InpTimerInterval))
    {
       Log("ERROR: No se pudo configurar el timer");
@@ -85,31 +89,57 @@ void OnDeinit(const int reason)
 }
 
 //+------------------------------------------------------------------+
-//| Timer function - Núcleo del EA                                   |
+//| Expert tick function                                             |
+//+------------------------------------------------------------------+
+void OnTick()
+{
+   // 1. Detección instantánea de cambios (Precio/Equidad/Ordenes)
+   if(HasSignificantChanges())
+   {
+      // Intentar enviar update si no estamos bloqueados por throttle
+      if(GetTickCount64() - g_lastRequestTime >= (ulong)InpMinRequestInterval)
+      {
+         SendUpdate();
+         g_lastUpdateTime = TimeCurrent();
+         g_secondsCounter = 0; // Resetear contador de heartbeat
+      }
+   }
+   
+   // 2. Polling de comandos "Casi Instantáneo" (cada 250ms aprox en ticks activos)
+   static ulong lastCommandCheck = 0;
+   if(GetTickCount64() - lastCommandCheck >= 250)
+   {
+      if(GetTickCount64() - g_lastRequestTime >= (ulong)InpMinRequestInterval)
+      {
+         CheckPendingCommands();
+         lastCommandCheck = GetTickCount64();
+      }
+   }
+   
+   // 3. Chequeo de trades cerrados
+   CheckClosedTrades();
+}
+
+//+------------------------------------------------------------------+
+//| Timer function - Fallback y Heartbeat                            |
 //+------------------------------------------------------------------+
 void OnTimer()
 {
+   // Simular evento tick si el mercado está quieto para procesar comandos
+   OnTick();
+   
+   // Heartbeat: Forzar actualización cada X segundos si no ha habido cambios
    g_secondsCounter++;
+   int ticksPerSecond = 1000 / InpTimerInterval;
    
-   // Verificar cada segundo si hay cambios significativos
-   if(HasSignificantChanges())
+   if(g_secondsCounter >= InpUpdateInterval * ticksPerSecond)
    {
-      SendUpdate();
-      g_lastUpdateTime = TimeCurrent();
-      g_secondsCounter = 0;
+      if(GetTickCount64() - g_lastRequestTime >= (ulong)InpMinRequestInterval)
+      {
+         SendUpdate();
+         g_secondsCounter = 0;
+      }
    }
-   // Si no hay cambios, enviar update periódico
-   else if(g_secondsCounter >= InpUpdateInterval)
-   {
-      SendUpdate();
-      g_secondsCounter = 0;
-   }
-   
-   // Verificar trades cerrados recientemente
-   CheckClosedTrades();
-   
-   // Verificar comandos pendientes del servidor (cada ciclo = cada segundo)
-   CheckPendingCommands();
 }
 
 //+------------------------------------------------------------------+
@@ -137,15 +167,16 @@ bool HasSignificantChanges()
    // Verificar cambio en balance (trade cerrado)
    if(MathAbs(currentBalance - g_lastBalance) > 0.01)
    {
-      Log("Cambio: Balance " + DoubleToString(g_lastBalance, 2) + " -> " + DoubleToString(currentBalance, 2));
+      // Log("Cambio: Balance"); // Reducir logs en tick
       CaptureCurrentState();
       return true;
    }
    
    // Verificar cambio significativo en equity
-   if(MathAbs(currentEquity - g_lastEquity) >= InpEquityThreshold)
+   // Con umbral 0.0 detecta CUALQUIER cambio de tick en el PnL
+   if(MathAbs(currentEquity - g_lastEquity) > InpEquityThreshold)
    {
-      Log("Cambio: Equity " + DoubleToString(g_lastEquity, 2) + " -> " + DoubleToString(currentEquity, 2));
+      // No loguear equity en cada tick para no saturar pestaña Expertos
       CaptureCurrentState();
       return true;
    }
@@ -161,7 +192,7 @@ bool HasSignificantChanges()
    // Verificar cambio en posiciones (SL/TP modificado, etc.)
    if(currentHash != g_lastPositionsHash)
    {
-      Log("Cambio: Posiciones modificadas");
+      // Log("Cambio: Modificación de orden");
       CaptureCurrentState();
       return true;
    }
@@ -319,6 +350,14 @@ bool SendHTTPPost(string url, string jsonData)
 //+------------------------------------------------------------------+
 //| Verifica trades cerrados recientemente                           |
 //+------------------------------------------------------------------+
+struct ClosedDealInfo {
+   ulong ticket;
+   long positionId;
+};
+
+//+------------------------------------------------------------------+
+//| Verifica trades cerrados recientemente                           |
+//+------------------------------------------------------------------+
 void CheckClosedTrades()
 {
    // Obtener historial de deals recientes (último minuto)
@@ -330,6 +369,10 @@ void CheckClosedTrades()
    int deals = HistoryDealsTotal();
    static ulong lastProcessedDeal = 0;
    
+   ClosedDealInfo pendingDetails[];
+   int pendingCount = 0;
+   
+   // 1. Identificar deals cerrados y guardar su ID de posición
    for(int i = 0; i < deals; i++)
    {
       ulong dealTicket = HistoryDealGetTicket(i);
@@ -341,25 +384,61 @@ void CheckClosedTrades()
          // Solo procesar salidas (trades cerrados)
          if(entry == DEAL_ENTRY_OUT)
          {
-            lastProcessedDeal = dealTicket;
+            long posId = HistoryDealGetInteger(dealTicket, DEAL_POSITION_ID);
             
-            // Obtener datos del deal
-            string symbol = HistoryDealGetString(dealTicket, DEAL_SYMBOL);
-            int type = (int)HistoryDealGetInteger(dealTicket, DEAL_TYPE);
-            double volume = HistoryDealGetDouble(dealTicket, DEAL_VOLUME);
-            double price = HistoryDealGetDouble(dealTicket, DEAL_PRICE);
-            double profit = HistoryDealGetDouble(dealTicket, DEAL_PROFIT);
-            double swap = HistoryDealGetDouble(dealTicket, DEAL_SWAP);
-            double commission = HistoryDealGetDouble(dealTicket, DEAL_COMMISSION);
-            datetime dealTime = (datetime)HistoryDealGetInteger(dealTicket, DEAL_TIME);
-            int magicNumber = (int)HistoryDealGetInteger(dealTicket, DEAL_MAGIC);
-            string comment = HistoryDealGetString(dealTicket, DEAL_COMMENT);
+            ArrayResize(pendingDetails, pendingCount+1);
+            pendingDetails[pendingCount].ticket = dealTicket;
+            pendingDetails[pendingCount].positionId = posId;
+            pendingCount++;
             
-            Log("Trade cerrado: #" + IntegerToString((int)dealTicket) + " " + symbol + " Profit: " + DoubleToString(profit, 2));
-            
-            // Enviar al servidor
-            SendTradeClosed(dealTicket, symbol, type, volume, price, profit, swap, commission, dealTime, magicNumber, comment);
+            if(dealTicket > lastProcessedDeal) lastProcessedDeal = dealTicket;
          }
+      }
+   }
+   
+   // 2. Procesar cada deal recuperando su historial completo por posición
+   for(int i = 0; i < pendingCount; i++)
+   {
+      ulong ticket = pendingDetails[i].ticket;
+      long positionId = pendingDetails[i].positionId;
+      
+      if(HistorySelectByPosition(positionId))
+      {
+         double openPrice = 0;
+         datetime openTime = 0;
+         
+         // Buscar el deal de entrada
+         int posDealsCount = HistoryDealsTotal();
+         for(int k = 0; k < posDealsCount; k++)
+         {
+             ulong t = HistoryDealGetTicket(k);
+             if((ENUM_DEAL_ENTRY)HistoryDealGetInteger(t, DEAL_ENTRY) == DEAL_ENTRY_IN)
+             {
+                 openPrice = HistoryDealGetDouble(t, DEAL_PRICE);
+                 openTime = (datetime)HistoryDealGetInteger(t, DEAL_TIME);
+                 break;
+             }
+         }
+         
+         // Obtener datos del deal de salida
+         string symbol = HistoryDealGetString(ticket, DEAL_SYMBOL);
+         int type = (int)HistoryDealGetInteger(ticket, DEAL_TYPE);
+         double volume = HistoryDealGetDouble(ticket, DEAL_VOLUME);
+         double closePrice = HistoryDealGetDouble(ticket, DEAL_PRICE);
+         double profit = HistoryDealGetDouble(ticket, DEAL_PROFIT);
+         double swap = HistoryDealGetDouble(ticket, DEAL_SWAP);
+         double commission = HistoryDealGetDouble(ticket, DEAL_COMMISSION);
+         datetime closeTime = (datetime)HistoryDealGetInteger(ticket, DEAL_TIME);
+         int magicNumber = (int)HistoryDealGetInteger(ticket, DEAL_MAGIC);
+         string comment = HistoryDealGetString(ticket, DEAL_COMMENT);
+         
+         // Fallback si no se encontró openTime
+         if(openTime == 0) openTime = closeTime - 60;
+         
+         Log("Trade cerrado: #" + IntegerToString((int)ticket) + " " + symbol + " Profit: " + DoubleToString(profit, 2));
+         
+         // Enviar al servidor
+         SendTradeClosed(ticket, symbol, type, volume, openPrice, closePrice, profit, swap, commission, openTime, closeTime, magicNumber, comment);
       }
    }
 }
@@ -368,8 +447,8 @@ void CheckClosedTrades()
 //| Envía notificación de trade cerrado                              |
 //+------------------------------------------------------------------+
 void SendTradeClosed(ulong ticket, string symbol, int type, double volume,
-                     double closePrice, double profit, double swap, double commission,
-                     datetime closeTime, int magicNumber, string comment)
+                     double openPrice, double closePrice, double profit, double swap, double commission,
+                     datetime openTime, datetime closeTime, int magicNumber, string comment)
 {
    string json = "{";
    json += "\"msg_type\":\"trade_closed\",";
@@ -380,14 +459,14 @@ void SendTradeClosed(ulong ticket, string symbol, int type, double volume,
    json += "\"symbol\":\"" + symbol + "\",";
    json += "\"type\":\"" + (type == DEAL_TYPE_BUY ? "buy" : "sell") + "\",";
    json += "\"volume\":" + DoubleToString(volume, 2) + ",";
-   json += "\"open_price\":0,";  // No disponible en el deal
+   json += "\"open_price\":" + DoubleToString(openPrice, 5) + ",";
    json += "\"close_price\":" + DoubleToString(closePrice, 5) + ",";
    json += "\"sl\":0,";
    json += "\"tp\":0,";
    json += "\"profit\":" + DoubleToString(profit, 2) + ",";
    json += "\"swap\":" + DoubleToString(swap, 2) + ",";
    json += "\"commission\":" + DoubleToString(commission, 2) + ",";
-   json += "\"open_time\":" + IntegerToString((long)(closeTime - 3600) * 1000) + ",";  // Aproximación
+   json += "\"open_time\":" + IntegerToString((long)openTime * 1000) + ",";
    json += "\"close_time\":" + IntegerToString((long)closeTime * 1000) + ",";
    json += "\"magic_number\":" + IntegerToString(magicNumber) + ",";
    json += "\"comment\":\"" + EscapeJSON(comment) + "\"";

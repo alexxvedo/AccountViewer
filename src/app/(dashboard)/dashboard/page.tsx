@@ -57,7 +57,11 @@ interface TradingAccount {
   isConnected: boolean;
   connectionToken: string;
   sectionId: string | null;
-  liveData: LiveData | null;
+  liveData: LiveData | null; // Datos iniciales (snapshot)
+}
+
+interface LiveDataMap {
+  [accountId: string]: LiveData;
 }
 
 interface Section {
@@ -78,6 +82,7 @@ export default function DashboardPage() {
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const [editingSection, setEditingSection] = useState<Section | null>(null);
   const [editingAccount, setEditingAccount] = useState<TradingAccount | null>(null);
+  const [liveDataMap, setLiveDataMap] = useState<LiveDataMap>({});
 
   // Form state
   const [accountForm, setAccountForm] = useState({
@@ -91,15 +96,35 @@ export default function DashboardPage() {
   const [sectionForm, setSectionForm] = useState({ name: "", color: "#10b981" });
   const [formLoading, setFormLoading] = useState(false);
 
+  // 1. Loop Estructura (Lento - 5s)
   useEffect(() => {
     if (session?.user?.id) {
-      fetchData();
-      const interval = setInterval(fetchData, 5000);
+      fetchStructure();
+      const interval = setInterval(fetchStructure, 5000);
       return () => clearInterval(interval);
     }
   }, [session?.user?.id]);
 
-  const fetchData = async () => {
+  // 2. Loop Valores Rápidos (Rápido - 200ms)
+  useEffect(() => {
+    if (session?.user?.id) {
+      const fetchFastLive = async () => {
+        try {
+          const res = await fetch(`/api/users/${session.user.id}/fast-live`);
+          const data = await res.json();
+          setLiveDataMap(data);
+        } catch (error) {
+           console.error("Fast poll error", error);
+        }
+      };
+      
+      fetchFastLive();
+      const interval = setInterval(fetchFastLive, 200);
+      return () => clearInterval(interval);
+    }
+  }, [session?.user?.id]);
+
+  const fetchStructure = async () => {
     if (!session?.user?.id) return;
     try {
       const [sectionsRes, accountsRes] = await Promise.all([
@@ -120,12 +145,20 @@ export default function DashboardPage() {
 
   // Calcular totales
   const allAccounts = [...sections.flatMap(s => s.accounts), ...unsectionedAccounts];
+  
+  // Helper para obtener datos (Fast Map > Initial Live Data > 0)
+  const getAccountData = (acc: TradingAccount) => {
+    const fastData = liveDataMap[acc.id];
+    if (fastData) return fastData;
+    return acc.liveData;
+  };
+
   const totalBalance = allAccounts
-    .filter(a => a.isConnected && a.liveData)
-    .reduce((sum, a) => sum + (a.liveData?.balance || 0), 0);
+    .filter(a => a.isConnected || liveDataMap[a.id]) // Si está en el mapa, está conectado
+    .reduce((sum, a) => sum + (getAccountData(a)?.balance || 0), 0);
   const totalFloatingPL = allAccounts
-    .filter(a => a.isConnected && a.liveData)
-    .reduce((sum, a) => sum + (a.liveData?.floatingPL || 0), 0);
+    .filter(a => a.isConnected || liveDataMap[a.id])
+    .reduce((sum, a) => sum + (getAccountData(a)?.floatingPL || 0), 0);
 
   const handleCreateAccount = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -147,7 +180,7 @@ export default function DashboardPage() {
       });
       setShowAccountModal(false);
       setAccountForm({ accountNumber: "", broker: "", server: "", platform: "MT5", nickname: "", sectionId: "" });
-      fetchData();
+      fetchStructure();
     } catch (error) {
       console.error("Error creating account:", error);
     } finally {
@@ -171,7 +204,7 @@ export default function DashboardPage() {
       });
       setShowSectionModal(false);
       setSectionForm({ name: "", color: "#10b981" });
-      fetchData();
+      fetchStructure();
     } catch (error) {
       console.error("Error creating section:", error);
     } finally {
@@ -191,7 +224,7 @@ export default function DashboardPage() {
       });
       setEditingSection(null);
       setSectionForm({ name: "", color: "#10b981" });
-      fetchData();
+      fetchStructure();
     } catch (error) {
       console.error("Error updating section:", error);
     } finally {
@@ -217,7 +250,7 @@ export default function DashboardPage() {
       });
       setEditingAccount(null);
       setAccountForm({ accountNumber: "", broker: "", server: "", platform: "MT5", nickname: "", sectionId: "" });
-      fetchData();
+      fetchStructure();
     } catch (error) {
       console.error("Error updating account:", error);
     } finally {
@@ -229,7 +262,7 @@ export default function DashboardPage() {
     if (!confirm("¿Eliminar esta sección? Las cuentas quedarán sin sección.")) return;
     try {
       await fetch(`/api/sections/${id}`, { method: "DELETE" });
-      fetchData();
+      fetchStructure();
     } catch (error) {
       console.error("Error deleting section:", error);
     }
@@ -278,10 +311,10 @@ export default function DashboardPage() {
 
   // Calcular stats de sección
   const getSectionStats = (accounts: TradingAccount[]) => {
-    const connected = accounts.filter(a => a.isConnected && a.liveData);
+    const connected = accounts.filter(a => a.isConnected || liveDataMap[a.id]);
     return {
-      balance: connected.reduce((s, a) => s + (a.liveData?.balance || 0), 0),
-      floatingPL: connected.reduce((s, a) => s + (a.liveData?.floatingPL || 0), 0),
+      balance: connected.reduce((s, a) => s + (getAccountData(a)?.balance || 0), 0),
+      floatingPL: connected.reduce((s, a) => s + (getAccountData(a)?.floatingPL || 0), 0),
       connectedCount: connected.length,
     };
   };
@@ -326,24 +359,24 @@ export default function DashboardPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
-          {account.isConnected && account.liveData ? (
+          {(account.isConnected || liveDataMap[account.id]) && getAccountData(account) ? (
             <div className="grid grid-cols-3 gap-2">
               <div className="rounded-lg bg-zinc-800/50 p-2 text-center">
                 <p className="text-xs text-zinc-400">Balance</p>
                 <p className="text-sm font-bold text-white">
-                  ${account.liveData.balance.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                  ${getAccountData(account)!.balance.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                 </p>
               </div>
               <div className="rounded-lg bg-zinc-800/50 p-2 text-center">
                 <p className="text-xs text-zinc-400">Equity</p>
                 <p className="text-sm font-bold text-white">
-                  ${account.liveData.equity.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                  ${getAccountData(account)!.equity.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                 </p>
               </div>
               <div className="rounded-lg bg-zinc-800/50 p-2 text-center">
                 <p className="text-xs text-zinc-400">P/L</p>
-                <p className={`text-sm font-bold ${(account.liveData.floatingPL || 0) >= 0 ? "text-green-400" : "text-red-400"}`}>
-                  {(account.liveData.floatingPL || 0) >= 0 ? "+" : ""}${(account.liveData.floatingPL || 0).toFixed(2)}
+                <p className={`text-sm font-bold ${(getAccountData(account)!.floatingPL || 0) >= 0 ? "text-green-400" : "text-red-400"}`}>
+                  {(getAccountData(account)!.floatingPL || 0) >= 0 ? "+" : ""}${(getAccountData(account)!.floatingPL || 0).toFixed(2)}
                 </p>
               </div>
             </div>

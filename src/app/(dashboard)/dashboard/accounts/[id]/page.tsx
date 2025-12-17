@@ -68,6 +68,7 @@ interface Position {
   swap: number;
   commission: number;
   open_time: number;
+  comment?: string;
 }
 
 interface Trade {
@@ -83,6 +84,7 @@ interface Trade {
   commission: number;
   openTime: string;
   closeTime: string;
+  comment?: string | null;
 }
 
 interface AccountInfo {
@@ -190,11 +192,11 @@ export default function AccountPage() {
     };
 
     fetchLiveData();
-    const interval = setInterval(fetchLiveData, 2000);
+    const interval = setInterval(fetchLiveData, 200);
     return () => clearInterval(interval);
   }, [accountId]);
 
-  // Polling para historial de trades (cada 5 segundos)
+  // Polling para historial de trades (cada 1 segundo)
   useEffect(() => {
     if (!accountId) return;
 
@@ -209,7 +211,7 @@ export default function AccountPage() {
     };
 
     fetchTradesPolling();
-    const interval = setInterval(fetchTradesPolling, 5000);
+    const interval = setInterval(fetchTradesPolling, 1000);
     return () => clearInterval(interval);
   }, [accountId]);
 
@@ -1037,6 +1039,7 @@ export default function AccountPage() {
                         <thead>
                           <tr className="border-b border-zinc-800 text-left text-xs text-zinc-400">
                             <th className="p-4 font-medium">Ticket</th>
+                            <th className="p-4 font-medium">Hora</th>
                             <th className="p-4 font-medium">Símbolo</th>
                             <th className="p-4 font-medium">Tipo</th>
                             <th className="p-4 font-medium">Volumen</th>
@@ -1044,7 +1047,10 @@ export default function AccountPage() {
                             <th className="p-4 font-medium">Actual</th>
                             <th className="p-4 font-medium">SL</th>
                             <th className="p-4 font-medium">TP</th>
-                            <th className="p-4 text-right font-medium">Profit</th>
+                            <th className="p-4 font-medium">Swap</th>
+                            <th className="p-4 font-medium">Comisión</th>
+                            <th className="p-4 font-medium text-right">Profit</th>
+                            <th className="p-4 font-medium">Comentario</th>
                             <th className="p-4 font-medium"></th>
                           </tr>
                         </thead>
@@ -1052,6 +1058,10 @@ export default function AccountPage() {
                           {paginatedPositions.map((p) => (
                             <tr key={p.ticket} className="border-b border-zinc-800/50 text-sm">
                               <td className="p-4 font-mono text-white">{p.ticket}</td>
+                              <td className="p-4 text-zinc-400 text-xs">
+                                {new Date(p.open_time).toLocaleDateString()} <br />
+                                {new Date(p.open_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </td>
                               <td className="p-4 font-medium text-white">{p.symbol}</td>
                               <td className="p-4">
                                 <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${p.type === "buy" ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"}`}>
@@ -1063,8 +1073,13 @@ export default function AccountPage() {
                               <td className="p-4 font-mono text-zinc-300">{p.current_price.toFixed(5)}</td>
                               <td className="p-4 font-mono text-zinc-400">{p.sl > 0 ? p.sl.toFixed(5) : "-"}</td>
                               <td className="p-4 font-mono text-zinc-400">{p.tp > 0 ? p.tp.toFixed(5) : "-"}</td>
+                              <td className="p-4 font-mono text-zinc-400">${p.swap.toFixed(2)}</td>
+                              <td className="p-4 font-mono text-zinc-400">${p.commission.toFixed(2)}</td>
                               <td className={`p-4 text-right font-medium ${p.profit >= 0 ? "text-green-400" : "text-red-400"}`}>
                                 {p.profit >= 0 ? "+" : ""}${p.profit.toFixed(2)}
+                              </td>
+                              <td className="p-4 text-xs text-zinc-500 max-w-[150px] truncate" title={p.comment}>
+                                {p.comment || "-"}
                               </td>
                               <td className="p-4">
                                 <Button
@@ -1251,13 +1266,17 @@ export default function AccountPage() {
                         <thead>
                           <tr className="border-b border-zinc-800 text-left text-xs text-zinc-400">
                             <th className="p-4 font-medium">Ticket</th>
+                            <th className="p-4 font-medium">Apertura</th>
+                            <th className="p-4 font-medium">Cierre</th>
                             <th className="p-4 font-medium">Símbolo</th>
                             <th className="p-4 font-medium">Tipo</th>
                             <th className="p-4 font-medium">Volumen</th>
-                            <th className="p-4 font-medium">Apertura</th>
-                            <th className="p-4 font-medium">Cierre</th>
-                            <th className="p-4 font-medium">Fecha</th>
-                            <th className="p-4 text-right font-medium">Profit</th>
+                            <th className="p-4 font-medium">Precio Open</th>
+                            <th className="p-4 font-medium">Precio Close</th>
+                            <th className="p-4 font-medium">Swap</th>
+                            <th className="p-4 font-medium">Comisión</th>
+                            <th className="p-4 font-medium text-right">Profit</th>
+                            <th className="p-4 font-medium">Comentario</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1266,6 +1285,14 @@ export default function AccountPage() {
                             return (
                               <tr key={t.id} className="border-b border-zinc-800/50 text-sm">
                                 <td className="p-4 font-mono text-white">{t.ticket}</td>
+                                <td className="p-4 text-zinc-400 text-xs">
+                                  {new Date(t.openTime).toLocaleDateString()} <br />
+                                  {new Date(t.openTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </td>
+                                <td className="p-4 text-zinc-400 text-xs">
+                                  {new Date(t.closeTime).toLocaleDateString()} <br />
+                                  {new Date(t.closeTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </td>
                                 <td className="p-4 font-medium text-white">{t.symbol}</td>
                                 <td className="p-4">
                                   <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${t.type === "buy" ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"}`}>
@@ -1275,9 +1302,13 @@ export default function AccountPage() {
                                 <td className="p-4 text-white">{t.volume}</td>
                                 <td className="p-4 font-mono text-zinc-300">{t.openPrice.toFixed(5)}</td>
                                 <td className="p-4 font-mono text-zinc-300">{t.closePrice.toFixed(5)}</td>
-                                <td className="p-4 text-zinc-400">{new Date(t.closeTime).toLocaleDateString()}</td>
+                                <td className="p-4 font-mono text-zinc-400">${t.swap.toFixed(2)}</td>
+                                <td className="p-4 font-mono text-zinc-400">${t.commission.toFixed(2)}</td>
                                 <td className={`p-4 text-right font-medium ${pl >= 0 ? "text-green-400" : "text-red-400"}`}>
                                   {pl >= 0 ? "+" : ""}${pl.toFixed(2)}
+                                </td>
+                                <td className="p-4 text-xs text-zinc-500 max-w-[150px] truncate" title={t.comment || ""}>
+                                  {t.comment || "-"}
                                 </td>
                               </tr>
                             );

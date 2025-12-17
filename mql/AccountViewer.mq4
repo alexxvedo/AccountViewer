@@ -15,9 +15,10 @@
 //+------------------------------------------------------------------+
 input string   InpConnectionToken = "";                      // Token de Conexión
 input string   InpServerURL = "http://127.0.0.1:3000/api";   // URL del servidor API
-input int      InpTimerInterval = 500;                       // Intervalo del timer (ms)
-input int      InpUpdateInterval = 5;                        // Intervalo de actualización (segundos)
-input double   InpEquityThreshold = 0.50;                    // Umbral de cambio de equity ($)
+input int      InpTimerInterval = 100;                       // Intervalo del timer (ms)
+input int      InpUpdateInterval = 5;                        // Intervalo de actualización (segundos) - Fallback
+input int      InpMinRequestInterval = 100;                  // Mínimo tiempo entre requests (ms)
+input double   InpEquityThreshold = 0.0;                     // Umbral de cambio de equity ($)
 input bool     InpLogEnabled = true;                         // Habilitar logs
 
 //+------------------------------------------------------------------+
@@ -30,6 +31,9 @@ double g_lastMargin = 0;
 int    g_lastOrdersCount = 0;
 string g_lastOrdersHash = "";
 datetime g_lastUpdateTime = 0;
+
+// Control de Throttling
+ulong g_lastRequestTime = 0;
 
 // Tracking de tickets abiertos para detectar cierres
 int g_openTickets[];
@@ -52,10 +56,10 @@ int OnInit()
    }
    
    Log("==============================================");
-   Log("AccountViewer EA v1.00 (MT4 HTTP) iniciando...");
+   Log("AccountViewer EA v1.10 (MT4 RT) iniciando...");
    Log("Token: " + StringSubstr(InpConnectionToken, 0, 8) + "...");
    Log("Server: " + InpServerURL);
-   Log("Update each: " + IntegerToString(InpUpdateInterval) + "s");
+   Log("Modo: Smart Tick (Instantáneo)");
    Log("==============================================");
    
    // IMPORTANTE: Añadir URL a la lista permitida
@@ -65,7 +69,7 @@ int OnInit()
    // Inicializar estado
    CaptureCurrentState();
    
-   // Configurar timer
+   // Configurar timer (Backup y Heartbeat)
    if(!EventSetMillisecondTimer(InpTimerInterval))
    {
       Log("ERROR: No se pudo configurar el timer");
@@ -89,31 +93,56 @@ void OnDeinit(const int reason)
 }
 
 //+------------------------------------------------------------------+
-//| Timer function - Núcleo del EA                                   |
+//| Expert tick function                                             |
+//+------------------------------------------------------------------+
+void OnTick()
+{
+   // 1. Detección instantánea de cambios (Precio/Equidad/Ordenes)
+   if(HasSignificantChanges())
+   {
+      // Intentar enviar update si no estamos bloqueados por throttle
+      if(GetTickCount() - g_lastRequestTime >= (ulong)InpMinRequestInterval)
+      {
+         SendUpdate();
+         g_lastUpdateTime = TimeCurrent();
+         g_tickCounter = 0;
+      }
+   }
+   
+   // 2. Polling de comandos "Casi Instantáneo" (cada 250ms aprox en ticks activos)
+   static ulong lastCommandCheck = 0;
+   if(GetTickCount() - lastCommandCheck >= 250)
+   {
+      if(GetTickCount() - g_lastRequestTime >= (ulong)InpMinRequestInterval)
+      {
+         CheckPendingCommands();
+         lastCommandCheck = GetTickCount();
+      }
+   }
+}
+
+//+------------------------------------------------------------------+
+//| Timer function - Fallback y Heartbeat                            |
 //+------------------------------------------------------------------+
 void OnTimer()
 {
+   // Simular evento tick si el mercado está quieto para procesar comandos
+   OnTick();
+
+   // Heartbeat: updates periódicos incluso sin cambios
    g_tickCounter++;
    
-   // Convertir ticks a segundos aproximados
+   // Convertir ticks de timer a segundos aproximados
    int secondsElapsed = g_tickCounter * InpTimerInterval / 1000;
    
-   // Verificar cada tick si hay cambios significativos
-   if(HasSignificantChanges())
+   if(secondsElapsed >= InpUpdateInterval)
    {
-      SendUpdate();
-      g_lastUpdateTime = TimeCurrent();
-      g_tickCounter = 0;
+      if(GetTickCount() - g_lastRequestTime >= (ulong)InpMinRequestInterval)
+      {
+         SendUpdate();
+         g_tickCounter = 0;
+      }
    }
-   // Si no hay cambios, enviar update periódico
-   else if(secondsElapsed >= InpUpdateInterval)
-   {
-      SendUpdate();
-      g_tickCounter = 0;
-   }
-   
-   // Verificar comandos pendientes del servidor (cada ciclo)
-   CheckPendingCommands();
 }
 
 //+------------------------------------------------------------------+
@@ -161,7 +190,7 @@ bool HasSignificantChanges()
    // Verificar cambio en balance (trade cerrado)
    if(MathAbs(currentBalance - g_lastBalance) > 0.01)
    {
-      Log("Cambio: Balance " + DoubleToString(g_lastBalance, 2) + " -> " + DoubleToString(currentBalance, 2));
+      // Log("Cambio: Balance"); 
       
       // Detectar y enviar trades cerrados ANTES de actualizar el estado
       CheckAndSendClosedTrades();
@@ -171,9 +200,10 @@ bool HasSignificantChanges()
    }
    
    // Verificar cambio significativo en equity
-   if(MathAbs(currentEquity - g_lastEquity) >= InpEquityThreshold)
+   // Umbral 0.0 para detectar cualquier movimiento (Tick-by-Tick)
+   if(MathAbs(currentEquity - g_lastEquity) > InpEquityThreshold)
    {
-      Log("Cambio: Equity " + DoubleToString(g_lastEquity, 2) + " -> " + DoubleToString(currentEquity, 2));
+      // No loguear equity en cada tick
       CaptureCurrentState();
       return true;
    }
@@ -201,7 +231,7 @@ bool HasSignificantChanges()
    // Verificar cambio en órdenes (SL/TP modificado, etc.)
    if(currentHash != g_lastOrdersHash)
    {
-      Log("Cambio: Órdenes modificadas");
+      // Log("Cambio: Órdenes modificadas");
       CaptureCurrentState();
       return true;
    }

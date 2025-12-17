@@ -142,6 +142,43 @@ const app = new Elysia({ prefix: "/api" })
   )
 
   // ============================================
+  // Cuentas de Trading - Datos en vivo RÁPIDOS (Memoria)
+  // ============================================
+  .get(
+    "/users/:id/fast-live",
+    async ({ params }) => {
+      // 1. Obtener solo IDs (búsqueda rápida en índice)
+      const accounts = await prisma.tradingAccount.findMany({
+        where: { userId: params.id },
+        select: { id: true },
+      });
+
+      // 2. Construir respuesta desde memoria
+      const result: Record<string, any> = {};
+
+      for (const acc of accounts) {
+        const cached = liveDataCache.get(acc.id);
+        // Verificar si es reciente (< 30s)
+        if (cached && (Date.now() - cached.timestamp < 30000)) {
+           result[acc.id] = {
+             balance: cached.data?.account?.balance || 0,
+             equity: cached.data?.account?.equity || 0,
+             floatingPL: (cached.data?.account?.equity || 0) - (cached.data?.account?.balance || 0),
+             lastUpdate: cached.timestamp,
+           };
+        }
+      }
+
+      return result;
+    },
+    {
+      params: t.Object({
+        id: t.String(),
+      }),
+    }
+  )
+
+  // ============================================
   // Crear nueva cuenta
   // ============================================
   .post(
