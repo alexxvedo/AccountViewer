@@ -118,13 +118,16 @@ const app = new Elysia({ prefix: "/api" })
       return accounts.map(account => {
         const cached = liveDataCache.get(account.id);
         const isLive = cached && (Date.now() - cached.timestamp < 30000);
+        const balance = cached?.data?.account?.balance || 0;
+        const equity = cached?.data?.account?.equity || 0;
         
         return {
           ...account,
           isConnected: isLive, // Estado real basado en caché
           liveData: isLive ? {
-            balance: cached.data?.account?.balance || 0,
-            equity: cached.data?.account?.equity || 0,
+            balance,
+            equity,
+            floatingPL: equity - balance,
             lastUpdate: cached.timestamp,
           } : null,
         };

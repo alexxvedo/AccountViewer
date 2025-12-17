@@ -288,8 +288,8 @@ export default function DashboardPage() {
               </div>
               <div className="rounded-lg bg-zinc-800/50 p-2 text-center">
                 <p className="text-xs text-zinc-400">P/L</p>
-                <p className={`text-sm font-bold ${account.liveData.floatingPL >= 0 ? "text-green-400" : "text-red-400"}`}>
-                  {account.liveData.floatingPL >= 0 ? "+" : ""}${account.liveData.floatingPL.toFixed(2)}
+                <p className={`text-sm font-bold ${(account.liveData.floatingPL || 0) >= 0 ? "text-green-400" : "text-red-400"}`}>
+                  {(account.liveData.floatingPL || 0) >= 0 ? "+" : ""}${(account.liveData.floatingPL || 0).toFixed(2)}
                 </p>
               </div>
             </div>
