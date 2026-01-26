@@ -6,7 +6,9 @@
 import { Elysia, t } from "elysia";
 import { cors } from "@elysiajs/cors";
 import { PrismaClient } from "@/generated/prisma";
-import { auth } from "@/lib/auth"; // Importar sistema de auth
+import { auth } from "@/lib/auth";
+import { checkRateLimit, getClientIP } from "@/lib/rate-limit";
+import { auditLog } from "@/lib/audit";
 
 // Importar modelos generados por Prismabox
 import {
@@ -26,8 +28,28 @@ const prisma = globalForPrisma.prisma ?? new PrismaClient();
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
 /**
- * Helper para verificar sesión y evitar IDOR
- * Valida que el ID en la URL corresponda al usuario autenticado
+ * Helper para verificar sesión, rate limit y evitar IDOR
+ */
+const verifySessionWithRateLimit = async (request: Request, targetUserId: string) => {
+  const ip = getClientIP(request);
+  
+  // Rate limit por usuario
+  const rateCheck = checkRateLimit("api", targetUserId);
+  if (!rateCheck.allowed) {
+    auditLog("RATE_LIMIT_EXCEEDED", { userId: targetUserId, ip, details: { type: "api" } });
+    throw new Error(`Rate limit exceeded. Try again in ${Math.ceil(rateCheck.resetIn / 1000)}s`);
+  }
+
+  const session = await auth.api.getSession({ headers: request.headers });
+  if (!session || session.user.id !== targetUserId) {
+    throw new Error("Unauthorized Access: IDOR Protected");
+  }
+  
+  return session;
+};
+
+/**
+ * Helper legacy para compatibilidad
  */
 const verifySession = async (headers: Headers, targetUserId: string) => {
   const session = await auth.api.getSession({ headers });
@@ -44,14 +66,15 @@ if (process.env.NODE_ENV !== "production") globalForPrisma.liveDataCache = liveD
 const commandQueue = globalForPrisma.commandQueue ?? new Map<string, { commands: { id: string; type: string; ticket?: number; createdAt: number }[] }>();
 if (process.env.NODE_ENV !== "production") globalForPrisma.commandQueue = commandQueue;
 
+
 // ============================================
 // Aplicación Elysia
 // ============================================
 const app = new Elysia({ prefix: "/api" })
-  // CORS
+  // CORS - Restringido a orígenes específicos
   .use(
     cors({
-      origin: true,
+      origin: process.env.CORS_ORIGINS?.split(',') || ["http://localhost:3000"],
       credentials: true,
     })
   )
@@ -354,8 +377,8 @@ const app = new Elysia({ prefix: "/api" })
       const section = await prisma.section.findUnique({ where: { id: params.id } });
       if (!section) return { message: "Sección no encontrada" };
 
-      // 2. Seguridad (TEMPORALMENTE DESHABILITADO PARA DEBUG)
-      // await verifySession(request.headers, section.userId);
+      // 2. Seguridad: Verificar que la sección pertenece al usuario
+      await verifySession(request.headers, section.userId);
 
       // 3. Desvincular cuentas explícitamente (Cumplir requerimiento usuario)
       await prisma.tradingAccount.updateMany({
@@ -474,7 +497,12 @@ const app = new Elysia({ prefix: "/api" })
   // ============================================
   .get(
     "/accounts/:id/trades",
-    async ({ params, query }) => {
+    async ({ params, query, request }) => {
+      // Verificar que el usuario es dueño de la cuenta
+      const account = await prisma.tradingAccount.findUnique({ where: { id: params.id } });
+      if (!account) throw new Error("Account not found");
+      await verifySession(request.headers, account.userId);
+
       const limit = Number(query?.limit) || 50;
       const offset = Number(query?.offset) || 0;
 
@@ -510,7 +538,12 @@ const app = new Elysia({ prefix: "/api" })
   // ============================================
   .get(
     "/accounts/:id/equity",
-    async ({ params, query }) => {
+    async ({ params, query, request }) => {
+      // Verificar que el usuario es dueño de la cuenta
+      const account = await prisma.tradingAccount.findUnique({ where: { id: params.id } });
+      if (!account) throw new Error("Account not found");
+      await verifySession(request.headers, account.userId);
+
       const hours = Number(query?.hours) || 24;
       const since = new Date(Date.now() - hours * 60 * 60 * 1000);
 
@@ -542,7 +575,12 @@ const app = new Elysia({ prefix: "/api" })
   // ============================================
   .get(
     "/accounts/:id/live",
-    async ({ params }) => {
+    async ({ params, request }) => {
+      // Verificar que el usuario es dueño de la cuenta
+      const account = await prisma.tradingAccount.findUnique({ where: { id: params.id } });
+      if (!account) throw new Error("Account not found");
+      await verifySession(request.headers, account.userId);
+
       const cached = liveDataCache.get(params.id);
       
       if (!cached) {
@@ -570,7 +608,12 @@ const app = new Elysia({ prefix: "/api" })
   // ============================================
   .post(
     "/accounts/:id/regenerate-token",
-    async ({ params }) => {
+    async ({ params, request }) => {
+      // Verificar que el usuario es dueño de la cuenta
+      const existingAccount = await prisma.tradingAccount.findUnique({ where: { id: params.id } });
+      if (!existingAccount) throw new Error("Account not found");
+      await verifySession(request.headers, existingAccount.userId);
+
       const account = await prisma.tradingAccount.update({
         where: { id: params.id },
         data: {
@@ -644,6 +687,12 @@ const app = new Elysia({ prefix: "/api" })
   .post(
     "/ea/update",
     async ({ body }) => {
+      // Rate limit por token EA
+      const rateCheck = checkRateLimit("ea", body.token);
+      if (!rateCheck.allowed) {
+        return { success: false, error: `Rate limit exceeded. Retry in ${Math.ceil(rateCheck.resetIn / 1000)}s` };
+      }
+
       // Validar token
       const account = await prisma.tradingAccount.findUnique({
         where: { connectionToken: body.token },
@@ -793,10 +842,10 @@ const app = new Elysia({ prefix: "/api" })
   // ============================================
   .post(
     "/accounts/:id/close-trade",
-    async ({ params, body }) => {
+    async ({ params, body, request }) => {
       const accountId = params.id;
       
-      // Verificar que la cuenta existe
+      // Verificar que la cuenta existe y el usuario es dueño
       const account = await prisma.tradingAccount.findUnique({
         where: { id: accountId },
       });
@@ -804,6 +853,8 @@ const app = new Elysia({ prefix: "/api" })
       if (!account) {
         return { success: false, error: "Cuenta no encontrada" };
       }
+
+      await verifySession(request.headers, account.userId);
       
       // Añadir comando a la cola
       const queue = commandQueue.get(accountId) || { commands: [] };
@@ -832,7 +883,7 @@ const app = new Elysia({ prefix: "/api" })
   // ============================================
   .post(
     "/accounts/:id/close-all",
-    async ({ params }) => {
+    async ({ params, request }) => {
       const accountId = params.id;
       
       const account = await prisma.tradingAccount.findUnique({
@@ -842,6 +893,8 @@ const app = new Elysia({ prefix: "/api" })
       if (!account) {
         return { success: false, error: "Cuenta no encontrada" };
       }
+
+      await verifySession(request.headers, account.userId);
       
       const queue = commandQueue.get(accountId) || { commands: [] };
       queue.commands.push({
@@ -904,7 +957,7 @@ const app = new Elysia({ prefix: "/api" })
   // ============================================
   .post(
     "/accounts/:id/sync-history",
-    async ({ params }) => {
+    async ({ params, request }) => {
       const accountId = params.id;
       
       const account = await prisma.tradingAccount.findUnique({
@@ -914,6 +967,8 @@ const app = new Elysia({ prefix: "/api" })
       if (!account) {
         return { success: false, error: "Cuenta no encontrada" };
       }
+
+      await verifySession(request.headers, account.userId);
       
       // Añadir comando de sincronización a la cola
       const queue = commandQueue.get(accountId) || { commands: [] };

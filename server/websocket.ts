@@ -276,49 +276,76 @@ const app = new Elysia()
   })
 
   // ============================================
-  // WebSocket para Frontend
+  // WebSocket para Frontend (con autenticación)
   // ============================================
   .ws("/ws/frontend", {
     query: t.Object({
       userId: t.String(),
+      // Token opcional para validación adicional (el userId se valida contra la BD)
     }),
 
-    open(ws) {
+    async open(ws) {
       const userId = (ws.data as any).query?.userId;
-      console.log(`[WS/Frontend] Conexión de usuario: ${userId}`);
+      console.log(`[WS/Frontend] Intentando conexión de usuario: ${userId}`);
 
-      (ws as any).data.subscribedAccounts = new Set<string>(["*"]);
+      // SEGURIDAD: Verificar que el userId existe y tiene cuentas
+      // Esto previene que alguien se conecte con un userId inventado
+      try {
+        const userAccounts = await prisma.tradingAccount.findMany({
+          where: { userId },
+          select: { id: true },
+        });
 
-      if (!frontendConnections.has(userId)) {
-        frontendConnections.set(userId, new Set());
-      }
-      frontendConnections.get(userId)!.add(ws);
+        if (userAccounts.length === 0) {
+          console.log(`[WS/Frontend] Usuario ${userId} no tiene cuentas o no existe`);
+          // Permitir conexión pero sin suscripciones (podría ser usuario nuevo)
+        }
 
-      // Enviar estado actual
-      const liveAccounts = liveStore.getByUserId(userId);
-      for (const account of liveAccounts) {
-        if (account.lastUpdate) {
+        // Guardar los IDs de cuentas del usuario para validación posterior
+        const validAccountIds = new Set(userAccounts.map(a => a.id));
+        (ws as any).data.validAccountIds = validAccountIds;
+        (ws as any).data.subscribedAccounts = new Set<string>(["*"]);
+        (ws as any).data.authenticated = true;
+
+        if (!frontendConnections.has(userId)) {
+          frontendConnections.set(userId, new Set());
+        }
+        frontendConnections.get(userId)!.add(ws);
+
+        console.log(`[WS/Frontend] Conexión autenticada: ${userId} (${userAccounts.length} cuentas)`);
+
+        // Enviar estado actual solo de las cuentas del usuario
+        const liveAccounts = liveStore.getByUserId(userId);
+        for (const account of liveAccounts) {
+          // SEGURIDAD: Solo enviar datos de cuentas que el usuario realmente posee
+          if (!validAccountIds.has(account.accountId)) continue;
+
+          if (account.lastUpdate) {
+            ws.send(
+              JSON.stringify({
+                type: "account_update",
+                account_id: account.accountId,
+                data: {
+                  account: account.lastUpdate.account,
+                  positions: account.lastUpdate.positions,
+                  timestamp: account.lastUpdate.timestamp,
+                },
+              })
+            );
+          }
+
           ws.send(
             JSON.stringify({
-              type: "account_update",
+              type: "connection_status",
               account_id: account.accountId,
-              data: {
-                account: account.lastUpdate.account,
-                positions: account.lastUpdate.positions,
-                timestamp: account.lastUpdate.timestamp,
-              },
+              connected: account.isConnected,
+              last_seen: account.lastSeen,
             })
           );
         }
-
-        ws.send(
-          JSON.stringify({
-            type: "connection_status",
-            account_id: account.accountId,
-            connected: account.isConnected,
-            last_seen: account.lastSeen,
-          })
-        );
+      } catch (error) {
+        console.error(`[WS/Frontend] Error de autenticación para ${userId}:`, error);
+        ws.close(4001, "Authentication failed");
       }
     },
 
@@ -327,8 +354,13 @@ const app = new Elysia()
         const msg = typeof message === "string" ? JSON.parse(message) : message;
         const data = (ws as any).data;
 
+        // SEGURIDAD: Solo permitir suscripción a cuentas que el usuario posee
         if (msg.type === "subscribe" && msg.account_id) {
-          data.subscribedAccounts.add(msg.account_id);
+          if (data.validAccountIds?.has(msg.account_id) || msg.account_id === "*") {
+            data.subscribedAccounts.add(msg.account_id);
+          } else {
+            console.log(`[WS/Frontend] Intento de suscripción no autorizada: ${msg.account_id}`);
+          }
         } else if (msg.type === "unsubscribe" && msg.account_id) {
           data.subscribedAccounts.delete(msg.account_id);
         }

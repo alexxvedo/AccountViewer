@@ -130,7 +130,7 @@ export default function DashboardPage() {
       };
       
       fetchFastLive();
-      const interval = setInterval(fetchFastLive, 200);
+      const interval = setInterval(fetchFastLive, 1000);
       return () => clearInterval(interval);
     }
   }, [session?.user?.id]);
@@ -405,15 +405,16 @@ export default function DashboardPage() {
             </div>
           )}
           <div className="flex items-center justify-between rounded-lg bg-zinc-800/50 p-2">
-            <span className="text-xs text-zinc-400">Token</span>
+            <span className="text-xs text-zinc-400">Token EA</span>
             <button
               onClick={(e) => { e.preventDefault(); copyToken(account.connectionToken); }}
               className="flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300"
+              title="Copiar token de conexión para el EA"
             >
               {copiedToken === account.connectionToken ? (
                 <><Check className="h-3 w-3" />Copiado</>
               ) : (
-                <><Copy className="h-3 w-3" />Copiar</>
+                <><Copy className="h-3 w-3" />Copiar Token</>
               )}
             </button>
           </div>

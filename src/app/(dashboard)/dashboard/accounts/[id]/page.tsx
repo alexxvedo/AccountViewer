@@ -192,7 +192,7 @@ export default function AccountPage() {
     };
 
     fetchLiveData();
-    const interval = setInterval(fetchLiveData, 200);
+    const interval = setInterval(fetchLiveData, 1000);
     return () => clearInterval(interval);
   }, [accountId]);
 
@@ -465,15 +465,16 @@ export default function AccountPage() {
             <span className="hidden sm:inline">Sincronizar</span>
           </Button>
           <div className="flex items-center gap-2 rounded-lg bg-zinc-900 px-3 py-2">
-            <span className="text-xs text-zinc-400">Token:</span>
-            <code className="font-mono text-xs text-emerald-400">
-              {account.connectionToken.slice(0, 8)}...
+            <span className="text-xs text-zinc-400">Token EA:</span>
+            <code className="font-mono text-xs text-zinc-500">
+              ••••••••••••
             </code>
             <Button
               variant="ghost"
               size="sm"
               onClick={copyToken}
-              className="h-6 w-6 p-0 text-zinc-400 hover:text-white"
+              className="h-6 w-6 p-0 text-emerald-400 hover:text-emerald-300"
+              title="Copiar token completo al portapapeles"
             >
               {copiedToken ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
             </Button>
