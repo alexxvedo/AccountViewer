@@ -67,6 +67,7 @@ export const auth = betterAuth({
     updateAge: 60 * 60 * 24, // 1 day
   },
   // Verificación de email
+  /*
   emailVerification: {
     sendOnSignUp: process.env.NODE_ENV === "production",
     sendVerificationEmail: async ({ user, url }) => {
@@ -81,6 +82,7 @@ export const auth = betterAuth({
       // });
     },
   },
+  */
   // Configuración de seguridad adicional
   trustedOrigins: process.env.CORS_ORIGINS?.split(",") || ["http://localhost:3000"],
 });
