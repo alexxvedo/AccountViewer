@@ -35,12 +35,11 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Copiar archivos necesarios
-COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/generated ./generated
+# Copiar archivos necesarios para el modo standalone de Next.js
+COPY --from=builder /app/public* ./public/
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static/
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/server ./server
-COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 
 # Script de entrada

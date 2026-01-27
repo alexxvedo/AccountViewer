@@ -17,4 +17,4 @@ bun run server/websocket.ts &
 
 # Iniciar Next.js con bun
 echo "🌐 Starting Next.js on port ${PORT:-3000}..."
-bun run start
+exec bun server.js
