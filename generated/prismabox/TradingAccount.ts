@@ -9,6 +9,7 @@ export const TradingAccountPlain = t.Object(
     id: t.String(),
     userId: t.String(),
     sectionId: __nullable__(t.String()),
+    accountTypeId: __nullable__(t.String()),
     connectionToken: t.String(),
     accountNumber: t.Integer(),
     broker: t.String(),
@@ -48,6 +49,18 @@ export const TradingAccountRelations = t.Object(
           color: __nullable__(t.String()),
           createdAt: t.Date(),
           updatedAt: t.Date(),
+        },
+        { additionalProperties: false },
+      ),
+    ),
+    accountType: __nullable__(
+      t.Object(
+        {
+          id: t.String(),
+          userId: t.String(),
+          name: t.String(),
+          color: t.String(),
+          createdAt: t.Date(),
         },
         { additionalProperties: false },
       ),
@@ -157,6 +170,19 @@ export const TradingAccountRelationsInputCreate = t.Object(
         { additionalProperties: false },
       ),
     ),
+    accountType: t.Optional(
+      t.Object(
+        {
+          connect: t.Object(
+            {
+              id: t.String({ additionalProperties: false }),
+            },
+            { additionalProperties: false },
+          ),
+        },
+        { additionalProperties: false },
+      ),
+    ),
     trades: t.Optional(
       t.Object(
         {
@@ -208,6 +234,20 @@ export const TradingAccountRelationsInputUpdate = t.Partial(
         { additionalProperties: false },
       ),
       section: t.Partial(
+        t.Object(
+          {
+            connect: t.Object(
+              {
+                id: t.String({ additionalProperties: false }),
+              },
+              { additionalProperties: false },
+            ),
+            disconnect: t.Boolean(),
+          },
+          { additionalProperties: false },
+        ),
+      ),
+      accountType: t.Partial(
         t.Object(
           {
             connect: t.Object(
@@ -287,6 +327,7 @@ export const TradingAccountWhere = t.Partial(
           id: t.String(),
           userId: t.String(),
           sectionId: t.String(),
+          accountTypeId: t.String(),
           connectionToken: t.String(),
           accountNumber: t.Integer(),
           broker: t.String(),
@@ -344,6 +385,7 @@ export const TradingAccountWhereUnique = t.Recursive(
               id: t.String(),
               userId: t.String(),
               sectionId: t.String(),
+              accountTypeId: t.String(),
               connectionToken: t.String(),
               accountNumber: t.Integer(),
               broker: t.String(),
@@ -372,6 +414,7 @@ export const TradingAccountSelect = t.Partial(
       id: t.Boolean(),
       userId: t.Boolean(),
       sectionId: t.Boolean(),
+      accountTypeId: t.Boolean(),
       connectionToken: t.Boolean(),
       accountNumber: t.Boolean(),
       broker: t.Boolean(),
@@ -386,6 +429,7 @@ export const TradingAccountSelect = t.Partial(
       updatedAt: t.Boolean(),
       user: t.Boolean(),
       section: t.Boolean(),
+      accountType: t.Boolean(),
       trades: t.Boolean(),
       snapshots: t.Boolean(),
       _count: t.Boolean(),
@@ -399,6 +443,7 @@ export const TradingAccountInclude = t.Partial(
     {
       user: t.Boolean(),
       section: t.Boolean(),
+      accountType: t.Boolean(),
       trades: t.Boolean(),
       snapshots: t.Boolean(),
       _count: t.Boolean(),
@@ -417,6 +462,9 @@ export const TradingAccountOrderBy = t.Partial(
         additionalProperties: false,
       }),
       sectionId: t.Union([t.Literal("asc"), t.Literal("desc")], {
+        additionalProperties: false,
+      }),
+      accountTypeId: t.Union([t.Literal("asc"), t.Literal("desc")], {
         additionalProperties: false,
       }),
       connectionToken: t.Union([t.Literal("asc"), t.Literal("desc")], {

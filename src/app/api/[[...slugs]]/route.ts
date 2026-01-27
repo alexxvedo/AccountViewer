@@ -3,6 +3,7 @@
 // Trading Platform SaaS
 // ============================================
 
+
 import { Elysia, t } from "elysia";
 import { cors } from "@elysiajs/cors";
 import { PrismaClient } from "@/generated/prisma";
@@ -46,11 +47,9 @@ const verifySessionWithRateLimit = async (request: Request, targetUserId: string
   }
   
   return session;
-};
+};  
 
-/**
- * Helper legacy para compatibilidad
- */
+
 const verifySession = async (headers: Headers, targetUserId: string) => {
   const session = await auth.api.getSession({ headers });
   if (!session || session.user.id !== targetUserId) {
@@ -111,8 +110,16 @@ const app = new Elysia({ prefix: "/api" })
           updatedAt: true,
           userId: true,
           sectionId: true,
+          accountTypeId: true,
           balance: true,
           equity: true,
+          accountType: {
+            select: {
+              id: true,
+              name: true,
+              color: true,
+            },
+          },
         },
       });
 
@@ -122,7 +129,6 @@ const app = new Elysia({ prefix: "/api" })
       params: t.Object({
         id: t.String(),
       }),
-      response: t.Array(TradingAccountPlain),
     }
   )
 
@@ -149,8 +155,55 @@ const app = new Elysia({ prefix: "/api" })
           updatedAt: true,
           userId: true,
           sectionId: true,
+          accountTypeId: true,
+          accountType: {
+            select: { id: true, name: true, color: true },
+          },
         },
       });
+
+      // Obtener estadísticas de trades para estas cuentas
+      const accountIds = accounts.map(a => a.id);
+      let statsMap: Record<string, { total: number; wins: number; grossProfit: number; grossLoss: number }> = {};
+      
+      if (accountIds.length > 0) { // Solo ejecutar si hay cuentas
+        try {
+          const [totalTrades, winningTrades, profitSums, lossSums] = await Promise.all([
+            prisma.tradeHistory.groupBy({
+              by: ['accountId'],
+              _count: { _all: true },
+              where: { accountId: { in: accountIds } }
+            }),
+            prisma.tradeHistory.groupBy({
+              by: ['accountId'],
+              _count: { _all: true },
+              where: { accountId: { in: accountIds }, profit: { gt: 0 } }
+            }),
+            // Sumar ganancias (profit > 0)
+            prisma.tradeHistory.groupBy({
+              by: ['accountId'],
+              _sum: { profit: true },
+              where: { accountId: { in: accountIds }, profit: { gt: 0 } }
+            }),
+            // Sumar pérdidas (profit < 0)
+            prisma.tradeHistory.groupBy({
+              by: ['accountId'],
+              _sum: { profit: true },
+              where: { accountId: { in: accountIds }, profit: { lt: 0 } }
+            })
+          ]);
+
+          accounts.forEach(a => {
+            const total = totalTrades.find(t => t.accountId === a.id)?._count._all || 0;
+            const wins = winningTrades.find(t => t.accountId === a.id)?._count._all || 0;
+            const grossProfit = profitSums.find(t => t.accountId === a.id)?._sum.profit || 0;
+            const grossLoss = Math.abs(lossSums.find(t => t.accountId === a.id)?._sum.profit || 0);
+            statsMap[a.id] = { total, wins, grossProfit, grossLoss };
+          });
+        } catch (e) {
+          console.error("Error calculating stats:", e);
+        }
+      }
 
       // Enriquecer con datos en vivo del caché
       return accounts.map(account => {
@@ -159,6 +212,10 @@ const app = new Elysia({ prefix: "/api" })
         const balance = cached?.data?.account?.balance || 0;
         const equity = cached?.data?.account?.equity || 0;
         
+        const stats = statsMap[account.id] || { total: 0, wins: 0, grossProfit: 0, grossLoss: 0 };
+        const winRate = stats.total > 0 ? Math.round((stats.wins / stats.total) * 100) : 0;
+        const profitFactor = stats.grossLoss > 0 ? parseFloat((stats.grossProfit / stats.grossLoss).toFixed(2)) : (stats.grossProfit > 0 ? 99.99 : 0);
+
         return {
           ...account,
           isConnected: isLive, // Estado real basado en caché
@@ -168,6 +225,11 @@ const app = new Elysia({ prefix: "/api" })
             floatingPL: equity - balance,
             lastUpdate: cached.timestamp,
           } : null,
+          stats: {
+            winRate,
+            trades: stats.total,
+            profitFactor
+          }
         };
       });
     },
@@ -231,6 +293,8 @@ const app = new Elysia({ prefix: "/api" })
           server: body.server,
           platform: body.platform || "MT5",
           nickname: body.nickname,
+          sectionId: body.sectionId || null,
+          accountTypeId: body.accountTypeId || null,
         },
       });
 
@@ -243,18 +307,163 @@ const app = new Elysia({ prefix: "/api" })
     {
       body: t.Object({
         userId: t.String(),
-        accountNumber: t.Integer(),
+        accountNumber: t.Numeric(),
         broker: t.String(),
         server: t.String(),
         platform: t.Optional(t.String()),
         nickname: t.Optional(t.String()),
         sectionId: t.Optional(t.String()),
+        accountTypeId: t.Optional(t.String()),
       }),
       response: t.Object({
         id: t.String(),
         connectionToken: t.String(),
         message: t.String(),
       }),
+    }
+  )
+
+  // ============================================
+  // TIPOS DE CUENTA - Listar por usuario
+  // ============================================
+  .get(
+    "/users/:id/account-types",
+    async ({ params, request }) => {
+      await verifySession(request.headers, params.id);
+      const types = await prisma.accountType.findMany({
+        where: { userId: params.id },
+        orderBy: { createdAt: "asc" },
+      });
+      return types;
+    },
+    {
+      params: t.Object({ id: t.String() }),
+    }
+  )
+
+  // ============================================
+  // TIPOS DE CUENTA - Crear
+  // ============================================
+  .post(
+    "/account-types",
+    async ({ body, request }) => {
+      await verifySession(request.headers, body.userId);
+      
+      // Verificar si ya existe ese tipo para el usuario
+      const existing = await prisma.accountType.findUnique({
+        where: {
+          userId_name: {
+            userId: body.userId,
+            name: body.name,
+          },
+        },
+      });
+      
+      if (existing) {
+        return { id: existing.id, message: "Tipo ya existe" };
+      }
+      
+      const type = await prisma.accountType.create({
+        data: {
+          userId: body.userId,
+          name: body.name,
+          color: body.color || "#71717A",
+        },
+      });
+      return { id: type.id, message: "Tipo de cuenta creado" };
+    },
+    {
+      body: t.Object({
+        userId: t.String(),
+        name: t.String(),
+        color: t.Optional(t.String()),
+      }),
+    }
+  )
+
+  // ============================================
+  // TIPOS DE CUENTA - Eliminar
+  // ============================================
+  .delete(
+    "/account-types/:id",
+    async ({ params, request }) => {
+      const type = await prisma.accountType.findUnique({ where: { id: params.id } });
+      if (!type) return { message: "Tipo no encontrado" };
+      await verifySession(request.headers, type.userId);
+      
+      // Desvincular cuentas
+      await prisma.tradingAccount.updateMany({
+        where: { accountTypeId: params.id },
+        data: { accountTypeId: null },
+      });
+      
+      await prisma.accountType.delete({ where: { id: params.id } });
+      return { message: "Tipo de cuenta eliminado" };
+    },
+    {
+      params: t.Object({ id: t.String() }),
+    }
+  )
+
+  // ============================================
+  // TIPOS DE CUENTA - Actualizar
+  // ============================================
+  .put(
+    "/account-types/:id",
+    async ({ params, body, request }) => {
+      const type = await prisma.accountType.findUnique({ where: { id: params.id } });
+      if (!type) throw new Error("Tipo no encontrado");
+      await verifySession(request.headers, type.userId);
+      
+      const updated = await prisma.accountType.update({
+        where: { id: params.id },
+        data: {
+          name: body.name,
+          color: body.color,
+        },
+      });
+      return updated;
+    },
+    {
+      params: t.Object({ id: t.String() }),
+      body: t.Object({
+        name: t.String(),
+        color: t.String(),
+      }),
+    }
+  )
+
+  // ============================================
+  // ESTADÍSTICAS DE CUENTA (Win Rate, Trades)
+  // ============================================
+  .get(
+    "/accounts/:id/stats",
+    async ({ params, request }) => {
+      const account = await prisma.tradingAccount.findUnique({ where: { id: params.id } });
+      if (!account) throw new Error("Account not found");
+      await verifySession(request.headers, account.userId);
+
+      // Calcular stats desde TradeHistory
+      const trades = await prisma.tradeHistory.findMany({
+        where: { accountId: params.id },
+        select: { profit: true },
+      });
+
+      const totalTrades = trades.length;
+      const winningTrades = trades.filter(t => t.profit > 0).length;
+      const winRate = totalTrades > 0 ? Math.round((winningTrades / totalTrades) * 100) : 0;
+      const totalProfit = trades.reduce((sum, t) => sum + t.profit, 0);
+
+      return {
+        totalTrades,
+        winningTrades,
+        losingTrades: totalTrades - winningTrades,
+        winRate,
+        totalProfit,
+      };
+    },
+    {
+      params: t.Object({ id: t.String() }),
     }
   )
 
@@ -401,22 +610,30 @@ const app = new Elysia({ prefix: "/api" })
   .put(
     "/accounts/:id",
     async ({ params, body, request }) => {
+      console.log(`[PUT /accounts/${params.id}] Body recibido:`, JSON.stringify(body));
       // Buscar cuenta para validar dueño
       const account = await prisma.tradingAccount.findUnique({ where: { id: params.id } });
       if (!account) throw new Error("Account not found");
       await verifySession(request.headers, account.userId);
 
-      await prisma.tradingAccount.update({
-        where: { id: params.id },
-        data: {
-          nickname: body.nickname || null,
-          broker: body.broker,
-          server: body.server,
-          platform: body.platform,
-          sectionId: body.sectionId || null,
-        },
-      });
-      return { message: "Cuenta actualizada" };
+      try {
+        const updated = await prisma.tradingAccount.update({
+          where: { id: params.id },
+          data: {
+            nickname: body.nickname || null,
+            broker: body.broker,
+            server: body.server,
+            platform: body.platform,
+            sectionId: body.sectionId || null,
+            accountTypeId: body.accountTypeId || null,
+          },
+        });
+        console.log(`[PUT /accounts/${params.id}] Success. New type: ${updated.accountTypeId}`);
+        return { message: "Cuenta actualizada" };
+      } catch (error) {
+        console.error(`[PUT /accounts/${params.id}] ERROR updating:`, error);
+        throw error; // Re-throw para que el frontend reciba 500
+      }
     },
     {
       params: t.Object({ id: t.String() }),
@@ -426,6 +643,7 @@ const app = new Elysia({ prefix: "/api" })
         server: t.String(),
         platform: t.String(),
         sectionId: t.Optional(t.Union([t.String(), t.Null()])),
+        accountTypeId: t.Optional(t.Union([t.String(), t.Null()])),
       }),
     }
   )
@@ -484,6 +702,31 @@ const app = new Elysia({ prefix: "/api" })
       }
 
       return account;
+    },
+    {
+      params: t.Object({
+        id: t.String(),
+      }),
+    }
+  )
+
+  // ============================================
+  // ELIMINAR CUENTA
+  // ============================================
+  .delete(
+    "/accounts/:id",
+    async ({ params, request }) => {
+      // Buscar cuenta para validar dueño
+      const account = await prisma.tradingAccount.findUnique({ where: { id: params.id } });
+      if (!account) throw new Error("Account not found");
+      await verifySession(request.headers, account.userId);
+
+      // Eliminar cuenta (Prisma borrará cascada el historial si está configurado)
+      await prisma.tradingAccount.delete({
+        where: { id: params.id },
+      });
+
+      return { message: "Cuenta eliminada exitosamente" };
     },
     {
       params: t.Object({
@@ -775,8 +1018,7 @@ const app = new Elysia({ prefix: "/api" })
       const { trade } = body;
 
       try {
-        await prisma.tradeHistory.create({
-          data: {
+        const data = {
             accountId: account.id,
             ticket: BigInt(trade.ticket),
             symbol: trade.symbol,
@@ -793,7 +1035,25 @@ const app = new Elysia({ prefix: "/api" })
             closeTime: new Date(trade.close_time),
             magicNumber: trade.magic_number,
             comment: trade.comment,
-          },
+        };
+          
+          // Corrección automática de tipo (Buy/Sell) si viene invertido del EA
+          const grossProfit = trade.profit - (trade.swap || 0) - (trade.commission || 0);
+          const priceDelta = trade.close_price - trade.open_price;
+          
+          // Lógica: Si precio sube (delta > 0) y ganamos (profit > 0) -> es BUY
+          // Si precio sube (delta > 0) y perdemos (profit < 0) -> es SELL
+          if (Math.abs(priceDelta) > 0.000001 && Math.abs(grossProfit) > 0.001) {
+             const sameSign = (priceDelta > 0 && grossProfit > 0) || (priceDelta < 0 && grossProfit < 0);
+             if (sameSign) {
+               data.type = "buy";
+             } else {
+               data.type = "sell";
+             }
+          }
+
+        await prisma.tradeHistory.create({
+          data,
         });
 
         return { success: true, message: "Trade guardado" };
@@ -914,6 +1174,34 @@ const app = new Elysia({ prefix: "/api" })
   )
 
   // ============================================
+  // EA - Forzar Sincronización Historial Completo
+  // ============================================
+  .post(
+    "/accounts/:id/sync-all-history",
+    async ({ params, request }) => {
+      const account = await prisma.tradingAccount.findUnique({ where: { id: params.id } });
+      if (!account) return { success: false, error: "Cuenta no encontrada" };
+      await verifySession(request.headers, account.userId);
+
+      const queue = commandQueue.get(params.id) || { commands: [] };
+      // Comando para que el EA envíe todo el historial
+      queue.commands.push({
+        id: crypto.randomUUID(),
+        type: "sync_history_full", // El EA debe reconocer esto
+        createdAt: Date.now(),
+      });
+      commandQueue.set(params.id, queue);
+
+      return { success: true, message: "Solicitud de historial completo enviada al EA" };
+    },
+    {
+      params: t.Object({
+        id: t.String(),
+      }),
+    }
+  )
+
+  // ============================================
   // EA obtiene comandos pendientes
   // ============================================
   .post(
@@ -1003,52 +1291,73 @@ const app = new Elysia({ prefix: "/api" })
       }
 
       const { trades } = body;
-      let imported = 0;
-      let skipped = 0;
-
-      for (const trade of trades) {
-        try {
-          await prisma.tradeHistory.upsert({
-            where: { ticket: BigInt(trade.ticket) },
-            update: {}, // No actualizar si ya existe
-            create: {
-              accountId: account.id,
-              ticket: BigInt(trade.ticket),
-              symbol: trade.symbol,
-              type: trade.type,
-              volume: trade.volume,
-              openPrice: trade.open_price,
-              closePrice: trade.close_price,
-              stopLoss: trade.sl || 0,
-              takeProfit: trade.tp || 0,
-              profit: trade.profit,
-              swap: trade.swap || 0,
-              commission: trade.commission || 0,
-              openTime: new Date(trade.open_time),
-              closeTime: new Date(trade.close_time),
-              magicNumber: trade.magic_number || 0,
-              comment: trade.comment || "",
-            },
-          });
-          imported++;
-        } catch (error) {
-          skipped++;
+      console.log(`[SYNC] Recibidos ${trades.length} trades para cuenta ${account.accountNumber}`);
+      if (trades.length > 0) console.log(`[SYNC] Sample trade:`, trades[0]);
+      
+      // 1. Preparar datos en memoria (corrección de tipos y formateo)
+      // Esto es O(N) en CPU, mucho más rápido que N queries a BD
+      const preparedTrades = trades.map(trade => {
+        let finalType = trade.type;
+        const grossProfit = trade.profit - (trade.swap || 0) - (trade.commission || 0);
+        const priceDelta = trade.close_price - trade.open_price;
+        
+        // Corrección de tipo Buy/Sell basada en precio/profit
+        if (Math.abs(priceDelta) > 0.000001 && Math.abs(grossProfit) > 0.001) {
+           const sameSign = (priceDelta > 0 && grossProfit > 0) || (priceDelta < 0 && grossProfit < 0);
+           finalType = sameSign ? "buy" : "sell";
         }
+        
+        // Detectar si vienen en segundos (MT5 standard) o milisegundos
+        const isSeconds = trade.open_time < 10000000000;
+        const multiplier = isSeconds ? 1000 : 1;
+
+        return {
+          accountId: account.id,
+          ticket: BigInt(trade.ticket),
+          symbol: trade.symbol,
+          type: finalType,
+          volume: trade.volume,
+          openPrice: trade.open_price,
+          closePrice: trade.close_price,
+          stopLoss: trade.sl || 0,
+          takeProfit: trade.tp || 0,
+          profit: trade.profit,
+          swap: trade.swap || 0,
+          commission: trade.commission || 0,
+          openTime: new Date(trade.open_time * multiplier),
+          closeTime: new Date(trade.close_time * multiplier),
+          magicNumber: trade.magic_number || 0,
+          comment: trade.comment || "",
+        };
+      });
+
+      // 2. Inserción Masiva (Bulk Insert) de los nuevos
+      // createMany es mucho más eficiente. skipDuplicates ignora los que ya existen (por ticket + accountId unique)
+      let imported = 0;
+      try {
+        const result = await prisma.tradeHistory.createMany({
+          data: preparedTrades,
+          skipDuplicates: true,
+        });
+        imported = result.count;
+      } catch (error) {
+        console.error("Error en bulk insert:", error);
+        return { success: false, error: "Error procesando trades", imported: 0 };
       }
 
       return { 
         success: true, 
-        message: `Historial sincronizado: ${imported} importados, ${skipped} omitidos`,
+        message: `Sincronización rápida: ${imported} nuevos trades importados`,
         imported,
-        skipped,
+        skipped: trades.length - imported, // Estimado
       };
     },
     {
       body: t.Object({
-        msg_type: t.Literal("sync_history"),
+        msg_type: t.Optional(t.Literal("sync_history")), // Hacer opcional por si acaso
         token: t.String(),
         trades: t.Array(t.Object({
-          ticket: t.Number(),
+          ticket: t.Union([t.Number(), t.String()]), // Permitir strings para evitar precision issues
           symbol: t.String(),
           type: t.String(),
           volume: t.Number(),

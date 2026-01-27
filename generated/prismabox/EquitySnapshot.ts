@@ -26,6 +26,7 @@ export const EquitySnapshotRelations = t.Object(
         id: t.String(),
         userId: t.String(),
         sectionId: __nullable__(t.String()),
+        accountTypeId: __nullable__(t.String()),
         connectionToken: t.String(),
         accountNumber: t.Integer(),
         broker: t.String(),

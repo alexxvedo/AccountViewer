@@ -36,6 +36,7 @@ model User {
   accounts        Account[]
   tradingAccounts TradingAccount[]
   sections        Section[]
+  accountTypes    AccountType[]
 
   @@map("user")
 }
@@ -104,12 +105,31 @@ model Section {
 }
 
 // ============================================
+// Tipos de Cuenta Personalizados
+// ============================================
+model AccountType {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String // "Funded", "Challenge", "Demo", etc.
+  color     String   @default("#71717A") // Color del badge
+  createdAt DateTime @default(now())
+
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accounts TradingAccount[]
+
+  @@unique([userId, name])
+  @@index([userId])
+  @@map("account_types")
+}
+
+// ============================================
 // Cuenta de Trading (MT4/MT5)
 // ============================================
 model TradingAccount {
-  id        String  @id @default(cuid())
-  userId    String
-  sectionId String? // Sección opcional
+  id            String  @id @default(cuid())
+  userId        String
+  sectionId     String? // Sección opcional
+  accountTypeId String? // Tipo de cuenta opcional
 
   // Token único para conexión del EA
   connectionToken String @unique @default(cuid())
@@ -132,13 +152,15 @@ model TradingAccount {
   updatedAt DateTime @updatedAt
 
   // Relaciones
-  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  section   Section?         @relation(fields: [sectionId], references: [id], onDelete: SetNull)
-  trades    TradeHistory[]
-  snapshots EquitySnapshot[]
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  section     Section?         @relation(fields: [sectionId], references: [id], onDelete: SetNull)
+  accountType AccountType?     @relation(fields: [accountTypeId], references: [id], onDelete: SetNull)
+  trades      TradeHistory[]
+  snapshots   EquitySnapshot[]
 
   @@index([userId])
   @@index([sectionId])
+  @@index([accountTypeId])
   @@index([connectionToken])
   @@map("trading_accounts")
 }
@@ -151,7 +173,7 @@ model TradeHistory {
   accountId String
 
   // Identificador del trade en MT
-  ticket BigInt @unique
+  ticket BigInt
 
   // Detalles del trade
   symbol     String
@@ -181,6 +203,7 @@ model TradeHistory {
   // Relaciones
   account TradingAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
 
+  @@unique([accountId, ticket])
   @@index([accountId])
   @@index([closeTime])
   @@map("trade_history")

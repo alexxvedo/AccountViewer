@@ -174,10 +174,19 @@ exports.Prisma.SectionScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.AccountTypeScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  name: 'name',
+  color: 'color',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.TradingAccountScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
   sectionId: 'sectionId',
+  accountTypeId: 'accountTypeId',
   connectionToken: 'connectionToken',
   accountNumber: 'accountNumber',
   broker: 'broker',
@@ -274,10 +283,18 @@ exports.Prisma.SectionOrderByRelevanceFieldEnum = {
   color: 'color'
 };
 
+exports.Prisma.AccountTypeOrderByRelevanceFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  name: 'name',
+  color: 'color'
+};
+
 exports.Prisma.TradingAccountOrderByRelevanceFieldEnum = {
   id: 'id',
   userId: 'userId',
   sectionId: 'sectionId',
+  accountTypeId: 'accountTypeId',
   connectionToken: 'connectionToken',
   broker: 'broker',
   server: 'server',
@@ -305,6 +322,7 @@ exports.Prisma.ModelName = {
   Account: 'Account',
   Verification: 'Verification',
   Section: 'Section',
+  AccountType: 'AccountType',
   TradingAccount: 'TradingAccount',
   TradeHistory: 'TradeHistory',
   EquitySnapshot: 'EquitySnapshot'

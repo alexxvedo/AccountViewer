@@ -1,19 +1,28 @@
 "use client";
 
+import { cn } from "@/lib/utils";
 import { useSession, signOut } from "@/lib/auth-client";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  TrendingUp,
   LayoutDashboard,
+  Wallet,
   Settings,
+  ChevronLeft,
+  TrendingUp,
+  HelpCircle,
   LogOut,
   Loader2,
   Menu,
-  X,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+
+interface NavItem {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  href: string;
+  badge?: string;
+}
 
 export default function DashboardLayout({
   children,
@@ -22,7 +31,9 @@ export default function DashboardLayout({
 }) {
   const { data: session, isPending } = useSession();
   const router = useRouter();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const pathname = usePathname();
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     if (!isPending && !session) {
@@ -32,8 +43,8 @@ export default function DashboardLayout({
 
   if (isPending) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-950">
-        <Loader2 className="h-8 w-8 animate-spin text-emerald-400" />
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -47,115 +58,200 @@ export default function DashboardLayout({
     router.push("/login");
   };
 
-  const closeSidebar = () => setSidebarOpen(false);
+  const mainNav: NavItem[] = [
+    { icon: LayoutDashboard, label: "Overview", href: "/dashboard" },
+    { icon: Wallet, label: "Cuentas", href: "/dashboard/accounts" },
+  ];
+
+  const secondaryNav: NavItem[] = [
+    { icon: Settings, label: "Ajustes", href: "/dashboard/settings" },
+    { icon: HelpCircle, label: "Ayuda", href: "/dashboard/help" },
+  ];
+
+  const isActive = (href: string) => {
+    if (href === "/dashboard") return pathname === "/dashboard";
+    return pathname.startsWith(href);
+  };
+
+  const userInitials = session.user?.name
+    ?.split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2) || "U";
 
   return (
-    <div className="flex min-h-screen bg-zinc-950">
+    <div className="flex h-screen bg-background">
       {/* Mobile overlay */}
-      {sidebarOpen && (
+      {mobileOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/60 lg:hidden"
-          onClick={closeSidebar}
+          className="fixed inset-0 z-40 bg-black/80 lg:hidden"
+          onClick={() => setMobileOpen(false)}
         />
       )}
 
       {/* Sidebar */}
       <aside
-        className={`fixed left-0 top-0 z-50 h-screen w-64 transform border-r border-zinc-800 bg-zinc-900 transition-transform duration-200 ease-in-out lg:translate-x-0 ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={cn(
+          "fixed left-0 top-0 z-50 flex h-screen flex-col border-r border-border bg-sidebar transition-all duration-300 lg:relative",
+          collapsed ? "w-16" : "w-64",
+          mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        )}
       >
-        <div className="flex h-full flex-col">
-          {/* Logo */}
-          <div className="flex h-16 items-center justify-between border-b border-zinc-800 px-4 lg:px-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-400 to-cyan-500">
-                <TrendingUp className="h-5 w-5 text-white" />
+        {/* Logo */}
+        <div className="flex h-16 items-center justify-between border-b border-border px-4">
+          {!collapsed && (
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent">
+                <TrendingUp className="h-5 w-5 text-accent-foreground" />
               </div>
-              <span className="text-lg font-semibold text-white">
+              <span className="text-lg font-semibold text-foreground">
                 AccountViewer
               </span>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="lg:hidden text-zinc-400"
-              onClick={closeSidebar}
-            >
-              <X className="h-5 w-5" />
-            </Button>
+          )}
+          {collapsed && (
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent mx-auto">
+              <TrendingUp className="h-5 w-5 text-accent-foreground" />
+            </div>
+          )}
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className={cn(
+              "rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground",
+              collapsed && "hidden"
+            )}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Main Navigation */}
+        <nav className="flex-1 space-y-1 p-3">
+          <div
+            className={cn(
+              "mb-2 px-3 text-xs font-medium uppercase tracking-wider text-muted-foreground",
+              collapsed && "hidden"
+            )}
+          >
+            Principal
           </div>
+          {mainNav.map((item) => {
+            const active = isActive(item.href);
+            return (
+              <Link
+                key={item.label}
+                href={item.href}
+                onClick={() => setMobileOpen(false)}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
+                  active
+                    ? "bg-sidebar-accent text-foreground"
+                    : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-foreground",
+                  collapsed && "justify-center px-2"
+                )}
+              >
+                <item.icon className="h-5 w-5 shrink-0" />
+                {!collapsed && (
+                  <>
+                    <span className="flex-1">{item.label}</span>
+                    {item.badge && (
+                      <span className="rounded-full bg-accent/20 px-2 py-0.5 text-xs font-medium text-accent">
+                        {item.badge}
+                      </span>
+                    )}
+                  </>
+                )}
+              </Link>
+            );
+          })}
 
-          {/* Navigation */}
-          <nav className="flex-1 space-y-1 p-4">
-            <Link
-              href="/dashboard"
-              onClick={closeSidebar}
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white"
-            >
-              <LayoutDashboard className="h-5 w-5" />
-              Dashboard
-            </Link>
-            <Link
-              href="/dashboard/settings"
-              onClick={closeSidebar}
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white"
-            >
-              <Settings className="h-5 w-5" />
-              Configuración
-            </Link>
-          </nav>
+          <div
+            className={cn(
+              "mb-2 mt-6 px-3 text-xs font-medium uppercase tracking-wider text-muted-foreground",
+              collapsed && "hidden"
+            )}
+          >
+            Gestión
+          </div>
+          {secondaryNav.map((item) => {
+            const active = isActive(item.href);
+            return (
+              <Link
+                key={item.label}
+                href={item.href}
+                onClick={() => setMobileOpen(false)}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
+                  active
+                    ? "bg-sidebar-accent text-foreground"
+                    : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-foreground",
+                  collapsed && "justify-center px-2"
+                )}
+              >
+                <item.icon className="h-5 w-5 shrink-0" />
+                {!collapsed && <span>{item.label}</span>}
+              </Link>
+            );
+          })}
+        </nav>
 
-          {/* User */}
-          <div className="border-t border-zinc-800 p-4">
-            <div className="mb-3 flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-cyan-500 text-sm font-medium text-white">
-                {session.user?.name?.[0]?.toUpperCase() || "U"}
-              </div>
-              <div className="flex-1 overflow-hidden">
-                <p className="truncate text-sm font-medium text-white">
+        {/* User Section */}
+        <div className="border-t border-border p-3">
+          <div
+            className={cn(
+              "flex items-center gap-3 rounded-lg px-3 py-2",
+              collapsed && "justify-center px-0"
+            )}
+          >
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-accent/20 text-sm font-semibold text-accent">
+              {userInitials}
+            </div>
+            {!collapsed && (
+              <div className="flex-1 truncate">
+                <p className="text-sm font-medium text-foreground">
                   {session.user?.name || "Usuario"}
                 </p>
-                <p className="truncate text-xs text-zinc-400">
+                <p className="text-xs text-muted-foreground truncate">
                   {session.user?.email}
                 </p>
               </div>
-            </div>
-            <Button
-              variant="ghost"
-              className="w-full justify-start text-zinc-400 hover:text-white"
-              onClick={handleSignOut}
-            >
-              <LogOut className="mr-2 h-4 w-4" />
-              Cerrar Sesión
-            </Button>
+            )}
           </div>
+          {!collapsed && (
+            <button
+              onClick={handleSignOut}
+              className="mt-2 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent/50 hover:text-foreground"
+            >
+              <LogOut className="h-4 w-4" />
+              Cerrar Sesión
+            </button>
+          )}
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 lg:ml-64">
-        {/* Mobile header */}
-        <div className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b border-zinc-800 bg-zinc-950 px-4 lg:hidden">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-zinc-400"
-            onClick={() => setSidebarOpen(true)}
+      <div className="flex flex-1 flex-col overflow-hidden">
+        {/* Mobile Header */}
+        <header className="flex h-14 items-center gap-4 border-b border-border bg-card px-4 lg:hidden">
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="text-muted-foreground hover:text-foreground"
           >
             <Menu className="h-5 w-5" />
-          </Button>
-          <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-400 to-cyan-500">
-              <TrendingUp className="h-4 w-4 text-white" />
-            </div>
-            <span className="font-semibold text-white">AccountViewer</span>
+          </button>
+          <span className="text-sm font-semibold text-foreground">
+            AccountViewer
+          </span>
+        </header>
+
+        {/* Page Content */}
+        <main className="flex-1 overflow-y-auto">
+          <div className="container mx-auto max-w-full p-6">
+            {children}
           </div>
-        </div>
-        
-        {/* Page content */}
-        <div className="p-4 sm:p-6 lg:p-8">{children}</div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }

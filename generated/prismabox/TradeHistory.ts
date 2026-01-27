@@ -35,6 +35,7 @@ export const TradeHistoryRelations = t.Object(
         id: t.String(),
         userId: t.String(),
         sectionId: __nullable__(t.String()),
+        accountTypeId: __nullable__(t.String()),
         connectionToken: t.String(),
         accountNumber: t.Integer(),
         broker: t.String(),
@@ -171,13 +172,27 @@ export const TradeHistoryWhereUnique = t.Recursive(
       [
         t.Partial(
           t.Object(
-            { id: t.String(), ticket: t.Integer() },
+            {
+              id: t.String(),
+              accountId_ticket: t.Object(
+                { accountId: t.String(), ticket: t.Integer() },
+                { additionalProperties: false },
+              ),
+            },
             { additionalProperties: false },
           ),
           { additionalProperties: false },
         ),
         t.Union(
-          [t.Object({ id: t.String() }), t.Object({ ticket: t.Integer() })],
+          [
+            t.Object({ id: t.String() }),
+            t.Object({
+              accountId_ticket: t.Object(
+                { accountId: t.String(), ticket: t.Integer() },
+                { additionalProperties: false },
+              ),
+            }),
+          ],
           { additionalProperties: false },
         ),
         t.Partial(

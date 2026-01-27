@@ -7,15 +7,8 @@ import { signIn } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { TrendingUp, Loader2 } from "lucide-react";
+import { Loader2, Command } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -30,100 +23,139 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const result = await signIn.email({
-        email,
-        password,
-      });
-
+      const result = await signIn.email({ email, password });
       if (result.error) {
-        setError(result.error.message || "Error al iniciar sesión");
+        setError(result.error.message || "Credenciales incorrectas");
       } else {
         router.push("/dashboard");
       }
     } catch (err) {
-      setError("Error al iniciar sesión");
+      setError("Error de conexión");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Card className="border-zinc-800 bg-zinc-950/50 backdrop-blur">
-      <CardHeader className="space-y-4">
-        <div className="flex items-center justify-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-500">
-            <TrendingUp className="h-6 w-6 text-white" />
+    <div className="container relative h-screen flex-col items-center justify-center md:grid lg:max-w-none lg:grid-cols-2 lg:px-0">
+      {/* Columna Derecha: Visual / Arte */}
+      <div className="relative hidden h-full flex-col bg-muted p-10 text-white lg:flex dark:border-r">
+        <div className="absolute inset-0 bg-zinc-900" />
+        <div className="relative z-20 flex items-center text-lg font-medium">
+          <Command className="mr-2 h-6 w-6" />
+          AccountViewer
+        </div>
+        <div className="relative z-20 mt-auto">
+          <blockquote className="space-y-2">
+            <p className="text-lg">
+              &ldquo;La disciplina es el puente entre metas y logros. Gestiona tus cuentas con precisión profesional.&rdquo;
+            </p>
+            <footer className="text-sm">Sofia Davis</footer>
+          </blockquote>
+        </div>
+      </div>
+      
+      {/* Columna Izquierda: Formulario */}
+      <div className="lg:p-8">
+        <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
+          <div className="flex flex-col space-y-2 text-center">
+            <h1 className="text-2xl font-semibold tracking-tight">
+              Bienvenido de nuevo
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Ingresa tu email para acceder a tu dashboard
+            </p>
           </div>
-        </div>
-        <div className="text-center">
-          <CardTitle className="text-2xl text-white">Bienvenido</CardTitle>
-          <CardDescription className="text-zinc-400">
-            Inicia sesión para acceder a tu dashboard
-          </CardDescription>
-        </div>
-      </CardHeader>
-      <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-4">
-          {error && (
-            <div className="rounded-lg bg-red-500/10 p-3 text-sm text-red-400">
-              {error}
+
+          <div className={cn("grid gap-6")}>
+            <form onSubmit={handleSubmit}>
+              <div className="grid gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    placeholder="nombre@ejemplo.com"
+                    type="email"
+                    autoCapitalize="none"
+                    autoComplete="email"
+                    autoCorrect="off"
+                    disabled={loading}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="bg-background"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <div className="flex items-center justify-between">
+                     <Label htmlFor="password">Contraseña</Label>
+                     <Link 
+                       href="/forgot-password" 
+                       className="text-xs text-muted-foreground underline-offset-4 hover:underline"
+                     >
+                       ¿Olvidaste tu contraseña?
+                     </Link>
+                  </div>
+                  <Input
+                    id="password"
+                    placeholder="••••••••"
+                    type="password"
+                    autoCapitalize="none"
+                    autoComplete="current-password"
+                    disabled={loading}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="bg-background"
+                  />
+                </div>
+                
+                {error && (
+                  <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md animate-in fade-in-50">
+                    {error}
+                  </div>
+                )}
+
+                <Button disabled={loading}>
+                  {loading && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  Iniciar Sesión
+                </Button>
+              </div>
+            </form>
+            
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
+                  O continúa con
+                </span>
+              </div>
             </div>
-          )}
-          <div className="space-y-2">
-            <Label htmlFor="email" className="text-zinc-300">
-              Email
-            </Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="tu@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="border-zinc-700 bg-zinc-900 text-white placeholder:text-zinc-500"
-            />
+             <div className="grid grid-cols-2 gap-6">
+                <Button variant="outline" disabled={loading}>
+                   Github
+                </Button>
+                 <Button variant="outline" disabled={loading}>
+                   Google
+                </Button>
+             </div>
+
+            <p className="px-8 text-center text-sm text-muted-foreground">
+              ¿No tienes cuenta?{" "}
+              <Link
+                href="/signup"
+                className="underline underline-offset-4 hover:text-primary"
+              >
+                Regístrate
+              </Link>
+            </p>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="password" className="text-zinc-300">
-              Contraseña
-            </Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="border-zinc-700 bg-zinc-900 text-white placeholder:text-zinc-500"
-            />
-          </div>
-        </CardContent>
-        <CardFooter className="flex flex-col gap-4">
-          <Button
-            type="submit"
-            className="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 text-white hover:from-emerald-600 hover:to-cyan-600"
-            disabled={loading}
-          >
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Iniciando sesión...
-              </>
-            ) : (
-              "Iniciar Sesión"
-            )}
-          </Button>
-          <p className="text-center text-sm text-zinc-400">
-            ¿No tienes cuenta?{" "}
-            <Link
-              href="/signup"
-              className="text-emerald-400 hover:text-emerald-300"
-            >
-              Regístrate
-            </Link>
-          </p>
-        </CardFooter>
-      </form>
-    </Card>
+        </div>
+      </div>
+    </div>
   );
 }

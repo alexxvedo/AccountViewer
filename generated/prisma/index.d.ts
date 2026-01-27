@@ -39,6 +39,11 @@ export type Verification = $Result.DefaultSelection<Prisma.$VerificationPayload>
  */
 export type Section = $Result.DefaultSelection<Prisma.$SectionPayload>
 /**
+ * Model AccountType
+ * 
+ */
+export type AccountType = $Result.DefaultSelection<Prisma.$AccountTypePayload>
+/**
  * Model TradingAccount
  * 
  */
@@ -228,6 +233,16 @@ export class PrismaClient<
     * ```
     */
   get section(): Prisma.SectionDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.accountType`: Exposes CRUD operations for the **AccountType** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more AccountTypes
+    * const accountTypes = await prisma.accountType.findMany()
+    * ```
+    */
+  get accountType(): Prisma.AccountTypeDelegate<ExtArgs, ClientOptions>;
 
   /**
    * `prisma.tradingAccount`: Exposes CRUD operations for the **TradingAccount** model.
@@ -703,6 +718,7 @@ export namespace Prisma {
     Account: 'Account',
     Verification: 'Verification',
     Section: 'Section',
+    AccountType: 'AccountType',
     TradingAccount: 'TradingAccount',
     TradeHistory: 'TradeHistory',
     EquitySnapshot: 'EquitySnapshot'
@@ -724,7 +740,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "user" | "session" | "account" | "verification" | "section" | "tradingAccount" | "tradeHistory" | "equitySnapshot"
+      modelProps: "user" | "session" | "account" | "verification" | "section" | "accountType" | "tradingAccount" | "tradeHistory" | "equitySnapshot"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1058,6 +1074,72 @@ export namespace Prisma {
           }
         }
       }
+      AccountType: {
+        payload: Prisma.$AccountTypePayload<ExtArgs>
+        fields: Prisma.AccountTypeFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.AccountTypeFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AccountTypePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.AccountTypeFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AccountTypePayload>
+          }
+          findFirst: {
+            args: Prisma.AccountTypeFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AccountTypePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.AccountTypeFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AccountTypePayload>
+          }
+          findMany: {
+            args: Prisma.AccountTypeFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AccountTypePayload>[]
+          }
+          create: {
+            args: Prisma.AccountTypeCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AccountTypePayload>
+          }
+          createMany: {
+            args: Prisma.AccountTypeCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.AccountTypeDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AccountTypePayload>
+          }
+          update: {
+            args: Prisma.AccountTypeUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AccountTypePayload>
+          }
+          deleteMany: {
+            args: Prisma.AccountTypeDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.AccountTypeUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.AccountTypeUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AccountTypePayload>
+          }
+          aggregate: {
+            args: Prisma.AccountTypeAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateAccountType>
+          }
+          groupBy: {
+            args: Prisma.AccountTypeGroupByArgs<ExtArgs>
+            result: $Utils.Optional<AccountTypeGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.AccountTypeCountArgs<ExtArgs>
+            result: $Utils.Optional<AccountTypeCountAggregateOutputType> | number
+          }
+        }
+      }
       TradingAccount: {
         payload: Prisma.$TradingAccountPayload<ExtArgs>
         fields: Prisma.TradingAccountFieldRefs
@@ -1345,6 +1427,7 @@ export namespace Prisma {
     account?: AccountOmit
     verification?: VerificationOmit
     section?: SectionOmit
+    accountType?: AccountTypeOmit
     tradingAccount?: TradingAccountOmit
     tradeHistory?: TradeHistoryOmit
     equitySnapshot?: EquitySnapshotOmit
@@ -1446,6 +1529,7 @@ export namespace Prisma {
     accounts: number
     tradingAccounts: number
     sections: number
+    accountTypes: number
   }
 
   export type UserCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -1453,6 +1537,7 @@ export namespace Prisma {
     accounts?: boolean | UserCountOutputTypeCountAccountsArgs
     tradingAccounts?: boolean | UserCountOutputTypeCountTradingAccountsArgs
     sections?: boolean | UserCountOutputTypeCountSectionsArgs
+    accountTypes?: boolean | UserCountOutputTypeCountAccountTypesArgs
   }
 
   // Custom InputTypes
@@ -1494,6 +1579,13 @@ export namespace Prisma {
     where?: SectionWhereInput
   }
 
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountAccountTypesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: AccountTypeWhereInput
+  }
+
 
   /**
    * Count Type SectionCountOutputType
@@ -1522,6 +1614,37 @@ export namespace Prisma {
    * SectionCountOutputType without action
    */
   export type SectionCountOutputTypeCountAccountsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: TradingAccountWhereInput
+  }
+
+
+  /**
+   * Count Type AccountTypeCountOutputType
+   */
+
+  export type AccountTypeCountOutputType = {
+    accounts: number
+  }
+
+  export type AccountTypeCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    accounts?: boolean | AccountTypeCountOutputTypeCountAccountsArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * AccountTypeCountOutputType without action
+   */
+  export type AccountTypeCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AccountTypeCountOutputType
+     */
+    select?: AccountTypeCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * AccountTypeCountOutputType without action
+   */
+  export type AccountTypeCountOutputTypeCountAccountsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: TradingAccountWhereInput
   }
 
@@ -1754,6 +1877,7 @@ export namespace Prisma {
     accounts?: boolean | User$accountsArgs<ExtArgs>
     tradingAccounts?: boolean | User$tradingAccountsArgs<ExtArgs>
     sections?: boolean | User$sectionsArgs<ExtArgs>
+    accountTypes?: boolean | User$accountTypesArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["user"]>
 
@@ -1775,6 +1899,7 @@ export namespace Prisma {
     accounts?: boolean | User$accountsArgs<ExtArgs>
     tradingAccounts?: boolean | User$tradingAccountsArgs<ExtArgs>
     sections?: boolean | User$sectionsArgs<ExtArgs>
+    accountTypes?: boolean | User$accountTypesArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -1785,6 +1910,7 @@ export namespace Prisma {
       accounts: Prisma.$AccountPayload<ExtArgs>[]
       tradingAccounts: Prisma.$TradingAccountPayload<ExtArgs>[]
       sections: Prisma.$SectionPayload<ExtArgs>[]
+      accountTypes: Prisma.$AccountTypePayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -2138,6 +2264,7 @@ export namespace Prisma {
     accounts<T extends User$accountsArgs<ExtArgs> = {}>(args?: Subset<T, User$accountsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AccountPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     tradingAccounts<T extends User$tradingAccountsArgs<ExtArgs> = {}>(args?: Subset<T, User$tradingAccountsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TradingAccountPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     sections<T extends User$sectionsArgs<ExtArgs> = {}>(args?: Subset<T, User$sectionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SectionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    accountTypes<T extends User$accountTypesArgs<ExtArgs> = {}>(args?: Subset<T, User$accountTypesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AccountTypePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2610,6 +2737,30 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: SectionScalarFieldEnum | SectionScalarFieldEnum[]
+  }
+
+  /**
+   * User.accountTypes
+   */
+  export type User$accountTypesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AccountType
+     */
+    select?: AccountTypeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AccountType
+     */
+    omit?: AccountTypeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AccountTypeInclude<ExtArgs> | null
+    where?: AccountTypeWhereInput
+    orderBy?: AccountTypeOrderByWithRelationInput | AccountTypeOrderByWithRelationInput[]
+    cursor?: AccountTypeWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: AccountTypeScalarFieldEnum | AccountTypeScalarFieldEnum[]
   }
 
   /**
@@ -6463,6 +6614,965 @@ export namespace Prisma {
 
 
   /**
+   * Model AccountType
+   */
+
+  export type AggregateAccountType = {
+    _count: AccountTypeCountAggregateOutputType | null
+    _min: AccountTypeMinAggregateOutputType | null
+    _max: AccountTypeMaxAggregateOutputType | null
+  }
+
+  export type AccountTypeMinAggregateOutputType = {
+    id: string | null
+    userId: string | null
+    name: string | null
+    color: string | null
+    createdAt: Date | null
+  }
+
+  export type AccountTypeMaxAggregateOutputType = {
+    id: string | null
+    userId: string | null
+    name: string | null
+    color: string | null
+    createdAt: Date | null
+  }
+
+  export type AccountTypeCountAggregateOutputType = {
+    id: number
+    userId: number
+    name: number
+    color: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type AccountTypeMinAggregateInputType = {
+    id?: true
+    userId?: true
+    name?: true
+    color?: true
+    createdAt?: true
+  }
+
+  export type AccountTypeMaxAggregateInputType = {
+    id?: true
+    userId?: true
+    name?: true
+    color?: true
+    createdAt?: true
+  }
+
+  export type AccountTypeCountAggregateInputType = {
+    id?: true
+    userId?: true
+    name?: true
+    color?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type AccountTypeAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which AccountType to aggregate.
+     */
+    where?: AccountTypeWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of AccountTypes to fetch.
+     */
+    orderBy?: AccountTypeOrderByWithRelationInput | AccountTypeOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: AccountTypeWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` AccountTypes from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` AccountTypes.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned AccountTypes
+    **/
+    _count?: true | AccountTypeCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: AccountTypeMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: AccountTypeMaxAggregateInputType
+  }
+
+  export type GetAccountTypeAggregateType<T extends AccountTypeAggregateArgs> = {
+        [P in keyof T & keyof AggregateAccountType]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateAccountType[P]>
+      : GetScalarType<T[P], AggregateAccountType[P]>
+  }
+
+
+
+
+  export type AccountTypeGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: AccountTypeWhereInput
+    orderBy?: AccountTypeOrderByWithAggregationInput | AccountTypeOrderByWithAggregationInput[]
+    by: AccountTypeScalarFieldEnum[] | AccountTypeScalarFieldEnum
+    having?: AccountTypeScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: AccountTypeCountAggregateInputType | true
+    _min?: AccountTypeMinAggregateInputType
+    _max?: AccountTypeMaxAggregateInputType
+  }
+
+  export type AccountTypeGroupByOutputType = {
+    id: string
+    userId: string
+    name: string
+    color: string
+    createdAt: Date
+    _count: AccountTypeCountAggregateOutputType | null
+    _min: AccountTypeMinAggregateOutputType | null
+    _max: AccountTypeMaxAggregateOutputType | null
+  }
+
+  type GetAccountTypeGroupByPayload<T extends AccountTypeGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<AccountTypeGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof AccountTypeGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], AccountTypeGroupByOutputType[P]>
+            : GetScalarType<T[P], AccountTypeGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type AccountTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    name?: boolean
+    color?: boolean
+    createdAt?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+    accounts?: boolean | AccountType$accountsArgs<ExtArgs>
+    _count?: boolean | AccountTypeCountOutputTypeDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["accountType"]>
+
+
+
+  export type AccountTypeSelectScalar = {
+    id?: boolean
+    userId?: boolean
+    name?: boolean
+    color?: boolean
+    createdAt?: boolean
+  }
+
+  export type AccountTypeOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "name" | "color" | "createdAt", ExtArgs["result"]["accountType"]>
+  export type AccountTypeInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+    accounts?: boolean | AccountType$accountsArgs<ExtArgs>
+    _count?: boolean | AccountTypeCountOutputTypeDefaultArgs<ExtArgs>
+  }
+
+  export type $AccountTypePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "AccountType"
+    objects: {
+      user: Prisma.$UserPayload<ExtArgs>
+      accounts: Prisma.$TradingAccountPayload<ExtArgs>[]
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      userId: string
+      name: string
+      color: string
+      createdAt: Date
+    }, ExtArgs["result"]["accountType"]>
+    composites: {}
+  }
+
+  type AccountTypeGetPayload<S extends boolean | null | undefined | AccountTypeDefaultArgs> = $Result.GetResult<Prisma.$AccountTypePayload, S>
+
+  type AccountTypeCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<AccountTypeFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: AccountTypeCountAggregateInputType | true
+    }
+
+  export interface AccountTypeDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['AccountType'], meta: { name: 'AccountType' } }
+    /**
+     * Find zero or one AccountType that matches the filter.
+     * @param {AccountTypeFindUniqueArgs} args - Arguments to find a AccountType
+     * @example
+     * // Get one AccountType
+     * const accountType = await prisma.accountType.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends AccountTypeFindUniqueArgs>(args: SelectSubset<T, AccountTypeFindUniqueArgs<ExtArgs>>): Prisma__AccountTypeClient<$Result.GetResult<Prisma.$AccountTypePayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one AccountType that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {AccountTypeFindUniqueOrThrowArgs} args - Arguments to find a AccountType
+     * @example
+     * // Get one AccountType
+     * const accountType = await prisma.accountType.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends AccountTypeFindUniqueOrThrowArgs>(args: SelectSubset<T, AccountTypeFindUniqueOrThrowArgs<ExtArgs>>): Prisma__AccountTypeClient<$Result.GetResult<Prisma.$AccountTypePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first AccountType that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AccountTypeFindFirstArgs} args - Arguments to find a AccountType
+     * @example
+     * // Get one AccountType
+     * const accountType = await prisma.accountType.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends AccountTypeFindFirstArgs>(args?: SelectSubset<T, AccountTypeFindFirstArgs<ExtArgs>>): Prisma__AccountTypeClient<$Result.GetResult<Prisma.$AccountTypePayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first AccountType that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AccountTypeFindFirstOrThrowArgs} args - Arguments to find a AccountType
+     * @example
+     * // Get one AccountType
+     * const accountType = await prisma.accountType.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends AccountTypeFindFirstOrThrowArgs>(args?: SelectSubset<T, AccountTypeFindFirstOrThrowArgs<ExtArgs>>): Prisma__AccountTypeClient<$Result.GetResult<Prisma.$AccountTypePayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more AccountTypes that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AccountTypeFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all AccountTypes
+     * const accountTypes = await prisma.accountType.findMany()
+     * 
+     * // Get first 10 AccountTypes
+     * const accountTypes = await prisma.accountType.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const accountTypeWithIdOnly = await prisma.accountType.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends AccountTypeFindManyArgs>(args?: SelectSubset<T, AccountTypeFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AccountTypePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a AccountType.
+     * @param {AccountTypeCreateArgs} args - Arguments to create a AccountType.
+     * @example
+     * // Create one AccountType
+     * const AccountType = await prisma.accountType.create({
+     *   data: {
+     *     // ... data to create a AccountType
+     *   }
+     * })
+     * 
+     */
+    create<T extends AccountTypeCreateArgs>(args: SelectSubset<T, AccountTypeCreateArgs<ExtArgs>>): Prisma__AccountTypeClient<$Result.GetResult<Prisma.$AccountTypePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many AccountTypes.
+     * @param {AccountTypeCreateManyArgs} args - Arguments to create many AccountTypes.
+     * @example
+     * // Create many AccountTypes
+     * const accountType = await prisma.accountType.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends AccountTypeCreateManyArgs>(args?: SelectSubset<T, AccountTypeCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a AccountType.
+     * @param {AccountTypeDeleteArgs} args - Arguments to delete one AccountType.
+     * @example
+     * // Delete one AccountType
+     * const AccountType = await prisma.accountType.delete({
+     *   where: {
+     *     // ... filter to delete one AccountType
+     *   }
+     * })
+     * 
+     */
+    delete<T extends AccountTypeDeleteArgs>(args: SelectSubset<T, AccountTypeDeleteArgs<ExtArgs>>): Prisma__AccountTypeClient<$Result.GetResult<Prisma.$AccountTypePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one AccountType.
+     * @param {AccountTypeUpdateArgs} args - Arguments to update one AccountType.
+     * @example
+     * // Update one AccountType
+     * const accountType = await prisma.accountType.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends AccountTypeUpdateArgs>(args: SelectSubset<T, AccountTypeUpdateArgs<ExtArgs>>): Prisma__AccountTypeClient<$Result.GetResult<Prisma.$AccountTypePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more AccountTypes.
+     * @param {AccountTypeDeleteManyArgs} args - Arguments to filter AccountTypes to delete.
+     * @example
+     * // Delete a few AccountTypes
+     * const { count } = await prisma.accountType.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends AccountTypeDeleteManyArgs>(args?: SelectSubset<T, AccountTypeDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more AccountTypes.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AccountTypeUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many AccountTypes
+     * const accountType = await prisma.accountType.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends AccountTypeUpdateManyArgs>(args: SelectSubset<T, AccountTypeUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one AccountType.
+     * @param {AccountTypeUpsertArgs} args - Arguments to update or create a AccountType.
+     * @example
+     * // Update or create a AccountType
+     * const accountType = await prisma.accountType.upsert({
+     *   create: {
+     *     // ... data to create a AccountType
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the AccountType we want to update
+     *   }
+     * })
+     */
+    upsert<T extends AccountTypeUpsertArgs>(args: SelectSubset<T, AccountTypeUpsertArgs<ExtArgs>>): Prisma__AccountTypeClient<$Result.GetResult<Prisma.$AccountTypePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of AccountTypes.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AccountTypeCountArgs} args - Arguments to filter AccountTypes to count.
+     * @example
+     * // Count the number of AccountTypes
+     * const count = await prisma.accountType.count({
+     *   where: {
+     *     // ... the filter for the AccountTypes we want to count
+     *   }
+     * })
+    **/
+    count<T extends AccountTypeCountArgs>(
+      args?: Subset<T, AccountTypeCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], AccountTypeCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a AccountType.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AccountTypeAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends AccountTypeAggregateArgs>(args: Subset<T, AccountTypeAggregateArgs>): Prisma.PrismaPromise<GetAccountTypeAggregateType<T>>
+
+    /**
+     * Group by AccountType.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AccountTypeGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends AccountTypeGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: AccountTypeGroupByArgs['orderBy'] }
+        : { orderBy?: AccountTypeGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, AccountTypeGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetAccountTypeGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the AccountType model
+   */
+  readonly fields: AccountTypeFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for AccountType.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__AccountTypeClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    user<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    accounts<T extends AccountType$accountsArgs<ExtArgs> = {}>(args?: Subset<T, AccountType$accountsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TradingAccountPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the AccountType model
+   */
+  interface AccountTypeFieldRefs {
+    readonly id: FieldRef<"AccountType", 'String'>
+    readonly userId: FieldRef<"AccountType", 'String'>
+    readonly name: FieldRef<"AccountType", 'String'>
+    readonly color: FieldRef<"AccountType", 'String'>
+    readonly createdAt: FieldRef<"AccountType", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * AccountType findUnique
+   */
+  export type AccountTypeFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AccountType
+     */
+    select?: AccountTypeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AccountType
+     */
+    omit?: AccountTypeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AccountTypeInclude<ExtArgs> | null
+    /**
+     * Filter, which AccountType to fetch.
+     */
+    where: AccountTypeWhereUniqueInput
+  }
+
+  /**
+   * AccountType findUniqueOrThrow
+   */
+  export type AccountTypeFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AccountType
+     */
+    select?: AccountTypeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AccountType
+     */
+    omit?: AccountTypeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AccountTypeInclude<ExtArgs> | null
+    /**
+     * Filter, which AccountType to fetch.
+     */
+    where: AccountTypeWhereUniqueInput
+  }
+
+  /**
+   * AccountType findFirst
+   */
+  export type AccountTypeFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AccountType
+     */
+    select?: AccountTypeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AccountType
+     */
+    omit?: AccountTypeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AccountTypeInclude<ExtArgs> | null
+    /**
+     * Filter, which AccountType to fetch.
+     */
+    where?: AccountTypeWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of AccountTypes to fetch.
+     */
+    orderBy?: AccountTypeOrderByWithRelationInput | AccountTypeOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for AccountTypes.
+     */
+    cursor?: AccountTypeWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` AccountTypes from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` AccountTypes.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of AccountTypes.
+     */
+    distinct?: AccountTypeScalarFieldEnum | AccountTypeScalarFieldEnum[]
+  }
+
+  /**
+   * AccountType findFirstOrThrow
+   */
+  export type AccountTypeFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AccountType
+     */
+    select?: AccountTypeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AccountType
+     */
+    omit?: AccountTypeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AccountTypeInclude<ExtArgs> | null
+    /**
+     * Filter, which AccountType to fetch.
+     */
+    where?: AccountTypeWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of AccountTypes to fetch.
+     */
+    orderBy?: AccountTypeOrderByWithRelationInput | AccountTypeOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for AccountTypes.
+     */
+    cursor?: AccountTypeWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` AccountTypes from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` AccountTypes.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of AccountTypes.
+     */
+    distinct?: AccountTypeScalarFieldEnum | AccountTypeScalarFieldEnum[]
+  }
+
+  /**
+   * AccountType findMany
+   */
+  export type AccountTypeFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AccountType
+     */
+    select?: AccountTypeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AccountType
+     */
+    omit?: AccountTypeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AccountTypeInclude<ExtArgs> | null
+    /**
+     * Filter, which AccountTypes to fetch.
+     */
+    where?: AccountTypeWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of AccountTypes to fetch.
+     */
+    orderBy?: AccountTypeOrderByWithRelationInput | AccountTypeOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing AccountTypes.
+     */
+    cursor?: AccountTypeWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` AccountTypes from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` AccountTypes.
+     */
+    skip?: number
+    distinct?: AccountTypeScalarFieldEnum | AccountTypeScalarFieldEnum[]
+  }
+
+  /**
+   * AccountType create
+   */
+  export type AccountTypeCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AccountType
+     */
+    select?: AccountTypeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AccountType
+     */
+    omit?: AccountTypeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AccountTypeInclude<ExtArgs> | null
+    /**
+     * The data needed to create a AccountType.
+     */
+    data: XOR<AccountTypeCreateInput, AccountTypeUncheckedCreateInput>
+  }
+
+  /**
+   * AccountType createMany
+   */
+  export type AccountTypeCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many AccountTypes.
+     */
+    data: AccountTypeCreateManyInput | AccountTypeCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * AccountType update
+   */
+  export type AccountTypeUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AccountType
+     */
+    select?: AccountTypeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AccountType
+     */
+    omit?: AccountTypeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AccountTypeInclude<ExtArgs> | null
+    /**
+     * The data needed to update a AccountType.
+     */
+    data: XOR<AccountTypeUpdateInput, AccountTypeUncheckedUpdateInput>
+    /**
+     * Choose, which AccountType to update.
+     */
+    where: AccountTypeWhereUniqueInput
+  }
+
+  /**
+   * AccountType updateMany
+   */
+  export type AccountTypeUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update AccountTypes.
+     */
+    data: XOR<AccountTypeUpdateManyMutationInput, AccountTypeUncheckedUpdateManyInput>
+    /**
+     * Filter which AccountTypes to update
+     */
+    where?: AccountTypeWhereInput
+    /**
+     * Limit how many AccountTypes to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * AccountType upsert
+   */
+  export type AccountTypeUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AccountType
+     */
+    select?: AccountTypeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AccountType
+     */
+    omit?: AccountTypeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AccountTypeInclude<ExtArgs> | null
+    /**
+     * The filter to search for the AccountType to update in case it exists.
+     */
+    where: AccountTypeWhereUniqueInput
+    /**
+     * In case the AccountType found by the `where` argument doesn't exist, create a new AccountType with this data.
+     */
+    create: XOR<AccountTypeCreateInput, AccountTypeUncheckedCreateInput>
+    /**
+     * In case the AccountType was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<AccountTypeUpdateInput, AccountTypeUncheckedUpdateInput>
+  }
+
+  /**
+   * AccountType delete
+   */
+  export type AccountTypeDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AccountType
+     */
+    select?: AccountTypeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AccountType
+     */
+    omit?: AccountTypeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AccountTypeInclude<ExtArgs> | null
+    /**
+     * Filter which AccountType to delete.
+     */
+    where: AccountTypeWhereUniqueInput
+  }
+
+  /**
+   * AccountType deleteMany
+   */
+  export type AccountTypeDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which AccountTypes to delete
+     */
+    where?: AccountTypeWhereInput
+    /**
+     * Limit how many AccountTypes to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * AccountType.accounts
+   */
+  export type AccountType$accountsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the TradingAccount
+     */
+    select?: TradingAccountSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the TradingAccount
+     */
+    omit?: TradingAccountOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: TradingAccountInclude<ExtArgs> | null
+    where?: TradingAccountWhereInput
+    orderBy?: TradingAccountOrderByWithRelationInput | TradingAccountOrderByWithRelationInput[]
+    cursor?: TradingAccountWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: TradingAccountScalarFieldEnum | TradingAccountScalarFieldEnum[]
+  }
+
+  /**
+   * AccountType without action
+   */
+  export type AccountTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AccountType
+     */
+    select?: AccountTypeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AccountType
+     */
+    omit?: AccountTypeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AccountTypeInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Model TradingAccount
    */
 
@@ -6490,6 +7600,7 @@ export namespace Prisma {
     id: string | null
     userId: string | null
     sectionId: string | null
+    accountTypeId: string | null
     connectionToken: string | null
     accountNumber: number | null
     broker: string | null
@@ -6508,6 +7619,7 @@ export namespace Prisma {
     id: string | null
     userId: string | null
     sectionId: string | null
+    accountTypeId: string | null
     connectionToken: string | null
     accountNumber: number | null
     broker: string | null
@@ -6526,6 +7638,7 @@ export namespace Prisma {
     id: number
     userId: number
     sectionId: number
+    accountTypeId: number
     connectionToken: number
     accountNumber: number
     broker: number
@@ -6558,6 +7671,7 @@ export namespace Prisma {
     id?: true
     userId?: true
     sectionId?: true
+    accountTypeId?: true
     connectionToken?: true
     accountNumber?: true
     broker?: true
@@ -6576,6 +7690,7 @@ export namespace Prisma {
     id?: true
     userId?: true
     sectionId?: true
+    accountTypeId?: true
     connectionToken?: true
     accountNumber?: true
     broker?: true
@@ -6594,6 +7709,7 @@ export namespace Prisma {
     id?: true
     userId?: true
     sectionId?: true
+    accountTypeId?: true
     connectionToken?: true
     accountNumber?: true
     broker?: true
@@ -6699,6 +7815,7 @@ export namespace Prisma {
     id: string
     userId: string
     sectionId: string | null
+    accountTypeId: string | null
     connectionToken: string
     accountNumber: number
     broker: string
@@ -6736,6 +7853,7 @@ export namespace Prisma {
     id?: boolean
     userId?: boolean
     sectionId?: boolean
+    accountTypeId?: boolean
     connectionToken?: boolean
     accountNumber?: boolean
     broker?: boolean
@@ -6750,6 +7868,7 @@ export namespace Prisma {
     updatedAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
     section?: boolean | TradingAccount$sectionArgs<ExtArgs>
+    accountType?: boolean | TradingAccount$accountTypeArgs<ExtArgs>
     trades?: boolean | TradingAccount$tradesArgs<ExtArgs>
     snapshots?: boolean | TradingAccount$snapshotsArgs<ExtArgs>
     _count?: boolean | TradingAccountCountOutputTypeDefaultArgs<ExtArgs>
@@ -6761,6 +7880,7 @@ export namespace Prisma {
     id?: boolean
     userId?: boolean
     sectionId?: boolean
+    accountTypeId?: boolean
     connectionToken?: boolean
     accountNumber?: boolean
     broker?: boolean
@@ -6775,10 +7895,11 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type TradingAccountOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "sectionId" | "connectionToken" | "accountNumber" | "broker" | "server" | "platform" | "nickname" | "isConnected" | "lastSeen" | "balance" | "equity" | "createdAt" | "updatedAt", ExtArgs["result"]["tradingAccount"]>
+  export type TradingAccountOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "sectionId" | "accountTypeId" | "connectionToken" | "accountNumber" | "broker" | "server" | "platform" | "nickname" | "isConnected" | "lastSeen" | "balance" | "equity" | "createdAt" | "updatedAt", ExtArgs["result"]["tradingAccount"]>
   export type TradingAccountInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
     section?: boolean | TradingAccount$sectionArgs<ExtArgs>
+    accountType?: boolean | TradingAccount$accountTypeArgs<ExtArgs>
     trades?: boolean | TradingAccount$tradesArgs<ExtArgs>
     snapshots?: boolean | TradingAccount$snapshotsArgs<ExtArgs>
     _count?: boolean | TradingAccountCountOutputTypeDefaultArgs<ExtArgs>
@@ -6789,6 +7910,7 @@ export namespace Prisma {
     objects: {
       user: Prisma.$UserPayload<ExtArgs>
       section: Prisma.$SectionPayload<ExtArgs> | null
+      accountType: Prisma.$AccountTypePayload<ExtArgs> | null
       trades: Prisma.$TradeHistoryPayload<ExtArgs>[]
       snapshots: Prisma.$EquitySnapshotPayload<ExtArgs>[]
     }
@@ -6796,6 +7918,7 @@ export namespace Prisma {
       id: string
       userId: string
       sectionId: string | null
+      accountTypeId: string | null
       connectionToken: string
       accountNumber: number
       broker: string
@@ -7150,6 +8273,7 @@ export namespace Prisma {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     user<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     section<T extends TradingAccount$sectionArgs<ExtArgs> = {}>(args?: Subset<T, TradingAccount$sectionArgs<ExtArgs>>): Prisma__SectionClient<$Result.GetResult<Prisma.$SectionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    accountType<T extends TradingAccount$accountTypeArgs<ExtArgs> = {}>(args?: Subset<T, TradingAccount$accountTypeArgs<ExtArgs>>): Prisma__AccountTypeClient<$Result.GetResult<Prisma.$AccountTypePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     trades<T extends TradingAccount$tradesArgs<ExtArgs> = {}>(args?: Subset<T, TradingAccount$tradesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TradeHistoryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     snapshots<T extends TradingAccount$snapshotsArgs<ExtArgs> = {}>(args?: Subset<T, TradingAccount$snapshotsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$EquitySnapshotPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
@@ -7184,6 +8308,7 @@ export namespace Prisma {
     readonly id: FieldRef<"TradingAccount", 'String'>
     readonly userId: FieldRef<"TradingAccount", 'String'>
     readonly sectionId: FieldRef<"TradingAccount", 'String'>
+    readonly accountTypeId: FieldRef<"TradingAccount", 'String'>
     readonly connectionToken: FieldRef<"TradingAccount", 'String'>
     readonly accountNumber: FieldRef<"TradingAccount", 'Int'>
     readonly broker: FieldRef<"TradingAccount", 'String'>
@@ -7555,6 +8680,25 @@ export namespace Prisma {
      */
     include?: SectionInclude<ExtArgs> | null
     where?: SectionWhereInput
+  }
+
+  /**
+   * TradingAccount.accountType
+   */
+  export type TradingAccount$accountTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AccountType
+     */
+    select?: AccountTypeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AccountType
+     */
+    omit?: AccountTypeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AccountTypeInclude<ExtArgs> | null
+    where?: AccountTypeWhereInput
   }
 
   /**
@@ -9876,10 +11020,22 @@ export namespace Prisma {
   export type SectionScalarFieldEnum = (typeof SectionScalarFieldEnum)[keyof typeof SectionScalarFieldEnum]
 
 
+  export const AccountTypeScalarFieldEnum: {
+    id: 'id',
+    userId: 'userId',
+    name: 'name',
+    color: 'color',
+    createdAt: 'createdAt'
+  };
+
+  export type AccountTypeScalarFieldEnum = (typeof AccountTypeScalarFieldEnum)[keyof typeof AccountTypeScalarFieldEnum]
+
+
   export const TradingAccountScalarFieldEnum: {
     id: 'id',
     userId: 'userId',
     sectionId: 'sectionId',
+    accountTypeId: 'accountTypeId',
     connectionToken: 'connectionToken',
     accountNumber: 'accountNumber',
     broker: 'broker',
@@ -10006,10 +11162,21 @@ export namespace Prisma {
   export type SectionOrderByRelevanceFieldEnum = (typeof SectionOrderByRelevanceFieldEnum)[keyof typeof SectionOrderByRelevanceFieldEnum]
 
 
+  export const AccountTypeOrderByRelevanceFieldEnum: {
+    id: 'id',
+    userId: 'userId',
+    name: 'name',
+    color: 'color'
+  };
+
+  export type AccountTypeOrderByRelevanceFieldEnum = (typeof AccountTypeOrderByRelevanceFieldEnum)[keyof typeof AccountTypeOrderByRelevanceFieldEnum]
+
+
   export const TradingAccountOrderByRelevanceFieldEnum: {
     id: 'id',
     userId: 'userId',
     sectionId: 'sectionId',
+    accountTypeId: 'accountTypeId',
     connectionToken: 'connectionToken',
     broker: 'broker',
     server: 'server',
@@ -10104,6 +11271,7 @@ export namespace Prisma {
     accounts?: AccountListRelationFilter
     tradingAccounts?: TradingAccountListRelationFilter
     sections?: SectionListRelationFilter
+    accountTypes?: AccountTypeListRelationFilter
   }
 
   export type UserOrderByWithRelationInput = {
@@ -10118,6 +11286,7 @@ export namespace Prisma {
     accounts?: AccountOrderByRelationAggregateInput
     tradingAccounts?: TradingAccountOrderByRelationAggregateInput
     sections?: SectionOrderByRelationAggregateInput
+    accountTypes?: AccountTypeOrderByRelationAggregateInput
     _relevance?: UserOrderByRelevanceInput
   }
 
@@ -10136,6 +11305,7 @@ export namespace Prisma {
     accounts?: AccountListRelationFilter
     tradingAccounts?: TradingAccountListRelationFilter
     sections?: SectionListRelationFilter
+    accountTypes?: AccountTypeListRelationFilter
   }, "id" | "email">
 
   export type UserOrderByWithAggregationInput = {
@@ -10448,6 +11618,66 @@ export namespace Prisma {
     updatedAt?: DateTimeWithAggregatesFilter<"Section"> | Date | string
   }
 
+  export type AccountTypeWhereInput = {
+    AND?: AccountTypeWhereInput | AccountTypeWhereInput[]
+    OR?: AccountTypeWhereInput[]
+    NOT?: AccountTypeWhereInput | AccountTypeWhereInput[]
+    id?: StringFilter<"AccountType"> | string
+    userId?: StringFilter<"AccountType"> | string
+    name?: StringFilter<"AccountType"> | string
+    color?: StringFilter<"AccountType"> | string
+    createdAt?: DateTimeFilter<"AccountType"> | Date | string
+    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+    accounts?: TradingAccountListRelationFilter
+  }
+
+  export type AccountTypeOrderByWithRelationInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    name?: SortOrder
+    color?: SortOrder
+    createdAt?: SortOrder
+    user?: UserOrderByWithRelationInput
+    accounts?: TradingAccountOrderByRelationAggregateInput
+    _relevance?: AccountTypeOrderByRelevanceInput
+  }
+
+  export type AccountTypeWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    userId_name?: AccountTypeUserIdNameCompoundUniqueInput
+    AND?: AccountTypeWhereInput | AccountTypeWhereInput[]
+    OR?: AccountTypeWhereInput[]
+    NOT?: AccountTypeWhereInput | AccountTypeWhereInput[]
+    userId?: StringFilter<"AccountType"> | string
+    name?: StringFilter<"AccountType"> | string
+    color?: StringFilter<"AccountType"> | string
+    createdAt?: DateTimeFilter<"AccountType"> | Date | string
+    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+    accounts?: TradingAccountListRelationFilter
+  }, "id" | "userId_name">
+
+  export type AccountTypeOrderByWithAggregationInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    name?: SortOrder
+    color?: SortOrder
+    createdAt?: SortOrder
+    _count?: AccountTypeCountOrderByAggregateInput
+    _max?: AccountTypeMaxOrderByAggregateInput
+    _min?: AccountTypeMinOrderByAggregateInput
+  }
+
+  export type AccountTypeScalarWhereWithAggregatesInput = {
+    AND?: AccountTypeScalarWhereWithAggregatesInput | AccountTypeScalarWhereWithAggregatesInput[]
+    OR?: AccountTypeScalarWhereWithAggregatesInput[]
+    NOT?: AccountTypeScalarWhereWithAggregatesInput | AccountTypeScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"AccountType"> | string
+    userId?: StringWithAggregatesFilter<"AccountType"> | string
+    name?: StringWithAggregatesFilter<"AccountType"> | string
+    color?: StringWithAggregatesFilter<"AccountType"> | string
+    createdAt?: DateTimeWithAggregatesFilter<"AccountType"> | Date | string
+  }
+
   export type TradingAccountWhereInput = {
     AND?: TradingAccountWhereInput | TradingAccountWhereInput[]
     OR?: TradingAccountWhereInput[]
@@ -10455,6 +11685,7 @@ export namespace Prisma {
     id?: StringFilter<"TradingAccount"> | string
     userId?: StringFilter<"TradingAccount"> | string
     sectionId?: StringNullableFilter<"TradingAccount"> | string | null
+    accountTypeId?: StringNullableFilter<"TradingAccount"> | string | null
     connectionToken?: StringFilter<"TradingAccount"> | string
     accountNumber?: IntFilter<"TradingAccount"> | number
     broker?: StringFilter<"TradingAccount"> | string
@@ -10469,6 +11700,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"TradingAccount"> | Date | string
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
     section?: XOR<SectionNullableScalarRelationFilter, SectionWhereInput> | null
+    accountType?: XOR<AccountTypeNullableScalarRelationFilter, AccountTypeWhereInput> | null
     trades?: TradeHistoryListRelationFilter
     snapshots?: EquitySnapshotListRelationFilter
   }
@@ -10477,6 +11709,7 @@ export namespace Prisma {
     id?: SortOrder
     userId?: SortOrder
     sectionId?: SortOrderInput | SortOrder
+    accountTypeId?: SortOrderInput | SortOrder
     connectionToken?: SortOrder
     accountNumber?: SortOrder
     broker?: SortOrder
@@ -10491,6 +11724,7 @@ export namespace Prisma {
     updatedAt?: SortOrder
     user?: UserOrderByWithRelationInput
     section?: SectionOrderByWithRelationInput
+    accountType?: AccountTypeOrderByWithRelationInput
     trades?: TradeHistoryOrderByRelationAggregateInput
     snapshots?: EquitySnapshotOrderByRelationAggregateInput
     _relevance?: TradingAccountOrderByRelevanceInput
@@ -10504,6 +11738,7 @@ export namespace Prisma {
     NOT?: TradingAccountWhereInput | TradingAccountWhereInput[]
     userId?: StringFilter<"TradingAccount"> | string
     sectionId?: StringNullableFilter<"TradingAccount"> | string | null
+    accountTypeId?: StringNullableFilter<"TradingAccount"> | string | null
     accountNumber?: IntFilter<"TradingAccount"> | number
     broker?: StringFilter<"TradingAccount"> | string
     server?: StringFilter<"TradingAccount"> | string
@@ -10517,6 +11752,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"TradingAccount"> | Date | string
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
     section?: XOR<SectionNullableScalarRelationFilter, SectionWhereInput> | null
+    accountType?: XOR<AccountTypeNullableScalarRelationFilter, AccountTypeWhereInput> | null
     trades?: TradeHistoryListRelationFilter
     snapshots?: EquitySnapshotListRelationFilter
   }, "id" | "connectionToken">
@@ -10525,6 +11761,7 @@ export namespace Prisma {
     id?: SortOrder
     userId?: SortOrder
     sectionId?: SortOrderInput | SortOrder
+    accountTypeId?: SortOrderInput | SortOrder
     connectionToken?: SortOrder
     accountNumber?: SortOrder
     broker?: SortOrder
@@ -10551,6 +11788,7 @@ export namespace Prisma {
     id?: StringWithAggregatesFilter<"TradingAccount"> | string
     userId?: StringWithAggregatesFilter<"TradingAccount"> | string
     sectionId?: StringNullableWithAggregatesFilter<"TradingAccount"> | string | null
+    accountTypeId?: StringNullableWithAggregatesFilter<"TradingAccount"> | string | null
     connectionToken?: StringWithAggregatesFilter<"TradingAccount"> | string
     accountNumber?: IntWithAggregatesFilter<"TradingAccount"> | number
     broker?: StringWithAggregatesFilter<"TradingAccount"> | string
@@ -10615,11 +11853,12 @@ export namespace Prisma {
 
   export type TradeHistoryWhereUniqueInput = Prisma.AtLeast<{
     id?: string
-    ticket?: bigint | number
+    accountId_ticket?: TradeHistoryAccountIdTicketCompoundUniqueInput
     AND?: TradeHistoryWhereInput | TradeHistoryWhereInput[]
     OR?: TradeHistoryWhereInput[]
     NOT?: TradeHistoryWhereInput | TradeHistoryWhereInput[]
     accountId?: StringFilter<"TradeHistory"> | string
+    ticket?: BigIntFilter<"TradeHistory"> | bigint | number
     symbol?: StringFilter<"TradeHistory"> | string
     type?: StringFilter<"TradeHistory"> | string
     volume?: FloatFilter<"TradeHistory"> | number
@@ -10636,7 +11875,7 @@ export namespace Prisma {
     magicNumber?: IntNullableFilter<"TradeHistory"> | number | null
     createdAt?: DateTimeFilter<"TradeHistory"> | Date | string
     account?: XOR<TradingAccountScalarRelationFilter, TradingAccountWhereInput>
-  }, "id" | "ticket">
+  }, "id" | "accountId_ticket">
 
   export type TradeHistoryOrderByWithAggregationInput = {
     id?: SortOrder
@@ -10778,6 +12017,7 @@ export namespace Prisma {
     accounts?: AccountCreateNestedManyWithoutUserInput
     tradingAccounts?: TradingAccountCreateNestedManyWithoutUserInput
     sections?: SectionCreateNestedManyWithoutUserInput
+    accountTypes?: AccountTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateInput = {
@@ -10792,6 +12032,7 @@ export namespace Prisma {
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
     tradingAccounts?: TradingAccountUncheckedCreateNestedManyWithoutUserInput
     sections?: SectionUncheckedCreateNestedManyWithoutUserInput
+    accountTypes?: AccountTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserUpdateInput = {
@@ -10806,6 +12047,7 @@ export namespace Prisma {
     accounts?: AccountUpdateManyWithoutUserNestedInput
     tradingAccounts?: TradingAccountUpdateManyWithoutUserNestedInput
     sections?: SectionUpdateManyWithoutUserNestedInput
+    accountTypes?: AccountTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateInput = {
@@ -10820,6 +12062,7 @@ export namespace Prisma {
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
     tradingAccounts?: TradingAccountUncheckedUpdateManyWithoutUserNestedInput
     sections?: SectionUncheckedUpdateManyWithoutUserNestedInput
+    accountTypes?: AccountTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateManyInput = {
@@ -11161,6 +12404,65 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type AccountTypeCreateInput = {
+    id?: string
+    name: string
+    color?: string
+    createdAt?: Date | string
+    user: UserCreateNestedOneWithoutAccountTypesInput
+    accounts?: TradingAccountCreateNestedManyWithoutAccountTypeInput
+  }
+
+  export type AccountTypeUncheckedCreateInput = {
+    id?: string
+    userId: string
+    name: string
+    color?: string
+    createdAt?: Date | string
+    accounts?: TradingAccountUncheckedCreateNestedManyWithoutAccountTypeInput
+  }
+
+  export type AccountTypeUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    color?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutAccountTypesNestedInput
+    accounts?: TradingAccountUpdateManyWithoutAccountTypeNestedInput
+  }
+
+  export type AccountTypeUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    color?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    accounts?: TradingAccountUncheckedUpdateManyWithoutAccountTypeNestedInput
+  }
+
+  export type AccountTypeCreateManyInput = {
+    id?: string
+    userId: string
+    name: string
+    color?: string
+    createdAt?: Date | string
+  }
+
+  export type AccountTypeUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    color?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type AccountTypeUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    color?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type TradingAccountCreateInput = {
     id?: string
     connectionToken?: string
@@ -11177,6 +12479,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     user: UserCreateNestedOneWithoutTradingAccountsInput
     section?: SectionCreateNestedOneWithoutAccountsInput
+    accountType?: AccountTypeCreateNestedOneWithoutAccountsInput
     trades?: TradeHistoryCreateNestedManyWithoutAccountInput
     snapshots?: EquitySnapshotCreateNestedManyWithoutAccountInput
   }
@@ -11185,6 +12488,7 @@ export namespace Prisma {
     id?: string
     userId: string
     sectionId?: string | null
+    accountTypeId?: string | null
     connectionToken?: string
     accountNumber: number
     broker: string
@@ -11217,6 +12521,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutTradingAccountsNestedInput
     section?: SectionUpdateOneWithoutAccountsNestedInput
+    accountType?: AccountTypeUpdateOneWithoutAccountsNestedInput
     trades?: TradeHistoryUpdateManyWithoutAccountNestedInput
     snapshots?: EquitySnapshotUpdateManyWithoutAccountNestedInput
   }
@@ -11225,6 +12530,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     userId?: StringFieldUpdateOperationsInput | string
     sectionId?: NullableStringFieldUpdateOperationsInput | string | null
+    accountTypeId?: NullableStringFieldUpdateOperationsInput | string | null
     connectionToken?: StringFieldUpdateOperationsInput | string
     accountNumber?: IntFieldUpdateOperationsInput | number
     broker?: StringFieldUpdateOperationsInput | string
@@ -11245,6 +12551,7 @@ export namespace Prisma {
     id?: string
     userId: string
     sectionId?: string | null
+    accountTypeId?: string | null
     connectionToken?: string
     accountNumber: number
     broker: string
@@ -11279,6 +12586,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     userId?: StringFieldUpdateOperationsInput | string
     sectionId?: NullableStringFieldUpdateOperationsInput | string | null
+    accountTypeId?: NullableStringFieldUpdateOperationsInput | string | null
     connectionToken?: StringFieldUpdateOperationsInput | string
     accountNumber?: IntFieldUpdateOperationsInput | number
     broker?: StringFieldUpdateOperationsInput | string
@@ -11592,6 +12900,12 @@ export namespace Prisma {
     none?: SectionWhereInput
   }
 
+  export type AccountTypeListRelationFilter = {
+    every?: AccountTypeWhereInput
+    some?: AccountTypeWhereInput
+    none?: AccountTypeWhereInput
+  }
+
   export type SortOrderInput = {
     sort: SortOrder
     nulls?: NullsOrder
@@ -11610,6 +12924,10 @@ export namespace Prisma {
   }
 
   export type SectionOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type AccountTypeOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -11893,6 +13211,41 @@ export namespace Prisma {
     updatedAt?: SortOrder
   }
 
+  export type AccountTypeOrderByRelevanceInput = {
+    fields: AccountTypeOrderByRelevanceFieldEnum | AccountTypeOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type AccountTypeUserIdNameCompoundUniqueInput = {
+    userId: string
+    name: string
+  }
+
+  export type AccountTypeCountOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    name?: SortOrder
+    color?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type AccountTypeMaxOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    name?: SortOrder
+    color?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type AccountTypeMinOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    name?: SortOrder
+    color?: SortOrder
+    createdAt?: SortOrder
+  }
+
   export type IntFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>
     in?: number[]
@@ -11918,6 +13271,11 @@ export namespace Prisma {
   export type SectionNullableScalarRelationFilter = {
     is?: SectionWhereInput | null
     isNot?: SectionWhereInput | null
+  }
+
+  export type AccountTypeNullableScalarRelationFilter = {
+    is?: AccountTypeWhereInput | null
+    isNot?: AccountTypeWhereInput | null
   }
 
   export type TradeHistoryListRelationFilter = {
@@ -11950,6 +13308,7 @@ export namespace Prisma {
     id?: SortOrder
     userId?: SortOrder
     sectionId?: SortOrder
+    accountTypeId?: SortOrder
     connectionToken?: SortOrder
     accountNumber?: SortOrder
     broker?: SortOrder
@@ -11974,6 +13333,7 @@ export namespace Prisma {
     id?: SortOrder
     userId?: SortOrder
     sectionId?: SortOrder
+    accountTypeId?: SortOrder
     connectionToken?: SortOrder
     accountNumber?: SortOrder
     broker?: SortOrder
@@ -11992,6 +13352,7 @@ export namespace Prisma {
     id?: SortOrder
     userId?: SortOrder
     sectionId?: SortOrder
+    accountTypeId?: SortOrder
     connectionToken?: SortOrder
     accountNumber?: SortOrder
     broker?: SortOrder
@@ -12086,6 +13447,11 @@ export namespace Prisma {
     fields: TradeHistoryOrderByRelevanceFieldEnum | TradeHistoryOrderByRelevanceFieldEnum[]
     sort: SortOrder
     search: string
+  }
+
+  export type TradeHistoryAccountIdTicketCompoundUniqueInput = {
+    accountId: string
+    ticket: bigint | number
   }
 
   export type TradeHistoryCountOrderByAggregateInput = {
@@ -12313,6 +13679,13 @@ export namespace Prisma {
     connect?: SectionWhereUniqueInput | SectionWhereUniqueInput[]
   }
 
+  export type AccountTypeCreateNestedManyWithoutUserInput = {
+    create?: XOR<AccountTypeCreateWithoutUserInput, AccountTypeUncheckedCreateWithoutUserInput> | AccountTypeCreateWithoutUserInput[] | AccountTypeUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: AccountTypeCreateOrConnectWithoutUserInput | AccountTypeCreateOrConnectWithoutUserInput[]
+    createMany?: AccountTypeCreateManyUserInputEnvelope
+    connect?: AccountTypeWhereUniqueInput | AccountTypeWhereUniqueInput[]
+  }
+
   export type SessionUncheckedCreateNestedManyWithoutUserInput = {
     create?: XOR<SessionCreateWithoutUserInput, SessionUncheckedCreateWithoutUserInput> | SessionCreateWithoutUserInput[] | SessionUncheckedCreateWithoutUserInput[]
     connectOrCreate?: SessionCreateOrConnectWithoutUserInput | SessionCreateOrConnectWithoutUserInput[]
@@ -12339,6 +13712,13 @@ export namespace Prisma {
     connectOrCreate?: SectionCreateOrConnectWithoutUserInput | SectionCreateOrConnectWithoutUserInput[]
     createMany?: SectionCreateManyUserInputEnvelope
     connect?: SectionWhereUniqueInput | SectionWhereUniqueInput[]
+  }
+
+  export type AccountTypeUncheckedCreateNestedManyWithoutUserInput = {
+    create?: XOR<AccountTypeCreateWithoutUserInput, AccountTypeUncheckedCreateWithoutUserInput> | AccountTypeCreateWithoutUserInput[] | AccountTypeUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: AccountTypeCreateOrConnectWithoutUserInput | AccountTypeCreateOrConnectWithoutUserInput[]
+    createMany?: AccountTypeCreateManyUserInputEnvelope
+    connect?: AccountTypeWhereUniqueInput | AccountTypeWhereUniqueInput[]
   }
 
   export type StringFieldUpdateOperationsInput = {
@@ -12413,6 +13793,20 @@ export namespace Prisma {
     deleteMany?: SectionScalarWhereInput | SectionScalarWhereInput[]
   }
 
+  export type AccountTypeUpdateManyWithoutUserNestedInput = {
+    create?: XOR<AccountTypeCreateWithoutUserInput, AccountTypeUncheckedCreateWithoutUserInput> | AccountTypeCreateWithoutUserInput[] | AccountTypeUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: AccountTypeCreateOrConnectWithoutUserInput | AccountTypeCreateOrConnectWithoutUserInput[]
+    upsert?: AccountTypeUpsertWithWhereUniqueWithoutUserInput | AccountTypeUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: AccountTypeCreateManyUserInputEnvelope
+    set?: AccountTypeWhereUniqueInput | AccountTypeWhereUniqueInput[]
+    disconnect?: AccountTypeWhereUniqueInput | AccountTypeWhereUniqueInput[]
+    delete?: AccountTypeWhereUniqueInput | AccountTypeWhereUniqueInput[]
+    connect?: AccountTypeWhereUniqueInput | AccountTypeWhereUniqueInput[]
+    update?: AccountTypeUpdateWithWhereUniqueWithoutUserInput | AccountTypeUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: AccountTypeUpdateManyWithWhereWithoutUserInput | AccountTypeUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: AccountTypeScalarWhereInput | AccountTypeScalarWhereInput[]
+  }
+
   export type SessionUncheckedUpdateManyWithoutUserNestedInput = {
     create?: XOR<SessionCreateWithoutUserInput, SessionUncheckedCreateWithoutUserInput> | SessionCreateWithoutUserInput[] | SessionUncheckedCreateWithoutUserInput[]
     connectOrCreate?: SessionCreateOrConnectWithoutUserInput | SessionCreateOrConnectWithoutUserInput[]
@@ -12467,6 +13861,20 @@ export namespace Prisma {
     update?: SectionUpdateWithWhereUniqueWithoutUserInput | SectionUpdateWithWhereUniqueWithoutUserInput[]
     updateMany?: SectionUpdateManyWithWhereWithoutUserInput | SectionUpdateManyWithWhereWithoutUserInput[]
     deleteMany?: SectionScalarWhereInput | SectionScalarWhereInput[]
+  }
+
+  export type AccountTypeUncheckedUpdateManyWithoutUserNestedInput = {
+    create?: XOR<AccountTypeCreateWithoutUserInput, AccountTypeUncheckedCreateWithoutUserInput> | AccountTypeCreateWithoutUserInput[] | AccountTypeUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: AccountTypeCreateOrConnectWithoutUserInput | AccountTypeCreateOrConnectWithoutUserInput[]
+    upsert?: AccountTypeUpsertWithWhereUniqueWithoutUserInput | AccountTypeUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: AccountTypeCreateManyUserInputEnvelope
+    set?: AccountTypeWhereUniqueInput | AccountTypeWhereUniqueInput[]
+    disconnect?: AccountTypeWhereUniqueInput | AccountTypeWhereUniqueInput[]
+    delete?: AccountTypeWhereUniqueInput | AccountTypeWhereUniqueInput[]
+    connect?: AccountTypeWhereUniqueInput | AccountTypeWhereUniqueInput[]
+    update?: AccountTypeUpdateWithWhereUniqueWithoutUserInput | AccountTypeUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: AccountTypeUpdateManyWithWhereWithoutUserInput | AccountTypeUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: AccountTypeScalarWhereInput | AccountTypeScalarWhereInput[]
   }
 
   export type UserCreateNestedOneWithoutSessionsInput = {
@@ -12557,6 +13965,62 @@ export namespace Prisma {
     deleteMany?: TradingAccountScalarWhereInput | TradingAccountScalarWhereInput[]
   }
 
+  export type UserCreateNestedOneWithoutAccountTypesInput = {
+    create?: XOR<UserCreateWithoutAccountTypesInput, UserUncheckedCreateWithoutAccountTypesInput>
+    connectOrCreate?: UserCreateOrConnectWithoutAccountTypesInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type TradingAccountCreateNestedManyWithoutAccountTypeInput = {
+    create?: XOR<TradingAccountCreateWithoutAccountTypeInput, TradingAccountUncheckedCreateWithoutAccountTypeInput> | TradingAccountCreateWithoutAccountTypeInput[] | TradingAccountUncheckedCreateWithoutAccountTypeInput[]
+    connectOrCreate?: TradingAccountCreateOrConnectWithoutAccountTypeInput | TradingAccountCreateOrConnectWithoutAccountTypeInput[]
+    createMany?: TradingAccountCreateManyAccountTypeInputEnvelope
+    connect?: TradingAccountWhereUniqueInput | TradingAccountWhereUniqueInput[]
+  }
+
+  export type TradingAccountUncheckedCreateNestedManyWithoutAccountTypeInput = {
+    create?: XOR<TradingAccountCreateWithoutAccountTypeInput, TradingAccountUncheckedCreateWithoutAccountTypeInput> | TradingAccountCreateWithoutAccountTypeInput[] | TradingAccountUncheckedCreateWithoutAccountTypeInput[]
+    connectOrCreate?: TradingAccountCreateOrConnectWithoutAccountTypeInput | TradingAccountCreateOrConnectWithoutAccountTypeInput[]
+    createMany?: TradingAccountCreateManyAccountTypeInputEnvelope
+    connect?: TradingAccountWhereUniqueInput | TradingAccountWhereUniqueInput[]
+  }
+
+  export type UserUpdateOneRequiredWithoutAccountTypesNestedInput = {
+    create?: XOR<UserCreateWithoutAccountTypesInput, UserUncheckedCreateWithoutAccountTypesInput>
+    connectOrCreate?: UserCreateOrConnectWithoutAccountTypesInput
+    upsert?: UserUpsertWithoutAccountTypesInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutAccountTypesInput, UserUpdateWithoutAccountTypesInput>, UserUncheckedUpdateWithoutAccountTypesInput>
+  }
+
+  export type TradingAccountUpdateManyWithoutAccountTypeNestedInput = {
+    create?: XOR<TradingAccountCreateWithoutAccountTypeInput, TradingAccountUncheckedCreateWithoutAccountTypeInput> | TradingAccountCreateWithoutAccountTypeInput[] | TradingAccountUncheckedCreateWithoutAccountTypeInput[]
+    connectOrCreate?: TradingAccountCreateOrConnectWithoutAccountTypeInput | TradingAccountCreateOrConnectWithoutAccountTypeInput[]
+    upsert?: TradingAccountUpsertWithWhereUniqueWithoutAccountTypeInput | TradingAccountUpsertWithWhereUniqueWithoutAccountTypeInput[]
+    createMany?: TradingAccountCreateManyAccountTypeInputEnvelope
+    set?: TradingAccountWhereUniqueInput | TradingAccountWhereUniqueInput[]
+    disconnect?: TradingAccountWhereUniqueInput | TradingAccountWhereUniqueInput[]
+    delete?: TradingAccountWhereUniqueInput | TradingAccountWhereUniqueInput[]
+    connect?: TradingAccountWhereUniqueInput | TradingAccountWhereUniqueInput[]
+    update?: TradingAccountUpdateWithWhereUniqueWithoutAccountTypeInput | TradingAccountUpdateWithWhereUniqueWithoutAccountTypeInput[]
+    updateMany?: TradingAccountUpdateManyWithWhereWithoutAccountTypeInput | TradingAccountUpdateManyWithWhereWithoutAccountTypeInput[]
+    deleteMany?: TradingAccountScalarWhereInput | TradingAccountScalarWhereInput[]
+  }
+
+  export type TradingAccountUncheckedUpdateManyWithoutAccountTypeNestedInput = {
+    create?: XOR<TradingAccountCreateWithoutAccountTypeInput, TradingAccountUncheckedCreateWithoutAccountTypeInput> | TradingAccountCreateWithoutAccountTypeInput[] | TradingAccountUncheckedCreateWithoutAccountTypeInput[]
+    connectOrCreate?: TradingAccountCreateOrConnectWithoutAccountTypeInput | TradingAccountCreateOrConnectWithoutAccountTypeInput[]
+    upsert?: TradingAccountUpsertWithWhereUniqueWithoutAccountTypeInput | TradingAccountUpsertWithWhereUniqueWithoutAccountTypeInput[]
+    createMany?: TradingAccountCreateManyAccountTypeInputEnvelope
+    set?: TradingAccountWhereUniqueInput | TradingAccountWhereUniqueInput[]
+    disconnect?: TradingAccountWhereUniqueInput | TradingAccountWhereUniqueInput[]
+    delete?: TradingAccountWhereUniqueInput | TradingAccountWhereUniqueInput[]
+    connect?: TradingAccountWhereUniqueInput | TradingAccountWhereUniqueInput[]
+    update?: TradingAccountUpdateWithWhereUniqueWithoutAccountTypeInput | TradingAccountUpdateWithWhereUniqueWithoutAccountTypeInput[]
+    updateMany?: TradingAccountUpdateManyWithWhereWithoutAccountTypeInput | TradingAccountUpdateManyWithWhereWithoutAccountTypeInput[]
+    deleteMany?: TradingAccountScalarWhereInput | TradingAccountScalarWhereInput[]
+  }
+
   export type UserCreateNestedOneWithoutTradingAccountsInput = {
     create?: XOR<UserCreateWithoutTradingAccountsInput, UserUncheckedCreateWithoutTradingAccountsInput>
     connectOrCreate?: UserCreateOrConnectWithoutTradingAccountsInput
@@ -12567,6 +14031,12 @@ export namespace Prisma {
     create?: XOR<SectionCreateWithoutAccountsInput, SectionUncheckedCreateWithoutAccountsInput>
     connectOrCreate?: SectionCreateOrConnectWithoutAccountsInput
     connect?: SectionWhereUniqueInput
+  }
+
+  export type AccountTypeCreateNestedOneWithoutAccountsInput = {
+    create?: XOR<AccountTypeCreateWithoutAccountsInput, AccountTypeUncheckedCreateWithoutAccountsInput>
+    connectOrCreate?: AccountTypeCreateOrConnectWithoutAccountsInput
+    connect?: AccountTypeWhereUniqueInput
   }
 
   export type TradeHistoryCreateNestedManyWithoutAccountInput = {
@@ -12629,6 +14099,16 @@ export namespace Prisma {
     delete?: SectionWhereInput | boolean
     connect?: SectionWhereUniqueInput
     update?: XOR<XOR<SectionUpdateToOneWithWhereWithoutAccountsInput, SectionUpdateWithoutAccountsInput>, SectionUncheckedUpdateWithoutAccountsInput>
+  }
+
+  export type AccountTypeUpdateOneWithoutAccountsNestedInput = {
+    create?: XOR<AccountTypeCreateWithoutAccountsInput, AccountTypeUncheckedCreateWithoutAccountsInput>
+    connectOrCreate?: AccountTypeCreateOrConnectWithoutAccountsInput
+    upsert?: AccountTypeUpsertWithoutAccountsInput
+    disconnect?: AccountTypeWhereInput | boolean
+    delete?: AccountTypeWhereInput | boolean
+    connect?: AccountTypeWhereUniqueInput
+    update?: XOR<XOR<AccountTypeUpdateToOneWithWhereWithoutAccountsInput, AccountTypeUpdateWithoutAccountsInput>, AccountTypeUncheckedUpdateWithoutAccountsInput>
   }
 
   export type TradeHistoryUpdateManyWithoutAccountNestedInput = {
@@ -13086,6 +14566,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     section?: SectionCreateNestedOneWithoutAccountsInput
+    accountType?: AccountTypeCreateNestedOneWithoutAccountsInput
     trades?: TradeHistoryCreateNestedManyWithoutAccountInput
     snapshots?: EquitySnapshotCreateNestedManyWithoutAccountInput
   }
@@ -13093,6 +14574,7 @@ export namespace Prisma {
   export type TradingAccountUncheckedCreateWithoutUserInput = {
     id?: string
     sectionId?: string | null
+    accountTypeId?: string | null
     connectionToken?: string
     accountNumber: number
     broker: string
@@ -13144,6 +14626,32 @@ export namespace Prisma {
 
   export type SectionCreateManyUserInputEnvelope = {
     data: SectionCreateManyUserInput | SectionCreateManyUserInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type AccountTypeCreateWithoutUserInput = {
+    id?: string
+    name: string
+    color?: string
+    createdAt?: Date | string
+    accounts?: TradingAccountCreateNestedManyWithoutAccountTypeInput
+  }
+
+  export type AccountTypeUncheckedCreateWithoutUserInput = {
+    id?: string
+    name: string
+    color?: string
+    createdAt?: Date | string
+    accounts?: TradingAccountUncheckedCreateNestedManyWithoutAccountTypeInput
+  }
+
+  export type AccountTypeCreateOrConnectWithoutUserInput = {
+    where: AccountTypeWhereUniqueInput
+    create: XOR<AccountTypeCreateWithoutUserInput, AccountTypeUncheckedCreateWithoutUserInput>
+  }
+
+  export type AccountTypeCreateManyUserInputEnvelope = {
+    data: AccountTypeCreateManyUserInput | AccountTypeCreateManyUserInput[]
     skipDuplicates?: boolean
   }
 
@@ -13234,6 +14742,7 @@ export namespace Prisma {
     id?: StringFilter<"TradingAccount"> | string
     userId?: StringFilter<"TradingAccount"> | string
     sectionId?: StringNullableFilter<"TradingAccount"> | string | null
+    accountTypeId?: StringNullableFilter<"TradingAccount"> | string | null
     connectionToken?: StringFilter<"TradingAccount"> | string
     accountNumber?: IntFilter<"TradingAccount"> | number
     broker?: StringFilter<"TradingAccount"> | string
@@ -13276,6 +14785,33 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"Section"> | Date | string
   }
 
+  export type AccountTypeUpsertWithWhereUniqueWithoutUserInput = {
+    where: AccountTypeWhereUniqueInput
+    update: XOR<AccountTypeUpdateWithoutUserInput, AccountTypeUncheckedUpdateWithoutUserInput>
+    create: XOR<AccountTypeCreateWithoutUserInput, AccountTypeUncheckedCreateWithoutUserInput>
+  }
+
+  export type AccountTypeUpdateWithWhereUniqueWithoutUserInput = {
+    where: AccountTypeWhereUniqueInput
+    data: XOR<AccountTypeUpdateWithoutUserInput, AccountTypeUncheckedUpdateWithoutUserInput>
+  }
+
+  export type AccountTypeUpdateManyWithWhereWithoutUserInput = {
+    where: AccountTypeScalarWhereInput
+    data: XOR<AccountTypeUpdateManyMutationInput, AccountTypeUncheckedUpdateManyWithoutUserInput>
+  }
+
+  export type AccountTypeScalarWhereInput = {
+    AND?: AccountTypeScalarWhereInput | AccountTypeScalarWhereInput[]
+    OR?: AccountTypeScalarWhereInput[]
+    NOT?: AccountTypeScalarWhereInput | AccountTypeScalarWhereInput[]
+    id?: StringFilter<"AccountType"> | string
+    userId?: StringFilter<"AccountType"> | string
+    name?: StringFilter<"AccountType"> | string
+    color?: StringFilter<"AccountType"> | string
+    createdAt?: DateTimeFilter<"AccountType"> | Date | string
+  }
+
   export type UserCreateWithoutSessionsInput = {
     id: string
     email: string
@@ -13287,6 +14823,7 @@ export namespace Prisma {
     accounts?: AccountCreateNestedManyWithoutUserInput
     tradingAccounts?: TradingAccountCreateNestedManyWithoutUserInput
     sections?: SectionCreateNestedManyWithoutUserInput
+    accountTypes?: AccountTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutSessionsInput = {
@@ -13300,6 +14837,7 @@ export namespace Prisma {
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
     tradingAccounts?: TradingAccountUncheckedCreateNestedManyWithoutUserInput
     sections?: SectionUncheckedCreateNestedManyWithoutUserInput
+    accountTypes?: AccountTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutSessionsInput = {
@@ -13329,6 +14867,7 @@ export namespace Prisma {
     accounts?: AccountUpdateManyWithoutUserNestedInput
     tradingAccounts?: TradingAccountUpdateManyWithoutUserNestedInput
     sections?: SectionUpdateManyWithoutUserNestedInput
+    accountTypes?: AccountTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutSessionsInput = {
@@ -13342,6 +14881,7 @@ export namespace Prisma {
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
     tradingAccounts?: TradingAccountUncheckedUpdateManyWithoutUserNestedInput
     sections?: SectionUncheckedUpdateManyWithoutUserNestedInput
+    accountTypes?: AccountTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutAccountsInput = {
@@ -13355,6 +14895,7 @@ export namespace Prisma {
     sessions?: SessionCreateNestedManyWithoutUserInput
     tradingAccounts?: TradingAccountCreateNestedManyWithoutUserInput
     sections?: SectionCreateNestedManyWithoutUserInput
+    accountTypes?: AccountTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutAccountsInput = {
@@ -13368,6 +14909,7 @@ export namespace Prisma {
     sessions?: SessionUncheckedCreateNestedManyWithoutUserInput
     tradingAccounts?: TradingAccountUncheckedCreateNestedManyWithoutUserInput
     sections?: SectionUncheckedCreateNestedManyWithoutUserInput
+    accountTypes?: AccountTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutAccountsInput = {
@@ -13397,6 +14939,7 @@ export namespace Prisma {
     sessions?: SessionUpdateManyWithoutUserNestedInput
     tradingAccounts?: TradingAccountUpdateManyWithoutUserNestedInput
     sections?: SectionUpdateManyWithoutUserNestedInput
+    accountTypes?: AccountTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutAccountsInput = {
@@ -13410,6 +14953,7 @@ export namespace Prisma {
     sessions?: SessionUncheckedUpdateManyWithoutUserNestedInput
     tradingAccounts?: TradingAccountUncheckedUpdateManyWithoutUserNestedInput
     sections?: SectionUncheckedUpdateManyWithoutUserNestedInput
+    accountTypes?: AccountTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutSectionsInput = {
@@ -13423,6 +14967,7 @@ export namespace Prisma {
     sessions?: SessionCreateNestedManyWithoutUserInput
     accounts?: AccountCreateNestedManyWithoutUserInput
     tradingAccounts?: TradingAccountCreateNestedManyWithoutUserInput
+    accountTypes?: AccountTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutSectionsInput = {
@@ -13436,6 +14981,7 @@ export namespace Prisma {
     sessions?: SessionUncheckedCreateNestedManyWithoutUserInput
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
     tradingAccounts?: TradingAccountUncheckedCreateNestedManyWithoutUserInput
+    accountTypes?: AccountTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutSectionsInput = {
@@ -13458,6 +15004,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     user: UserCreateNestedOneWithoutTradingAccountsInput
+    accountType?: AccountTypeCreateNestedOneWithoutAccountsInput
     trades?: TradeHistoryCreateNestedManyWithoutAccountInput
     snapshots?: EquitySnapshotCreateNestedManyWithoutAccountInput
   }
@@ -13465,6 +15012,7 @@ export namespace Prisma {
   export type TradingAccountUncheckedCreateWithoutSectionInput = {
     id?: string
     userId: string
+    accountTypeId?: string | null
     connectionToken?: string
     accountNumber: number
     broker: string
@@ -13513,6 +15061,7 @@ export namespace Prisma {
     sessions?: SessionUpdateManyWithoutUserNestedInput
     accounts?: AccountUpdateManyWithoutUserNestedInput
     tradingAccounts?: TradingAccountUpdateManyWithoutUserNestedInput
+    accountTypes?: AccountTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutSectionsInput = {
@@ -13526,6 +15075,7 @@ export namespace Prisma {
     sessions?: SessionUncheckedUpdateManyWithoutUserNestedInput
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
     tradingAccounts?: TradingAccountUncheckedUpdateManyWithoutUserNestedInput
+    accountTypes?: AccountTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type TradingAccountUpsertWithWhereUniqueWithoutSectionInput = {
@@ -13544,6 +15094,144 @@ export namespace Prisma {
     data: XOR<TradingAccountUpdateManyMutationInput, TradingAccountUncheckedUpdateManyWithoutSectionInput>
   }
 
+  export type UserCreateWithoutAccountTypesInput = {
+    id: string
+    email: string
+    name?: string | null
+    emailVerified?: boolean
+    image?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    sessions?: SessionCreateNestedManyWithoutUserInput
+    accounts?: AccountCreateNestedManyWithoutUserInput
+    tradingAccounts?: TradingAccountCreateNestedManyWithoutUserInput
+    sections?: SectionCreateNestedManyWithoutUserInput
+  }
+
+  export type UserUncheckedCreateWithoutAccountTypesInput = {
+    id: string
+    email: string
+    name?: string | null
+    emailVerified?: boolean
+    image?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    sessions?: SessionUncheckedCreateNestedManyWithoutUserInput
+    accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
+    tradingAccounts?: TradingAccountUncheckedCreateNestedManyWithoutUserInput
+    sections?: SectionUncheckedCreateNestedManyWithoutUserInput
+  }
+
+  export type UserCreateOrConnectWithoutAccountTypesInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutAccountTypesInput, UserUncheckedCreateWithoutAccountTypesInput>
+  }
+
+  export type TradingAccountCreateWithoutAccountTypeInput = {
+    id?: string
+    connectionToken?: string
+    accountNumber: number
+    broker: string
+    server: string
+    platform?: string
+    nickname?: string | null
+    isConnected?: boolean
+    lastSeen?: Date | string | null
+    balance?: number
+    equity?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    user: UserCreateNestedOneWithoutTradingAccountsInput
+    section?: SectionCreateNestedOneWithoutAccountsInput
+    trades?: TradeHistoryCreateNestedManyWithoutAccountInput
+    snapshots?: EquitySnapshotCreateNestedManyWithoutAccountInput
+  }
+
+  export type TradingAccountUncheckedCreateWithoutAccountTypeInput = {
+    id?: string
+    userId: string
+    sectionId?: string | null
+    connectionToken?: string
+    accountNumber: number
+    broker: string
+    server: string
+    platform?: string
+    nickname?: string | null
+    isConnected?: boolean
+    lastSeen?: Date | string | null
+    balance?: number
+    equity?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    trades?: TradeHistoryUncheckedCreateNestedManyWithoutAccountInput
+    snapshots?: EquitySnapshotUncheckedCreateNestedManyWithoutAccountInput
+  }
+
+  export type TradingAccountCreateOrConnectWithoutAccountTypeInput = {
+    where: TradingAccountWhereUniqueInput
+    create: XOR<TradingAccountCreateWithoutAccountTypeInput, TradingAccountUncheckedCreateWithoutAccountTypeInput>
+  }
+
+  export type TradingAccountCreateManyAccountTypeInputEnvelope = {
+    data: TradingAccountCreateManyAccountTypeInput | TradingAccountCreateManyAccountTypeInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type UserUpsertWithoutAccountTypesInput = {
+    update: XOR<UserUpdateWithoutAccountTypesInput, UserUncheckedUpdateWithoutAccountTypesInput>
+    create: XOR<UserCreateWithoutAccountTypesInput, UserUncheckedCreateWithoutAccountTypesInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutAccountTypesInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutAccountTypesInput, UserUncheckedUpdateWithoutAccountTypesInput>
+  }
+
+  export type UserUpdateWithoutAccountTypesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    name?: NullableStringFieldUpdateOperationsInput | string | null
+    emailVerified?: BoolFieldUpdateOperationsInput | boolean
+    image?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    sessions?: SessionUpdateManyWithoutUserNestedInput
+    accounts?: AccountUpdateManyWithoutUserNestedInput
+    tradingAccounts?: TradingAccountUpdateManyWithoutUserNestedInput
+    sections?: SectionUpdateManyWithoutUserNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutAccountTypesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    name?: NullableStringFieldUpdateOperationsInput | string | null
+    emailVerified?: BoolFieldUpdateOperationsInput | boolean
+    image?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    sessions?: SessionUncheckedUpdateManyWithoutUserNestedInput
+    accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
+    tradingAccounts?: TradingAccountUncheckedUpdateManyWithoutUserNestedInput
+    sections?: SectionUncheckedUpdateManyWithoutUserNestedInput
+  }
+
+  export type TradingAccountUpsertWithWhereUniqueWithoutAccountTypeInput = {
+    where: TradingAccountWhereUniqueInput
+    update: XOR<TradingAccountUpdateWithoutAccountTypeInput, TradingAccountUncheckedUpdateWithoutAccountTypeInput>
+    create: XOR<TradingAccountCreateWithoutAccountTypeInput, TradingAccountUncheckedCreateWithoutAccountTypeInput>
+  }
+
+  export type TradingAccountUpdateWithWhereUniqueWithoutAccountTypeInput = {
+    where: TradingAccountWhereUniqueInput
+    data: XOR<TradingAccountUpdateWithoutAccountTypeInput, TradingAccountUncheckedUpdateWithoutAccountTypeInput>
+  }
+
+  export type TradingAccountUpdateManyWithWhereWithoutAccountTypeInput = {
+    where: TradingAccountScalarWhereInput
+    data: XOR<TradingAccountUpdateManyMutationInput, TradingAccountUncheckedUpdateManyWithoutAccountTypeInput>
+  }
+
   export type UserCreateWithoutTradingAccountsInput = {
     id: string
     email: string
@@ -13555,6 +15243,7 @@ export namespace Prisma {
     sessions?: SessionCreateNestedManyWithoutUserInput
     accounts?: AccountCreateNestedManyWithoutUserInput
     sections?: SectionCreateNestedManyWithoutUserInput
+    accountTypes?: AccountTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutTradingAccountsInput = {
@@ -13568,6 +15257,7 @@ export namespace Prisma {
     sessions?: SessionUncheckedCreateNestedManyWithoutUserInput
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
     sections?: SectionUncheckedCreateNestedManyWithoutUserInput
+    accountTypes?: AccountTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutTradingAccountsInput = {
@@ -13596,6 +15286,27 @@ export namespace Prisma {
   export type SectionCreateOrConnectWithoutAccountsInput = {
     where: SectionWhereUniqueInput
     create: XOR<SectionCreateWithoutAccountsInput, SectionUncheckedCreateWithoutAccountsInput>
+  }
+
+  export type AccountTypeCreateWithoutAccountsInput = {
+    id?: string
+    name: string
+    color?: string
+    createdAt?: Date | string
+    user: UserCreateNestedOneWithoutAccountTypesInput
+  }
+
+  export type AccountTypeUncheckedCreateWithoutAccountsInput = {
+    id?: string
+    userId: string
+    name: string
+    color?: string
+    createdAt?: Date | string
+  }
+
+  export type AccountTypeCreateOrConnectWithoutAccountsInput = {
+    where: AccountTypeWhereUniqueInput
+    create: XOR<AccountTypeCreateWithoutAccountsInput, AccountTypeUncheckedCreateWithoutAccountsInput>
   }
 
   export type TradeHistoryCreateWithoutAccountInput = {
@@ -13702,6 +15413,7 @@ export namespace Prisma {
     sessions?: SessionUpdateManyWithoutUserNestedInput
     accounts?: AccountUpdateManyWithoutUserNestedInput
     sections?: SectionUpdateManyWithoutUserNestedInput
+    accountTypes?: AccountTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutTradingAccountsInput = {
@@ -13715,6 +15427,7 @@ export namespace Prisma {
     sessions?: SessionUncheckedUpdateManyWithoutUserNestedInput
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
     sections?: SectionUncheckedUpdateManyWithoutUserNestedInput
+    accountTypes?: AccountTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type SectionUpsertWithoutAccountsInput = {
@@ -13744,6 +15457,33 @@ export namespace Prisma {
     color?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type AccountTypeUpsertWithoutAccountsInput = {
+    update: XOR<AccountTypeUpdateWithoutAccountsInput, AccountTypeUncheckedUpdateWithoutAccountsInput>
+    create: XOR<AccountTypeCreateWithoutAccountsInput, AccountTypeUncheckedCreateWithoutAccountsInput>
+    where?: AccountTypeWhereInput
+  }
+
+  export type AccountTypeUpdateToOneWithWhereWithoutAccountsInput = {
+    where?: AccountTypeWhereInput
+    data: XOR<AccountTypeUpdateWithoutAccountsInput, AccountTypeUncheckedUpdateWithoutAccountsInput>
+  }
+
+  export type AccountTypeUpdateWithoutAccountsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    color?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutAccountTypesNestedInput
+  }
+
+  export type AccountTypeUncheckedUpdateWithoutAccountsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    color?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type TradeHistoryUpsertWithWhereUniqueWithoutAccountInput = {
@@ -13833,6 +15573,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     user: UserCreateNestedOneWithoutTradingAccountsInput
     section?: SectionCreateNestedOneWithoutAccountsInput
+    accountType?: AccountTypeCreateNestedOneWithoutAccountsInput
     snapshots?: EquitySnapshotCreateNestedManyWithoutAccountInput
   }
 
@@ -13840,6 +15581,7 @@ export namespace Prisma {
     id?: string
     userId: string
     sectionId?: string | null
+    accountTypeId?: string | null
     connectionToken?: string
     accountNumber: number
     broker: string
@@ -13887,6 +15629,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutTradingAccountsNestedInput
     section?: SectionUpdateOneWithoutAccountsNestedInput
+    accountType?: AccountTypeUpdateOneWithoutAccountsNestedInput
     snapshots?: EquitySnapshotUpdateManyWithoutAccountNestedInput
   }
 
@@ -13894,6 +15637,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     userId?: StringFieldUpdateOperationsInput | string
     sectionId?: NullableStringFieldUpdateOperationsInput | string | null
+    accountTypeId?: NullableStringFieldUpdateOperationsInput | string | null
     connectionToken?: StringFieldUpdateOperationsInput | string
     accountNumber?: IntFieldUpdateOperationsInput | number
     broker?: StringFieldUpdateOperationsInput | string
@@ -13925,6 +15669,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     user: UserCreateNestedOneWithoutTradingAccountsInput
     section?: SectionCreateNestedOneWithoutAccountsInput
+    accountType?: AccountTypeCreateNestedOneWithoutAccountsInput
     trades?: TradeHistoryCreateNestedManyWithoutAccountInput
   }
 
@@ -13932,6 +15677,7 @@ export namespace Prisma {
     id?: string
     userId: string
     sectionId?: string | null
+    accountTypeId?: string | null
     connectionToken?: string
     accountNumber: number
     broker: string
@@ -13979,6 +15725,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutTradingAccountsNestedInput
     section?: SectionUpdateOneWithoutAccountsNestedInput
+    accountType?: AccountTypeUpdateOneWithoutAccountsNestedInput
     trades?: TradeHistoryUpdateManyWithoutAccountNestedInput
   }
 
@@ -13986,6 +15733,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     userId?: StringFieldUpdateOperationsInput | string
     sectionId?: NullableStringFieldUpdateOperationsInput | string | null
+    accountTypeId?: NullableStringFieldUpdateOperationsInput | string | null
     connectionToken?: StringFieldUpdateOperationsInput | string
     accountNumber?: IntFieldUpdateOperationsInput | number
     broker?: StringFieldUpdateOperationsInput | string
@@ -14028,6 +15776,7 @@ export namespace Prisma {
   export type TradingAccountCreateManyUserInput = {
     id?: string
     sectionId?: string | null
+    accountTypeId?: string | null
     connectionToken?: string
     accountNumber: number
     broker: string
@@ -14048,6 +15797,13 @@ export namespace Prisma {
     color?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
+  }
+
+  export type AccountTypeCreateManyUserInput = {
+    id?: string
+    name: string
+    color?: string
+    createdAt?: Date | string
   }
 
   export type SessionUpdateWithoutUserInput = {
@@ -14137,6 +15893,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     section?: SectionUpdateOneWithoutAccountsNestedInput
+    accountType?: AccountTypeUpdateOneWithoutAccountsNestedInput
     trades?: TradeHistoryUpdateManyWithoutAccountNestedInput
     snapshots?: EquitySnapshotUpdateManyWithoutAccountNestedInput
   }
@@ -14144,6 +15901,7 @@ export namespace Prisma {
   export type TradingAccountUncheckedUpdateWithoutUserInput = {
     id?: StringFieldUpdateOperationsInput | string
     sectionId?: NullableStringFieldUpdateOperationsInput | string | null
+    accountTypeId?: NullableStringFieldUpdateOperationsInput | string | null
     connectionToken?: StringFieldUpdateOperationsInput | string
     accountNumber?: IntFieldUpdateOperationsInput | number
     broker?: StringFieldUpdateOperationsInput | string
@@ -14163,6 +15921,7 @@ export namespace Prisma {
   export type TradingAccountUncheckedUpdateManyWithoutUserInput = {
     id?: StringFieldUpdateOperationsInput | string
     sectionId?: NullableStringFieldUpdateOperationsInput | string | null
+    accountTypeId?: NullableStringFieldUpdateOperationsInput | string | null
     connectionToken?: StringFieldUpdateOperationsInput | string
     accountNumber?: IntFieldUpdateOperationsInput | number
     broker?: StringFieldUpdateOperationsInput | string
@@ -14203,9 +15962,33 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type AccountTypeUpdateWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    color?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    accounts?: TradingAccountUpdateManyWithoutAccountTypeNestedInput
+  }
+
+  export type AccountTypeUncheckedUpdateWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    color?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    accounts?: TradingAccountUncheckedUpdateManyWithoutAccountTypeNestedInput
+  }
+
+  export type AccountTypeUncheckedUpdateManyWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    color?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type TradingAccountCreateManySectionInput = {
     id?: string
     userId: string
+    accountTypeId?: string | null
     connectionToken?: string
     accountNumber: number
     broker: string
@@ -14235,6 +16018,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutTradingAccountsNestedInput
+    accountType?: AccountTypeUpdateOneWithoutAccountsNestedInput
     trades?: TradeHistoryUpdateManyWithoutAccountNestedInput
     snapshots?: EquitySnapshotUpdateManyWithoutAccountNestedInput
   }
@@ -14242,6 +16026,7 @@ export namespace Prisma {
   export type TradingAccountUncheckedUpdateWithoutSectionInput = {
     id?: StringFieldUpdateOperationsInput | string
     userId?: StringFieldUpdateOperationsInput | string
+    accountTypeId?: NullableStringFieldUpdateOperationsInput | string | null
     connectionToken?: StringFieldUpdateOperationsInput | string
     accountNumber?: IntFieldUpdateOperationsInput | number
     broker?: StringFieldUpdateOperationsInput | string
@@ -14261,6 +16046,83 @@ export namespace Prisma {
   export type TradingAccountUncheckedUpdateManyWithoutSectionInput = {
     id?: StringFieldUpdateOperationsInput | string
     userId?: StringFieldUpdateOperationsInput | string
+    accountTypeId?: NullableStringFieldUpdateOperationsInput | string | null
+    connectionToken?: StringFieldUpdateOperationsInput | string
+    accountNumber?: IntFieldUpdateOperationsInput | number
+    broker?: StringFieldUpdateOperationsInput | string
+    server?: StringFieldUpdateOperationsInput | string
+    platform?: StringFieldUpdateOperationsInput | string
+    nickname?: NullableStringFieldUpdateOperationsInput | string | null
+    isConnected?: BoolFieldUpdateOperationsInput | boolean
+    lastSeen?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    balance?: FloatFieldUpdateOperationsInput | number
+    equity?: FloatFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type TradingAccountCreateManyAccountTypeInput = {
+    id?: string
+    userId: string
+    sectionId?: string | null
+    connectionToken?: string
+    accountNumber: number
+    broker: string
+    server: string
+    platform?: string
+    nickname?: string | null
+    isConnected?: boolean
+    lastSeen?: Date | string | null
+    balance?: number
+    equity?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type TradingAccountUpdateWithoutAccountTypeInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    connectionToken?: StringFieldUpdateOperationsInput | string
+    accountNumber?: IntFieldUpdateOperationsInput | number
+    broker?: StringFieldUpdateOperationsInput | string
+    server?: StringFieldUpdateOperationsInput | string
+    platform?: StringFieldUpdateOperationsInput | string
+    nickname?: NullableStringFieldUpdateOperationsInput | string | null
+    isConnected?: BoolFieldUpdateOperationsInput | boolean
+    lastSeen?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    balance?: FloatFieldUpdateOperationsInput | number
+    equity?: FloatFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutTradingAccountsNestedInput
+    section?: SectionUpdateOneWithoutAccountsNestedInput
+    trades?: TradeHistoryUpdateManyWithoutAccountNestedInput
+    snapshots?: EquitySnapshotUpdateManyWithoutAccountNestedInput
+  }
+
+  export type TradingAccountUncheckedUpdateWithoutAccountTypeInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    sectionId?: NullableStringFieldUpdateOperationsInput | string | null
+    connectionToken?: StringFieldUpdateOperationsInput | string
+    accountNumber?: IntFieldUpdateOperationsInput | number
+    broker?: StringFieldUpdateOperationsInput | string
+    server?: StringFieldUpdateOperationsInput | string
+    platform?: StringFieldUpdateOperationsInput | string
+    nickname?: NullableStringFieldUpdateOperationsInput | string | null
+    isConnected?: BoolFieldUpdateOperationsInput | boolean
+    lastSeen?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    balance?: FloatFieldUpdateOperationsInput | number
+    equity?: FloatFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    trades?: TradeHistoryUncheckedUpdateManyWithoutAccountNestedInput
+    snapshots?: EquitySnapshotUncheckedUpdateManyWithoutAccountNestedInput
+  }
+
+  export type TradingAccountUncheckedUpdateManyWithoutAccountTypeInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    sectionId?: NullableStringFieldUpdateOperationsInput | string | null
     connectionToken?: StringFieldUpdateOperationsInput | string
     accountNumber?: IntFieldUpdateOperationsInput | number
     broker?: StringFieldUpdateOperationsInput | string

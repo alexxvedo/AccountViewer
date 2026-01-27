@@ -1,6 +1,5 @@
 // ============================================
 // Servidor WebSocket Standalone - Bun
-// Trading Platform SaaS
 // 
 // Este servidor maneja las conexiones WebSocket
 // de los EA y Frontend en tiempo real.

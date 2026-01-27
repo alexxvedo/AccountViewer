@@ -1,10 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSession } from "@/lib/auth-client";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -17,7 +21,27 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import {
   ArrowLeft,
   Wifi,
@@ -31,13 +55,19 @@ import {
   Loader2,
   BarChart3,
   History,
-  Briefcase,
+  CircleDot,
   ChevronLeft,
   ChevronRight,
   Percent,
   Target,
   Scale,
   RefreshCw,
+  PieChart as PieChartIcon,
+  X,
+  AlertTriangle,
+  Timer,
+  Flame,
+  Download
 } from "lucide-react";
 import {
   XAxis,
@@ -52,8 +82,13 @@ import {
   PieChart,
   Pie,
   Cell,
-  Legend,
+  RadarChart,
+  Radar,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
 } from "recharts";
+import { cn } from "@/lib/utils";
 
 interface Position {
   ticket: number;
@@ -112,7 +147,7 @@ interface AccountData {
   connectionToken: string;
 }
 
-type TabType = "stats" | "positions" | "history";
+const COLORS = ["var(--chart-1)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)", "var(--muted-foreground)"];
 
 export default function AccountPage() {
   const params = useParams();
@@ -127,28 +162,26 @@ export default function AccountPage() {
   } | null>(null);
   const [allTrades, setAllTrades] = useState<Trade[]>([]);
   const [isLive, setIsLive] = useState(false);
-  const [equityHistory, setEquityHistory] = useState<
-    { time: string; equity: number }[]
-  >([]);
+  const [equityHistory, setEquityHistory] = useState<{ time: string; equity: number; balance: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedToken, setCopiedToken] = useState(false);
   
-  // Tabs y paginación
-  const [activeTab, setActiveTab] = useState<TabType>("stats");
+  const [activeTab, setActiveTab] = useState("overview");
   const [positionsPage, setPositionsPage] = useState(1);
   const [historyPage, setHistoryPage] = useState(1);
   const [syncing, setSyncing] = useState(false);
+  const [closingTickets, setClosingTickets] = useState<Set<number>>(new Set());
+  const [closingAll, setClosingAll] = useState(false);
   
-  // Opciones de paginación (0 = mostrar todos)
   const [historyPerPage, setHistoryPerPage] = useState(0);
   const [positionsPerPage, setPositionsPerPage] = useState(0);
   
-  // Filtros del historial
   const [periodFilter, setPeriodFilter] = useState<"all" | "today" | "week" | "month" | "custom">("all");
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   const [symbolFilter, setSymbolFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState<"all" | "buy" | "sell">("all");
+  const [historyResultFilter, setHistoryResultFilter] = useState<"all" | "win" | "loss">("all");
 
   useEffect(() => {
     if (session?.user?.id) {
@@ -157,10 +190,8 @@ export default function AccountPage() {
     }
   }, [session?.user?.id, accountId]);
 
-  // Reset de página cuando cambian filtros (antes de returns condicionales)
-  useEffect(() => { setHistoryPage(1); }, [periodFilter, dateFrom, dateTo, symbolFilter, typeFilter, historyPerPage]);
+  useEffect(() => { setHistoryPage(1); }, [periodFilter, dateFrom, dateTo, symbolFilter, typeFilter, historyPerPage, historyResultFilter]);
 
-  // Polling para datos en vivo
   useEffect(() => {
     if (!accountId) return;
 
@@ -175,8 +206,9 @@ export default function AccountPage() {
           
           setEquityHistory((prev) => {
             const newPoint = {
-              time: new Date().toLocaleTimeString(),
+              time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
               equity: data.data.account.equity,
+              balance: data.data.account.balance,
             };
             if (prev.length > 0 && prev[prev.length - 1].equity === newPoint.equity) {
               return prev;
@@ -196,13 +228,12 @@ export default function AccountPage() {
     return () => clearInterval(interval);
   }, [accountId]);
 
-  // Polling para historial de trades (cada 1 segundo)
   useEffect(() => {
     if (!accountId) return;
 
     const fetchTradesPolling = async () => {
       try {
-        const res = await fetch(`/api/accounts/${accountId}/trades?limit=100`);
+        const res = await fetch(`/api/accounts/${accountId}/trades?limit=100000`);
         const data = await res.json();
         setAllTrades(data);
       } catch (error) {
@@ -211,7 +242,7 @@ export default function AccountPage() {
     };
 
     fetchTradesPolling();
-    const interval = setInterval(fetchTradesPolling, 1000);
+    const interval = setInterval(fetchTradesPolling, 30000);
     return () => clearInterval(interval);
   }, [accountId]);
 
@@ -230,7 +261,7 @@ export default function AccountPage() {
 
   const fetchTrades = async () => {
     try {
-      const res = await fetch(`/api/accounts/${accountId}/trades?limit=100`);
+      const res = await fetch(`/api/accounts/${accountId}/trades?limit=100000`);
       const data = await res.json();
       setAllTrades(data);
     } catch (error) {
@@ -240,22 +271,13 @@ export default function AccountPage() {
 
   const copyToken = () => {
     if (!account) return;
-    
     const text = account.connectionToken;
-
-    // Intentar usar la API moderna (requiere HTTPS o localhost)
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text)
-        .then(() => {
-          setCopiedToken(true);
-          setTimeout(() => setCopiedToken(false), 2000);
-        })
-        .catch((err) => {
-          console.warn("Clipboard API failed, trying fallback...", err);
-          fallbackCopy(text);
-        });
+      navigator.clipboard.writeText(text).then(() => {
+        setCopiedToken(true);
+        setTimeout(() => setCopiedToken(false), 2000);
+      }).catch(() => fallbackCopy(text));
     } else {
-      // Fallback para HTTP (execCommand)
       fallbackCopy(text);
     }
   };
@@ -264,61 +286,299 @@ export default function AccountPage() {
     try {
       const textArea = document.createElement("textarea");
       textArea.value = text;
-      
-      // Asegurar que no sea visible ni afecte el layout
-      textArea.style.top = "0";
-      textArea.style.left = "0";
-      textArea.style.position = "fixed";
-      textArea.style.opacity = "0";
-
+      textArea.style.cssText = "top:0;left:0;position:fixed;opacity:0";
       document.body.appendChild(textArea);
       textArea.focus();
       textArea.select();
-
       const successful = document.execCommand('copy');
       document.body.removeChild(textArea);
-
       if (successful) {
         setCopiedToken(true);
         setTimeout(() => setCopiedToken(false), 2000);
-      } else {
-        alert("No se pudo copiar. Por favor selecciona y copia manualmente.");
       }
     } catch (err) {
       console.error("Fallback copy failed:", err);
-      alert("Error al copiar. Por favor selecciona y copia manualmente.");
     }
   };
 
-  const syncHistory = async () => {
-    if (!isLive) {
-      alert("El EA debe estar conectado para sincronizar el historial");
-      return;
-    }
-    setSyncing(true);
+  const syncHistory = async (silent = false) => {
+    if (!isLive) return;
+    if (!silent) setSyncing(true);
     try {
       const res = await fetch(`/api/accounts/${accountId}/sync-history`, { method: "POST" });
       const data = await res.json();
       if (data.success) {
-        // Esperar unos segundos para que el EA envíe los datos y luego refrescar
-        setTimeout(() => {
-          fetchTrades();
-          setSyncing(false);
-        }, 5000);
+        // Si es silencioso o no, damos un tiempo para que el EA procese y luego actualizamos
+        setTimeout(() => { 
+          fetchTrades(); 
+          if (!silent) setSyncing(false); 
+        }, 3000);
       } else {
-        alert("Error al sincronizar: " + data.error);
-        setSyncing(false);
+        if (!silent) setSyncing(false);
       }
     } catch (error) {
       console.error("Error syncing history:", error);
-      setSyncing(false);
+      if (!silent) setSyncing(false);
     }
   };
+
+  const closePosition = async (ticket: number) => {
+    // Marcar como cerrándose
+    setClosingTickets(prev => new Set(prev).add(ticket));
+    
+    try {
+      const res = await fetch(`/api/accounts/${accountId}/close-trade`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ticket }),
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        // Polling más rápido temporalmente para detectar el cierre
+        const checkClosed = setInterval(async () => {
+          const liveRes = await fetch(`/api/accounts/${accountId}/live`);
+          const liveData = await liveRes.json();
+          if (liveData.connected && liveData.data) {
+            const stillOpen = liveData.data.positions.some((p: Position) => p.ticket === ticket);
+            if (!stillOpen) {
+              setClosingTickets(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(ticket);
+                return newSet;
+              });
+              setLiveData(liveData.data);
+              // Forzar sincronización de historial
+              syncHistory(true);
+              fetchTrades();
+              clearInterval(checkClosed);
+            }
+          }
+        }, 500);
+        
+        // Timeout después de 10 segundos
+        setTimeout(() => {
+          clearInterval(checkClosed);
+          setClosingTickets(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(ticket);
+            return newSet;
+          });
+        }, 10000);
+      }
+    } catch (error) {
+      console.error("Error closing position:", error);
+      setClosingTickets(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(ticket);
+        return newSet;
+      });
+    }
+  };
+
+  const closeAllPositions = async () => {
+    
+    setClosingAll(true);
+    
+    try {
+      const res = await fetch(`/api/accounts/${accountId}/close-all`, { method: "POST" });
+      const data = await res.json();
+      
+      if (data.success) {
+        // Polling más rápido para detectar que todas se cerraron
+        const checkClosed = setInterval(async () => {
+          const liveRes = await fetch(`/api/accounts/${accountId}/live`);
+          const liveData = await liveRes.json();
+          if (liveData.connected && liveData.data) {
+            if (liveData.data.positions.length === 0) {
+              setClosingAll(false);
+              setLiveData(liveData.data);
+              // Forzar sincronización de historial
+              syncHistory(true);
+              fetchTrades();
+              clearInterval(checkClosed);
+            }
+          }
+        }, 500);
+        
+        // Timeout después de 15 segundos
+        setTimeout(() => {
+          clearInterval(checkClosed);
+          setClosingAll(false);
+        }, 15000);
+      }
+    } catch (error) {
+      console.error("Error closing all positions:", error);
+      setClosingAll(false);
+    }
+  };
+
+  // Cálculos Memoizados para Rendimiento (Movidos al inicio para evitar violación de reglas de Hooks)
+  const stats = useMemo(() => {
+    const totalTrades = allTrades.length;
+    const winningTrades = allTrades.filter(t => t.profit + t.swap + t.commission > 0).length;
+    const losingTrades = allTrades.filter(t => t.profit + t.swap + t.commission < 0).length;
+    const winRate = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0;
+    const totalProfit = allTrades.reduce((sum, t) => sum + t.profit + t.swap + t.commission, 0);
+    
+    const winTradesList = allTrades.filter(t => t.profit + t.swap + t.commission > 0);
+    const lossTradesList = allTrades.filter(t => t.profit + t.swap + t.commission < 0);
+    
+    const avgWin = winningTrades > 0 
+      ? winTradesList.reduce((sum, t) => sum + t.profit + t.swap + t.commission, 0) / winningTrades 
+      : 0;
+    const avgLoss = losingTrades > 0 
+      ? Math.abs(lossTradesList.reduce((sum, t) => sum + t.profit + t.swap + t.commission, 0) / losingTrades)
+      : 0;
+    const profitFactor = avgLoss > 0 ? avgWin / avgLoss : 0;
+    const expectancy = totalTrades > 0 ? totalProfit / totalTrades : 0;
+
+    return { totalTrades, winningTrades, losingTrades, winRate, totalProfit, avgWin, avgLoss, profitFactor, expectancy };
+  }, [allTrades]);
+
+  const { totalTrades, winningTrades, losingTrades, winRate, totalProfit, avgWin, avgLoss, profitFactor, expectancy } = stats;
+
+  const positions = liveData?.positions || [];
+  const totalFloatingPL = useMemo(() => positions.reduce((sum: number, pos: Position) => sum + pos.profit, 0), [positions]);
+  const floatingPL = liveData ? liveData.account.equity - liveData.account.balance : 0;
+
+  // Filtrar trades (Memoizado)
+  const filteredTrades = useMemo(() => {
+    return allTrades.filter((trade: Trade) => {
+      const pl = trade.profit + trade.swap + trade.commission;
+      if (historyResultFilter === "win" && pl <= 0) return false;
+      if (historyResultFilter === "loss" && pl >= 0) return false;
+      if (typeFilter !== "all" && trade.type !== typeFilter) return false;
+      if (symbolFilter && !trade.symbol.toLowerCase().includes(symbolFilter.toLowerCase())) return false;
+      
+      const tradeDate = new Date(trade.closeTime);
+      const now = new Date();
+      
+      if (periodFilter === "today") {
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        if (tradeDate < today) return false;
+      } else if (periodFilter === "week") {
+        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        if (tradeDate < weekAgo) return false;
+      } else if (periodFilter === "month") {
+        const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        if (tradeDate < monthAgo) return false;
+      } else if (periodFilter === "custom") {
+        if (dateFrom && tradeDate < dateFrom) return false;
+        if (dateTo) {
+          const endOfDay = new Date(dateTo);
+          endOfDay.setHours(23, 59, 59, 999);
+          if (tradeDate > endOfDay) return false;
+        }
+      }
+      return true;
+    });
+  }, [allTrades, historyResultFilter, typeFilter, symbolFilter, periodFilter, dateFrom, dateTo]);
+
+  const filteredTotalProfit = useMemo(() => filteredTrades.reduce((sum: number, t: Trade) => sum + t.profit + t.swap + t.commission, 0), [filteredTrades]);
+  const filteredWinning = useMemo(() => filteredTrades.filter((t: Trade) => t.profit + t.swap + t.commission > 0).length, [filteredTrades]);
+  const filteredLosing = useMemo(() => filteredTrades.filter((t: Trade) => t.profit + t.swap + t.commission < 0).length, [filteredTrades]);
+  
+  const uniqueSymbols = useMemo(() => [...new Set(allTrades.map((t: Trade) => t.symbol))].sort(), [allTrades]);
+
+  // Paginación
+  const effectiveHistoryPerPage = historyPerPage === 0 ? filteredTrades.length : historyPerPage;
+  const totalHistoryPages = effectiveHistoryPerPage > 0 ? Math.ceil(filteredTrades.length / effectiveHistoryPerPage) : 1;
+  const paginatedTrades = useMemo(() => 
+    historyPerPage === 0 ? filteredTrades : filteredTrades.slice((historyPage - 1) * historyPerPage, historyPage * historyPerPage),
+    [filteredTrades, historyPage, historyPerPage]
+  );
+
+  const effectivePositionsPerPage = positionsPerPage === 0 ? positions.length : positionsPerPage;
+  const totalPositionPages = effectivePositionsPerPage > 0 ? Math.ceil(positions.length / effectivePositionsPerPage) : 1;
+  const paginatedPositions = useMemo(() => 
+    positionsPerPage === 0 ? positions : positions.slice((positionsPage - 1) * positionsPerPage, positionsPage * positionsPerPage),
+    [positions, positionsPage, positionsPerPage]
+  );
+
+  // Datos para gráficos (Memoizados)
+  const symbolDistribution = useMemo(() => {
+    const bySymbol: Record<string, { profit: number; trades: number }> = {};
+    allTrades.forEach((t: Trade) => {
+      const pl = t.profit + t.swap + t.commission;
+      if (!bySymbol[t.symbol]) bySymbol[t.symbol] = { profit: 0, trades: 0 };
+      bySymbol[t.symbol].profit += pl;
+      bySymbol[t.symbol].trades += 1;
+    });
+    const totalCount = Object.values(bySymbol).reduce((sum: number, d: any) => sum + d.trades, 0);
+    return Object.entries(bySymbol)
+      .map(([name, data]) => ({ name, value: totalCount > 0 ? Math.round((data.trades / totalCount) * 100) : 0, ...data }))
+      .sort((a, b) => b.trades - a.trades)
+      .slice(0, 5);
+  }, [allTrades]);
+
+  const dailyPnL = useMemo(() => {
+    const byDay: Record<string, { pnl: number; trades: number }> = {};
+    allTrades.forEach((t: Trade) => {
+      const day = new Date(t.closeTime).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+      const pl = t.profit + t.swap + t.commission;
+      if (!byDay[day]) byDay[day] = { pnl: 0, trades: 0 };
+      byDay[day].pnl += pl;
+      byDay[day].trades += 1;
+    });
+    return Object.entries(byDay).map(([date, data]) => ({ date, ...data })).slice(-8);
+  }, [allTrades]);
+
+  const profitCurveData = useMemo(() => {
+    let cumulative = 0;
+    return [...allTrades].reverse().map((t: Trade, i: number) => {
+      cumulative += t.profit + t.swap + t.commission;
+      return { trade: i + 1, profit: cumulative };
+    });
+  }, [allTrades]);
+
+  const longTrades = useMemo(() => allTrades.filter((t: Trade) => t.type === "buy"), [allTrades]);
+  const shortTrades = useMemo(() => allTrades.filter((t: Trade) => t.type === "sell"), [allTrades]);
+  
+  const longWinRate = useMemo(() => {
+    const wins = longTrades.filter(t => t.profit + t.swap + t.commission > 0).length;
+    return longTrades.length > 0 ? (wins / longTrades.length) * 100 : 0;
+  }, [longTrades]);
+
+  const shortWinRate = useMemo(() => {
+    const wins = shortTrades.filter(t => t.profit + t.swap + t.commission > 0).length;
+    return shortTrades.length > 0 ? (wins / shortTrades.length) * 100 : 0;
+  }, [shortTrades]);
+
+  // Rachas
+  const streaks = useMemo(() => {
+    let maxWins = 0, maxLosses = 0, currentWins = 0, currentLosses = 0;
+    [...allTrades].reverse().forEach(t => {
+      const pl = t.profit + t.swap + t.commission;
+      if (pl > 0) {
+        currentWins++;
+        currentLosses = 0;
+        maxWins = Math.max(maxWins, currentWins);
+      } else if (pl < 0) {
+        currentLosses++;
+        currentWins = 0;
+        maxLosses = Math.max(maxLosses, currentLosses);
+      }
+    });
+    return { maxWins, maxLosses };
+  }, [allTrades]);
+
+  const { maxWins, maxLosses } = streaks;
+
+  // Radar data para perfil de trading
+  const radarData = useMemo(() => [
+    { metric: "Win Rate", value: Math.min(winRate, 100), fullMark: 100 },
+    { metric: "Profit Factor", value: Math.min(profitFactor * 25, 100), fullMark: 100 },
+    { metric: "Risk/Reward", value: avgLoss > 0 ? Math.min((avgWin / avgLoss) * 30, 100) : 50, fullMark: 100 },
+    { metric: "Consistencia", value: totalTrades > 5 ? Math.min(60 + (profitFactor * 10), 100) : 0, fullMark: 100 },
+    { metric: "Disciplina", value: totalTrades > 0 ? Math.min(70 + winRate * 0.3, 100) : 0, fullMark: 100 },
+    { metric: "Drawdown", value: 80, fullMark: 100 },
+  ], [winRate, profitFactor, avgWin, avgLoss, totalTrades]);
 
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-emerald-400" />
+        <Loader2 className="h-8 w-8 animate-spin text-accent" />
       </div>
     );
   }
@@ -326,12 +586,8 @@ export default function AccountPage() {
   if (!account) {
     return (
       <div className="flex h-full flex-col items-center justify-center">
-        <p className="text-zinc-400">Cuenta no encontrada</p>
-        <Button
-          variant="ghost"
-          onClick={() => router.push("/dashboard")}
-          className="mt-4 text-emerald-400"
-        >
+        <p className="text-muted-foreground">Cuenta no encontrada</p>
+        <Button variant="ghost" onClick={() => router.push("/dashboard")} className="mt-4 text-accent">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Volver al Dashboard
         </Button>
@@ -339,1006 +595,783 @@ export default function AccountPage() {
     );
   }
 
-  // Cálculos de estadísticas
-  const floatingPL = liveData ? liveData.account.equity - liveData.account.balance : 0;
-  const totalTrades = allTrades.length;
-  const winningTrades = allTrades.filter(t => t.profit + t.swap + t.commission > 0).length;
-  const losingTrades = allTrades.filter(t => t.profit + t.swap + t.commission < 0).length;
-  const winRate = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0;
-  const totalProfit = allTrades.reduce((sum, t) => sum + t.profit + t.swap + t.commission, 0);
-  const avgWin = winningTrades > 0 
-    ? allTrades.filter(t => t.profit + t.swap + t.commission > 0).reduce((sum, t) => sum + t.profit + t.swap + t.commission, 0) / winningTrades 
-    : 0;
-  const avgLoss = losingTrades > 0 
-    ? Math.abs(allTrades.filter(t => t.profit + t.swap + t.commission < 0).reduce((sum, t) => sum + t.profit + t.swap + t.commission, 0) / losingTrades)
-    : 0;
-  const profitFactor = avgLoss > 0 ? avgWin / avgLoss : 0;
-  const positions = liveData?.positions || [];
-
-  // Filtrar trades según filtros seleccionados
-  const filteredTrades = allTrades.filter(trade => {
-    // Filtro por tipo
-    if (typeFilter !== "all" && trade.type !== typeFilter) return false;
-    
-    // Filtro por símbolo
-    if (symbolFilter && !trade.symbol.toLowerCase().includes(symbolFilter.toLowerCase())) return false;
-    
-    // Filtro por período
-    const tradeDate = new Date(trade.closeTime);
-    const now = new Date();
-    
-    if (periodFilter === "today") {
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      if (tradeDate < today) return false;
-    } else if (periodFilter === "week") {
-      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      if (tradeDate < weekAgo) return false;
-    } else if (periodFilter === "month") {
-      const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-      if (tradeDate < monthAgo) return false;
-    } else if (periodFilter === "custom") {
-      if (dateFrom && tradeDate < dateFrom) return false;
-      if (dateTo) {
-        const endOfDay = new Date(dateTo);
-        endOfDay.setHours(23, 59, 59, 999);
-        if (tradeDate > endOfDay) return false;
-      }
-    }
-    
-    return true;
-  });
-
-  // Calcular totales de trades filtrados
-  const filteredTotalProfit = filteredTrades.reduce((sum, t) => sum + t.profit + t.swap + t.commission, 0);
-  const filteredWinning = filteredTrades.filter(t => t.profit + t.swap + t.commission > 0).length;
-  const filteredLosing = filteredTrades.filter(t => t.profit + t.swap + t.commission < 0).length;
-
-  // Obtener símbolos únicos para el filtro
-  const uniqueSymbols = [...new Set(allTrades.map(t => t.symbol))].sort();
-
-  // Paginación con opciones dinámicas
-  const effectiveHistoryPerPage = historyPerPage === 0 ? filteredTrades.length : historyPerPage;
-  const effectivePositionsPerPage = positionsPerPage === 0 ? positions.length : positionsPerPage;
-  
-  const totalPositionPages = effectivePositionsPerPage > 0 ? Math.ceil(positions.length / effectivePositionsPerPage) : 1;
-  const totalHistoryPages = effectiveHistoryPerPage > 0 ? Math.ceil(filteredTrades.length / effectiveHistoryPerPage) : 1;
-  
-  const paginatedPositions = positionsPerPage === 0 
-    ? positions 
-    : positions.slice((positionsPage - 1) * positionsPerPage, positionsPage * positionsPerPage);
-  const paginatedTrades = historyPerPage === 0 
-    ? filteredTrades 
-    : filteredTrades.slice((historyPage - 1) * historyPerPage, historyPage * historyPerPage);
-
-  const tabs = [
-    { id: "stats" as TabType, label: "Estadísticas", icon: BarChart3 },
-    { id: "positions" as TabType, label: `Abiertas (${positions.length})`, icon: Briefcase },
-    { id: "history" as TabType, label: `Historial (${allTrades.length})`, icon: History },
-  ];
-
   return (
     <div className="space-y-6">
-      {/* Header con Token */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex items-start gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.push("/dashboard")}
-            className="mt-1 text-zinc-400 hover:text-white"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-              <h1 className="text-xl font-bold text-white sm:text-2xl">
-                {account.nickname || `Cuenta ${account.accountNumber}`}
-              </h1>
-              <div
-                className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
-                  isLive
-                    ? "bg-green-500/10 text-green-400"
-                    : "bg-zinc-500/10 text-zinc-400"
-                }`}
-              >
-                {isLive ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
-                {isLive ? "Online" : "Offline"}
+      {/* Header */}
+      <div className="mb-6">
+        <Link href="/dashboard" className="mb-4 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <ArrowLeft className="h-4 w-4" />
+          Volver al Dashboard
+        </Link>
+
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex items-start gap-4">
+            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-secondary text-xl font-bold text-foreground">
+              {account.broker.charAt(0)}
+            </div>
+            <div>
+              <div className="flex items-center gap-3">
+                <h1 className="text-2xl font-bold text-foreground">
+                  {account.nickname || `Cuenta ${account.accountNumber}`}
+                </h1>
+                <Badge variant="outline" className={cn("border font-medium", isLive ? "bg-profit/20 text-profit border-profit/30" : "bg-muted text-muted-foreground")}>
+                  <span className={cn("mr-1.5 h-2 w-2 rounded-full", isLive ? "bg-profit" : "bg-muted-foreground")} />
+                  {isLive ? "Conectado" : "Desconectado"}
+                </Badge>
+              </div>
+              <div className="mt-1 flex items-center gap-4 text-sm text-muted-foreground">
+                <span>{account.broker}</span>
+                <span className="text-border">|</span>
+                <span className="font-mono">{account.accountNumber}</span>
+                <Button variant="ghost" size="icon" className="h-5 w-5" onClick={copyToken}>
+                  {copiedToken ? <Check className="h-3 w-3 text-profit" /> : <Copy className="h-3 w-3" />}
+                </Button>
+                <span className="text-border">|</span>
+                <span>{account.platform}</span>
               </div>
             </div>
-            <p className="text-sm text-zinc-400 sm:text-base">
-              {account.broker} • {account.platform}
-            </p>
           </div>
-        </div>
-        
-        {/* Token compacto y botón sync */}
-        <div className="ml-12 flex items-center gap-2 sm:ml-0">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={syncHistory}
-            disabled={syncing || !isLive}
-            className="border-zinc-700 text-zinc-300 hover:text-white"
-            title="Sincronizar historial de trades"
-          >
-            <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />
-            <span className="hidden sm:inline">Sincronizar</span>
-          </Button>
-          <div className="flex items-center gap-2 rounded-lg bg-zinc-900 px-3 py-2">
-            <span className="text-xs text-zinc-400">Token EA:</span>
-            <code className="font-mono text-xs text-zinc-500">
-              ••••••••••••
-            </code>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={copyToken}
-              className="h-6 w-6 p-0 text-emerald-400 hover:text-emerald-300"
-              title="Copiar token completo al portapapeles"
-            >
-              {copiedToken ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => syncHistory()} disabled={syncing || !isLive} className="border-border bg-transparent">
+              <RefreshCw className={cn("mr-2 h-4 w-4", syncing && "animate-spin")} />
+              Sincronizar
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 overflow-x-auto rounded-lg bg-zinc-900 p-1">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex flex-1 items-center justify-center gap-1 whitespace-nowrap rounded-md px-2 py-2 text-xs font-medium transition-colors sm:gap-2 sm:px-4 sm:text-sm ${
-              activeTab === tab.id
-                ? "bg-zinc-800 text-white"
-                : "text-zinc-400 hover:text-white"
-            }`}
-          >
-            <tab.icon className="h-4 w-4" />
-            <span className="hidden sm:inline">{tab.label}</span>
-            <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
-          </button>
-        ))}
+      {/* Quick Stats */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <Card className="border-border bg-card">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">Balance</p>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <p className="mt-1 text-xl font-bold font-mono text-foreground">
+              ${liveData?.account.balance.toLocaleString("en-US", { minimumFractionDigits: 2 }) || "—"}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border bg-card">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">Equity</p>
+              <Activity className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <p className="mt-1 text-xl font-bold font-mono text-foreground">
+              ${liveData?.account.equity.toLocaleString("en-US", { minimumFractionDigits: 2 }) || "—"}
+            </p>
+            {liveData && (
+              <p className={cn("text-xs", totalFloatingPL >= 0 ? "text-profit" : "text-loss")}>
+                Flotante: {totalFloatingPL >= 0 ? "+" : ""}${totalFloatingPL.toFixed(2)}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="border-border bg-card">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">P/L Cerrado</p>
+              {totalProfit >= 0 ? <TrendingUp className="h-4 w-4 text-profit" /> : <TrendingDown className="h-4 w-4 text-loss" />}
+            </div>
+            <p className={cn("mt-1 text-xl font-bold font-mono", totalProfit >= 0 ? "text-profit" : "text-loss")}>
+              {totalProfit >= 0 ? "+" : ""}${totalProfit.toFixed(2)}
+            </p>
+            <p className="text-xs text-muted-foreground">{totalTrades} trades</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border bg-card">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">Win Rate</p>
+              <Target className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <p className="mt-1 text-xl font-bold font-mono text-foreground">{winRate.toFixed(1)}%</p>
+            <p className="text-xs text-muted-foreground">{winningTrades}W / {losingTrades}L</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border bg-card">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">Profit Factor</p>
+              <Scale className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <p className="mt-1 text-xl font-bold font-mono text-foreground">{profitFactor === 0 ? "—" : profitFactor.toFixed(2)}</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border bg-card">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">Margen Libre</p>
+              <Percent className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <p className="mt-1 text-xl font-bold font-mono text-foreground">
+              ${liveData?.account.free_margin.toLocaleString("en-US", { minimumFractionDigits: 2 }) || "—"}
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Contenido de Tabs */}
-      <>
-        {/* Tab: Estadísticas */}
-        {activeTab === "stats" && (
-          <div className="space-y-4 sm:space-y-6">
-            {/* Stats Grid - Solo cuando hay datos en vivo */}
-            {liveData ? (
-              <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-                <Card className="border-zinc-800 bg-zinc-900">
-                  <CardContent className="p-3 sm:p-5">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs text-zinc-400">Balance</p>
-                        <p className="text-xl font-bold text-white">
-                          ${liveData.account.balance.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                        </p>
-                      </div>
-                      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-500/10">
-                        <DollarSign className="h-4 w-4 text-cyan-400" />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card className="border-zinc-800 bg-zinc-900">
-                  <CardContent className="p-3 sm:p-5">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs text-zinc-400">Equidad</p>
-                        <p className="text-xl font-bold text-white">
-                          ${liveData.account.equity.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                        </p>
-                      </div>
-                      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/10">
-                        <Activity className="h-4 w-4 text-emerald-400" />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card className="border-zinc-800 bg-zinc-900">
-                  <CardContent className="p-3 sm:p-5">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs text-zinc-400">P/L Flotante</p>
-                        <p className={`text-xl font-bold ${floatingPL >= 0 ? "text-green-400" : "text-red-400"}`}>
-                          {floatingPL >= 0 ? "+" : ""}${floatingPL.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                        </p>
-                      </div>
-                      <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${floatingPL >= 0 ? "bg-green-500/10" : "bg-red-500/10"}`}>
-                        {floatingPL >= 0 ? <TrendingUp className="h-4 w-4 text-green-400" /> : <TrendingDown className="h-4 w-4 text-red-400" />}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card className="border-zinc-800 bg-zinc-900">
-                  <CardContent className="p-3 sm:p-5">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs text-zinc-400">Margen Libre</p>
-                        <p className="text-xl font-bold text-white">
-                          ${liveData.account.free_margin.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                        </p>
-                      </div>
-                      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-500/10">
-                        <Activity className="h-4 w-4 text-purple-400" />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            ) : (
-              <Card className="border-zinc-800 bg-zinc-900/50 border-dashed">
-                <CardContent className="flex items-center gap-3 p-4">
-                  <WifiOff className="h-5 w-5 text-zinc-500" />
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="bg-secondary/50 p-1">
+          <TabsTrigger value="overview" className="data-[state=active]:bg-card">
+            <BarChart3 className="mr-2 h-4 w-4" />
+            Overview
+          </TabsTrigger>
+          <TabsTrigger value="positions" className="data-[state=active]:bg-card">
+            <CircleDot className="mr-2 h-4 w-4" />
+            Posiciones ({positions.length})
+          </TabsTrigger>
+          <TabsTrigger value="history" className="data-[state=active]:bg-card">
+            <History className="mr-2 h-4 w-4" />
+            Historial
+          </TabsTrigger>
+          <TabsTrigger value="analytics" className="data-[state=active]:bg-card">
+            <PieChartIcon className="mr-2 h-4 w-4" />
+            Analytics
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Overview Tab */}
+        <TabsContent value="overview" className="space-y-6">
+          {/* Equity Curve + Radar Chart */}
+          <div className="grid gap-6 lg:grid-cols-3">
+            {/* Equity Curve (2 columns) */}
+            <Card className="border-border bg-card lg:col-span-3">
+              <CardHeader>
+                <CardTitle className="text-foreground">Curva de Equity</CardTitle>
+                <CardDescription>Evolución del balance y equity</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={equityHistory.length > 1 ? equityHistory : profitCurveData}>
+                      <defs>
+                        <linearGradient id="balanceGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="var(--chart-1)" stopOpacity={0} />
+                        </linearGradient>
+                        <linearGradient id="equityGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="var(--chart-3)" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="var(--chart-3)" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                      <XAxis dataKey={equityHistory.length > 1 ? "time" : "trade"} axisLine={false} tickLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 12 }} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 12 }} tickFormatter={(v) => `$${(v / 1000).toFixed(1)}k`} domain={['dataMin - 100', 'dataMax + 100']} />
+                      <Tooltip contentStyle={{ backgroundColor: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px" }} />
+                      {equityHistory.length > 1 ? (
+                        <>
+                          <Area type="monotone" dataKey="balance" stroke="var(--chart-1)" strokeWidth={2} fill="url(#balanceGradient)" name="Balance" />
+                          <Area type="monotone" dataKey="equity" stroke="var(--chart-3)" strokeWidth={2} fill="url(#equityGradient)" name="Equity" />
+                        </>
+                      ) : (
+                        <Area type="monotone" dataKey="profit" stroke="var(--chart-1)" strokeWidth={2} fill="url(#balanceGradient)" name="Profit" />
+                      )}
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+
+            
+          </div>
+
+          {/* Stats Grid (4 cards) */}
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <Card className="border-border bg-card">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Profit Factor</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-bold font-mono text-foreground">{profitFactor === 0 ? "—" : profitFactor.toFixed(2)}</span>
+                  <span className={cn("text-xs", profitFactor >= 1.5 ? "text-profit" : profitFactor >= 1 ? "text-warning" : "text-loss")}>
+                    {profitFactor >= 1.5 ? "Excelente" : profitFactor >= 1 ? "Bueno" : "Mejorar"}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Avg Win: ${avgWin.toFixed(0)} | Avg Loss: ${avgLoss.toFixed(0)}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-border bg-card">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Expectancy</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-baseline gap-2">
+                  <span className={cn("text-3xl font-bold font-mono", expectancy >= 0 ? "text-profit" : "text-loss")}>${expectancy.toFixed(2)}</span>
+                  <span className="text-xs text-muted-foreground">por trade</span>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Basado en {totalTrades} trades
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-border bg-card">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Rachas</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-4">
                   <div>
-                    <p className="text-sm text-zinc-400">Datos en tiempo real no disponibles</p>
-                    <p className="text-xs text-zinc-500">Conecta el EA para ver balance, equidad y margen actual</p>
+                    <span className="text-2xl font-bold font-mono text-profit">{maxWins}</span>
+                    <p className="text-xs text-muted-foreground">Wins seguidos</p>
+                  </div>
+                  <div>
+                    <span className="text-2xl font-bold font-mono text-loss">{maxLosses}</span>
+                    <p className="text-xs text-muted-foreground">Losses seguidos</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-border bg-card">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Long vs Short</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">Winrate</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Long ({longTrades.length})</span>
+                    <span className="font-mono text-profit">{longWinRate.toFixed(0)}%</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Short ({shortTrades.length})</span>
+                    <span className="font-mono text-chart-3">{shortWinRate.toFixed(0)}%</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Daily P&L */}
+          {dailyPnL.length > 0 && (
+            <Card className="border-border bg-card">
+              <CardHeader>
+                <CardTitle className="text-foreground">P&L Diario</CardTitle>
+                <CardDescription>Rendimiento por día de trading</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[200px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={dailyPnL}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                      <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 12 }} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 12 }} tickFormatter={(v) => `$${v}`} />
+                      <Tooltip contentStyle={{ backgroundColor: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px" }} formatter={(v) => [`$${(v as number).toFixed(2)}`, "P&L"]} />
+                      <Bar dataKey="pnl" radius={[4, 4, 0, 0]}>
+                        {dailyPnL.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.pnl >= 0 ? "var(--chart-1)" : "var(--destructive)"} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* Positions Tab */}
+        <TabsContent value="positions" className="space-y-6">
+          <Card className="border-border bg-card">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-foreground">Posiciones Abiertas</CardTitle>
+                  <CardDescription>
+                    {positions.length} posiciones | P&L Flotante:{" "}
+                    <span className={cn("font-mono font-medium", totalFloatingPL >= 0 ? "text-profit" : "text-loss")}>
+                      {totalFloatingPL >= 0 ? "+" : ""}${totalFloatingPL.toFixed(2)}
+                    </span>
+                  </CardDescription>
+                </div>
+                {positions.length > 0 && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        disabled={closingAll}
+                        className="border-loss/30 bg-loss/10 text-loss hover:bg-loss/20"
+                      >
+                        {closingAll ? (
+                          <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Cerrando...</>
+                        ) : (
+                          "Cerrar Todas"
+                        )}
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>¿Está seguro de cerrar todas las posiciones?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Esta acción cerrará inmediatamente todas las posiciones abiertas. Esta acción no se puede deshacer.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={closeAllPositions} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                          Sí, cerrar todo
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              {positions.length === 0 ? (
+                <p className="py-16 text-center text-muted-foreground">No hay posiciones abiertas</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-border hover:bg-transparent">
+                        <TableHead className="text-muted-foreground">Ticket</TableHead>
+                        <TableHead className="text-muted-foreground">Símbolo</TableHead>
+                        <TableHead className="text-muted-foreground">Tipo</TableHead>
+                        <TableHead className="text-muted-foreground">Volumen</TableHead>
+                        <TableHead className="text-muted-foreground">Apertura</TableHead>
+                        <TableHead className="text-muted-foreground">Actual</TableHead>
+                        <TableHead className="text-muted-foreground">SL</TableHead>
+                        <TableHead className="text-muted-foreground">TP</TableHead>
+                        <TableHead className="text-muted-foreground">P&L</TableHead>
+                        <TableHead className="text-right text-muted-foreground">Acción</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {paginatedPositions.map((p) => (
+                        <TableRow key={p.ticket} className="border-border hover:bg-secondary/50">
+                          <TableCell className="font-mono text-sm text-muted-foreground">#{p.ticket}</TableCell>
+                          <TableCell className="font-medium text-foreground">{p.symbol}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={cn("font-medium uppercase", p.type === "buy" ? "bg-profit/20 text-profit border-profit/30" : "bg-loss/20 text-loss border-loss/30")}>
+                              {p.type}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="font-mono">{p.volume}</TableCell>
+                          <TableCell className="font-mono">{p.open_price.toFixed(5)}</TableCell>
+                          <TableCell className="font-mono">{p.current_price.toFixed(5)}</TableCell>
+                          <TableCell className="font-mono text-loss">{p.sl > 0 ? p.sl.toFixed(5) : "—"}</TableCell>
+                          <TableCell className="font-mono text-profit">{p.tp > 0 ? p.tp.toFixed(5) : "—"}</TableCell>
+                          <TableCell className={cn("font-mono font-medium", p.profit >= 0 ? "text-profit" : "text-loss")}>
+                            {p.profit >= 0 ? "+" : ""}${p.profit.toFixed(2)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => closePosition(p.ticket)} 
+                              disabled={closingTickets.has(p.ticket) || closingAll}
+                              className="text-loss hover:text-loss hover:bg-loss/10"
+                            >
+                              {closingTickets.has(p.ticket) ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <X className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Margin Info */}
+          {liveData && (
+            <div className="grid gap-4 md:grid-cols-3">
+              <Card className="border-border bg-card">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Margen Usado</span>
+                    <span className="font-mono font-medium text-foreground">${liveData.account.margin.toLocaleString()}</span>
                   </div>
                 </CardContent>
               </Card>
-            )}
+              <Card className="border-border bg-card">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Margen Libre</span>
+                    <span className="font-mono font-medium text-foreground">${liveData.account.free_margin.toLocaleString()}</span>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="border-border bg-card">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Nivel de Margen</span>
+                    <span className="font-mono font-medium text-profit">{liveData.account.margin_level.toFixed(2)}%</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </TabsContent>
 
-            {/* Stats adicionales - siempre visibles basados en historial */}
-            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-                <Card className="border-zinc-800 bg-zinc-900">
-                  <CardContent className="p-3 sm:p-5">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs text-zinc-400">Win Rate</p>
-                        <p className="text-xl font-bold text-white">{winRate.toFixed(1)}%</p>
-                      </div>
-                      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500/10">
-                        <Percent className="h-4 w-4 text-amber-400" />
-                      </div>
-                    </div>
-                    <p className="mt-1 text-xs text-zinc-500">{winningTrades}W / {losingTrades}L</p>
-                  </CardContent>
-                </Card>
-                <Card className="border-zinc-800 bg-zinc-900">
-                  <CardContent className="p-3 sm:p-5">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs text-zinc-400">Profit Factor</p>
-                        <p className="text-xl font-bold text-white">{profitFactor.toFixed(2)}</p>
-                      </div>
-                      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-500/10">
-                        <Scale className="h-4 w-4 text-blue-400" />
-                      </div>
-                    </div>
-                    <p className="mt-1 text-xs text-zinc-500">Ratio Win/Loss</p>
-                  </CardContent>
-                </Card>
-                <Card className="border-zinc-800 bg-zinc-900">
-                  <CardContent className="p-3 sm:p-5">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs text-zinc-400">Total P/L (Cerrado)</p>
-                        <p className={`text-xl font-bold ${totalProfit >= 0 ? "text-green-400" : "text-red-400"}`}>
-                          {totalProfit >= 0 ? "+" : ""}${totalProfit.toFixed(2)}
-                        </p>
-                      </div>
-                      <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${totalProfit >= 0 ? "bg-green-500/10" : "bg-red-500/10"}`}>
-                        <Target className="h-4 w-4 text-green-400" />
-                      </div>
-                    </div>
-                    <p className="mt-1 text-xs text-zinc-500">{totalTrades} trades</p>
-                  </CardContent>
-                </Card>
-                <Card className="border-zinc-800 bg-zinc-900">
-                  <CardContent className="p-3 sm:p-5">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs text-zinc-400">Apalancamiento</p>
-                        <p className="text-xl font-bold text-white">1:{liveData?.account?.leverage || 100}</p>
-                      </div>
-                      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-rose-500/10">
-                        <Activity className="h-4 w-4 text-rose-400" />
-                      </div>
-                    </div>
-                    <p className="mt-1 text-xs text-zinc-500">{liveData?.account?.currency || "USD"}</p>
-                  </CardContent>
-                </Card>
+        {/* History Tab */}
+        <TabsContent value="history" className="space-y-6">
+          <Card className="border-border bg-card">
+            <CardHeader>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <CardTitle className="text-foreground">Historial de Operaciones</CardTitle>
+                  <CardDescription>{filteredTrades.length} operaciones</CardDescription>
+                  <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={async () => {
+                        const confirm = window.confirm("¿Solicitar historial completo al EA? Esto forzará una descarga de todos los trades antiguos.");
+                        if (!confirm) return;
+                        try {
+                           const res = await fetch(`/api/accounts/${accountId}/sync-all-history`, { method: "POST" });
+                           const json = await res.json();
+                           if (json.success) alert("Comando enviado. El historial completo se sincronizará en breve.");
+                           else alert("Error: " + json.error);
+                        } catch (e) {
+                           alert("Error enviando comando");
+                        }
+                      }}
+                      className="mt-2 gap-2 text-xs h-7 border-dashed border-primary/50 text-primary hover:bg-primary/10"
+                    >
+                      <Download className="h-3 w-3" />
+                      Sincronizar Todo
+                    </Button>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Select 
+                    value={historyPerPage.toString()} 
+                    onValueChange={(v) => { setHistoryPerPage(Number(v)); setHistoryPage(1); }}
+                  >
+                    <SelectTrigger className="w-[130px] bg-secondary border-border">
+                      <SelectValue placeholder="Tratos por pág." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10 por pág.</SelectItem>
+                      <SelectItem value="20">20 por pág.</SelectItem>
+                      <SelectItem value="50">50 por pág.</SelectItem>
+                      <SelectItem value="100">100 por pág.</SelectItem>
+                      <SelectItem value="0">Ver Todos</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={historyResultFilter} onValueChange={(v) => setHistoryResultFilter(v as typeof historyResultFilter)}>
+                    <SelectTrigger className="w-[130px] bg-secondary border-border">
+                      <SelectValue placeholder="Filtrar" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas</SelectItem>
+                      <SelectItem value="win">Ganadoras</SelectItem>
+                      <SelectItem value="loss">Perdedoras</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={periodFilter} onValueChange={(v) => setPeriodFilter(v as typeof periodFilter)}>
+                    <SelectTrigger className="w-[130px] bg-secondary border-border">
+                      <SelectValue placeholder="Período" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todo</SelectItem>
+                      <SelectItem value="today">Hoy</SelectItem>
+                      <SelectItem value="week">7 días</SelectItem>
+                      <SelectItem value="month">30 días</SelectItem>
+                      <SelectItem value="custom">Personalizado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-
-              {/* Promedios */}
-              <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
-                <Card className="border-zinc-800 bg-zinc-900">
-                  <CardContent className="p-3 sm:p-5">
-                    <p className="text-xs text-zinc-400">Promedio Ganador</p>
-                    <p className="text-2xl font-bold text-green-400">+${avgWin.toFixed(2)}</p>
-                  </CardContent>
-                </Card>
-                <Card className="border-zinc-800 bg-zinc-900">
-                  <CardContent className="p-3 sm:p-5">
-                    <p className="text-xs text-zinc-400">Promedio Perdedor</p>
-                    <p className="text-2xl font-bold text-red-400">-${avgLoss.toFixed(2)}</p>
-                  </CardContent>
-                </Card>
+              {periodFilter === "custom" && (
+                <div className="flex gap-2 mt-2">
+                  <DatePicker date={dateFrom} onDateChange={setDateFrom} placeholder="Desde" />
+                  <DatePicker date={dateTo} onDateChange={setDateTo} placeholder="Hasta" />
+                </div>
+              )}
+              <div className="flex flex-wrap items-center gap-4 text-sm mt-2">
+                <span className="text-muted-foreground">
+                  Ganadas: <span className="text-profit font-medium">{filteredWinning}</span>
+                </span>
+                <span className="text-muted-foreground">
+                  Perdidas: <span className="text-loss font-medium">{filteredLosing}</span>
+                </span>
+                <span className={cn("font-bold", filteredTotalProfit >= 0 ? "text-profit" : "text-loss")}>
+                  Total: {filteredTotalProfit >= 0 ? "+" : ""}${filteredTotalProfit.toFixed(2)}
+                </span>
               </div>
-
-              {/* Gráficos de estadísticas */}
-              {allTrades.length > 0 && (
+            </CardHeader>
+            <CardContent>
+              {filteredTrades.length === 0 ? (
+                <p className="py-16 text-center text-muted-foreground">No hay trades con los filtros seleccionados</p>
+              ) : (
                 <>
-                  {/* Fila 1: Profit Acumulado y Win/Loss Pie */}
-                  <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
-                    {/* Gráfico de Profit Acumulado */}
-                    <Card className="border-zinc-800 bg-zinc-900">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm text-white">Curva de Profit</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="h-52">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={(() => {
-                              let cumulative = 0;
-                              return [...allTrades].reverse().map((t, i) => {
-                                cumulative += t.profit + t.swap + t.commission;
-                                return { trade: i + 1, profit: cumulative };
-                              });
-                            })()}>
-                              <defs>
-                                <linearGradient id="profitGradient" x1="0" y1="0" x2="0" y2="1">
-                                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                                  <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                                </linearGradient>
-                              </defs>
-                              <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-                              <XAxis dataKey="trade" stroke="#71717a" fontSize={10} tickLine={false} label={{ value: 'Trade #', position: 'insideBottom', offset: -5, fill: '#71717a', fontSize: 10 }} />
-                              <YAxis stroke="#71717a" fontSize={10} tickLine={false} tickFormatter={(v) => `$${v}`} />
-                              <Tooltip cursor={{ fill: 'rgba(255,255,255,0.05)' }} contentStyle={{ backgroundColor: "#18181b", border: "1px solid #27272a", borderRadius: "8px" }} labelStyle={{ color: "#a1a1aa" }} itemStyle={{ color: "#e4e4e7" }} formatter={(v) => [`$${(v as number)?.toFixed(2) || 0}`, "Profit Acumulado"]} />
-                              <Area type="monotone" dataKey="profit" stroke="#10b981" strokeWidth={2} fill="url(#profitGradient)" />
-                            </AreaChart>
-                          </ResponsiveContainer>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    {/* Win/Loss Visual Stats */}
-                    <Card className="border-zinc-800 bg-zinc-900">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm text-white">Distribución Win/Loss</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex h-52 flex-col justify-center space-y-4">
-                          {/* Win Rate Visual */}
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="text-green-400">Ganadores ({winningTrades})</span>
-                              <span className="font-mono text-white">{winRate.toFixed(1)}%</span>
-                            </div>
-                            <div className="h-3 w-full overflow-hidden rounded-full bg-zinc-800">
-                              <div 
-                                className="h-full rounded-full bg-gradient-to-r from-green-500 to-emerald-400 transition-all duration-500"
-                                style={{ width: `${winRate}%` }}
-                              />
-                            </div>
-                          </div>
-                          
-                          {/* Loss Rate Visual */}
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="text-red-400">Perdedores ({losingTrades})</span>
-                              <span className="font-mono text-white">{(100 - winRate).toFixed(1)}%</span>
-                            </div>
-                            <div className="h-3 w-full overflow-hidden rounded-full bg-zinc-800">
-                              <div 
-                                className="h-full rounded-full bg-gradient-to-r from-red-500 to-rose-400 transition-all duration-500"
-                                style={{ width: `${100 - winRate}%` }}
-                              />
-                            </div>
-                          </div>
-                          
-                          {/* Summary */}
-                          <div className="mt-4 grid grid-cols-3 gap-4 pt-4 border-t border-zinc-800">
-                            <div className="text-center">
-                              <p className="text-xl font-bold text-white">{totalTrades}</p>
-                              <p className="text-xs text-zinc-400">Total</p>
-                            </div>
-                            <div className="text-center">
-                              <p className="text-xl font-bold text-green-400">{winningTrades}</p>
-                              <p className="text-xs text-zinc-400">Ganados</p>
-                            </div>
-                            <div className="text-center">
-                              <p className="text-xl font-bold text-red-400">{losingTrades}</p>
-                              <p className="text-xs text-zinc-400">Perdidos</p>
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-border hover:bg-transparent">
+                          <TableHead className="text-muted-foreground">Ticket</TableHead>
+                          <TableHead className="text-muted-foreground">Símbolo</TableHead>
+                          <TableHead className="text-muted-foreground">Tipo</TableHead>
+                          <TableHead className="text-muted-foreground">Vol.</TableHead>
+                          <TableHead className="text-muted-foreground">Apertura</TableHead>
+                          <TableHead className="text-muted-foreground">Cierre</TableHead>
+                          <TableHead className="text-muted-foreground">Fecha Apertura</TableHead>
+                          <TableHead className="text-muted-foreground">Fecha Cierre</TableHead>
+                          <TableHead className="text-muted-foreground">P&L</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {paginatedTrades.map((t) => {
+                          const pl = t.profit + t.swap + t.commission;
+                          return (
+                            <TableRow key={t.id} className="border-border hover:bg-secondary/50">
+                              <TableCell className="font-mono text-sm text-muted-foreground">#{t.ticket}</TableCell>
+                              <TableCell className="font-medium text-foreground">{t.symbol}</TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className={cn("font-medium uppercase", t.type === "buy" ? "bg-profit/20 text-profit border-profit/30" : "bg-loss/20 text-loss border-loss/30")}>
+                                  {t.type}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="font-mono">{t.volume}</TableCell>
+                              <TableCell className="font-mono">{t.openPrice.toFixed(5)}</TableCell>
+                              <TableCell className="font-mono">{t.closePrice.toFixed(5)}</TableCell>
+                              <TableCell className="text-xs text-muted-foreground font-mono">
+                                {new Date(t.openTime).toLocaleString("es-ES", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                              </TableCell>
+                              <TableCell className="text-xs text-muted-foreground font-mono">
+                                {new Date(t.closeTime).toLocaleString("es-ES", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  {pl >= 0 ? <Check className="h-4 w-4 text-profit" /> : <X className="h-4 w-4 text-loss" />}
+                                  <span className={cn("font-mono font-medium", pl >= 0 ? "text-profit" : "text-loss")}>
+                                    {pl >= 0 ? "+" : ""}${pl.toFixed(2)}
+                                  </span>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
                   </div>
+                  {/* Pagination Controls */}
+                  <div className="flex items-center justify-between border-t border-border pt-4 mt-4">
+                    <p className="text-sm text-muted-foreground">
+                      Mostrando {Math.min(filteredTrades.length, (historyPage - 1) * effectiveHistoryPerPage + 1)} - {Math.min(filteredTrades.length, historyPage * effectiveHistoryPerPage)} de {filteredTrades.length} trades
+                    </p>
 
-                  {/* Fila 2: Profit por Símbolo (Barras) */}
-                  <Card className="border-zinc-800 bg-zinc-900">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm text-white">Profit por Símbolo</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="h-64">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={(() => {
-                            const bySymbol: Record<string, { profit: number; trades: number }> = {};
-                            allTrades.forEach((t) => {
-                              const pl = t.profit + t.swap + t.commission;
-                              if (!bySymbol[t.symbol]) bySymbol[t.symbol] = { profit: 0, trades: 0 };
-                              bySymbol[t.symbol].profit += pl;
-                              bySymbol[t.symbol].trades += 1;
-                            });
-                            return Object.entries(bySymbol)
-                              .map(([symbol, data]) => ({ symbol, ...data }))
-                              .sort((a, b) => b.profit - a.profit);
-                          })()}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-                            <XAxis dataKey="symbol" stroke="#71717a" fontSize={10} tickLine={false} />
-                            <YAxis stroke="#71717a" fontSize={10} tickLine={false} tickFormatter={(v) => `$${v}`} />
-                            <Tooltip 
-                              cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                              contentStyle={{ backgroundColor: "#18181b", border: "1px solid #27272a", borderRadius: "8px" }} 
-                              labelStyle={{ color: "#a1a1aa" }}
-                              itemStyle={{ color: "#e4e4e7" }}
-                              formatter={(v, name) => [name === 'profit' ? `$${(v as number).toFixed(2)}` : v, name === 'profit' ? 'Profit' : 'Trades']}
-                            />
-                            <Bar dataKey="profit" fill="#10b981" radius={[4, 4, 0, 0]}>
-                              {(() => {
-                                const bySymbol: Record<string, number> = {};
-                                allTrades.forEach((t) => {
-                                  const pl = t.profit + t.swap + t.commission;
-                                  bySymbol[t.symbol] = (bySymbol[t.symbol] || 0) + pl;
-                                });
-                                return Object.values(bySymbol).map((profit, i) => (
-                                  <Cell key={i} fill={profit >= 0 ? '#22c55e' : '#ef4444'} />
-                                ));
-                              })()}
-                            </Bar>
-                          </BarChart>
-                        </ResponsiveContainer>
+                    {effectiveHistoryPerPage > 0 && totalHistoryPages > 1 && (
+                      <div className="flex items-center gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => setHistoryPage(1)} 
+                          disabled={historyPage === 1}
+                          className="hidden sm:flex"
+                        >
+                          Primera
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => setHistoryPage(p => Math.max(1, p - 1))} 
+                          disabled={historyPage === 1}
+                        >
+                          <ChevronLeft className="h-4 w-4" /> Anteriores
+                        </Button>
+                        
+                        <div className="flex items-center gap-1 mx-2">
+                          <span className="text-sm font-medium">Página {historyPage}</span>
+                          <span className="text-sm text-muted-foreground">de {totalHistoryPages}</span>
+                        </div>
+                        
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => setHistoryPage(p => Math.min(totalHistoryPages, p + 1))} 
+                          disabled={historyPage === totalHistoryPages}
+                        >
+                          Siguientes <ChevronRight className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => setHistoryPage(totalHistoryPages)} 
+                          disabled={historyPage === totalHistoryPages}
+                          className="hidden sm:flex"
+                        >
+                          Última
+                        </Button>
                       </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Fila 3: Trades por día y Profit por hora */}
-                  <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
-                    {/* Trades por día de la semana */}
-                    <Card className="border-zinc-800 bg-zinc-900">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm text-white">Trades por Día</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="h-48">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={(() => {
-                              const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-                              const byDay: Record<number, { trades: number; profit: number }> = {};
-                              for (let i = 0; i < 7; i++) byDay[i] = { trades: 0, profit: 0 };
-                              allTrades.forEach((t) => {
-                                const day = new Date(t.closeTime).getDay();
-                                byDay[day].trades += 1;
-                                byDay[day].profit += t.profit + t.swap + t.commission;
-                              });
-                              return days.map((name, i) => ({ day: name, ...byDay[i] }));
-                            })()}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-                              <XAxis dataKey="day" stroke="#71717a" fontSize={10} tickLine={false} />
-                              <YAxis stroke="#71717a" fontSize={10} tickLine={false} />
-                              <Tooltip cursor={{ fill: 'rgba(255,255,255,0.05)' }} contentStyle={{ backgroundColor: "#18181b", border: "1px solid #27272a", borderRadius: "8px" }} labelStyle={{ color: "#a1a1aa" }} itemStyle={{ color: "#e4e4e7" }} />
-                              <Bar dataKey="trades" fill="#8b5cf6" radius={[4, 4, 0, 0]} name="Trades" />
-                            </BarChart>
-                          </ResponsiveContainer>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    {/* Profit por tipo (Long/Short) */}
-                    <Card className="border-zinc-800 bg-zinc-900">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm text-white">Long vs Short</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex h-48 flex-col justify-center space-y-4">
-                          {(() => {
-                            let buyProfit = 0, sellProfit = 0, buyTrades = 0, sellTrades = 0;
-                            allTrades.forEach((t) => {
-                              const pl = t.profit + t.swap + t.commission;
-                              if (t.type === 'buy') { buyProfit += pl; buyTrades++; }
-                              else { sellProfit += pl; sellTrades++; }
-                            });
-                            return (
-                              <>
-                                {/* Long */}
-                                <div className="rounded-lg bg-zinc-800/50 p-3">
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                      <div className="h-3 w-3 rounded-full bg-green-500" />
-                                      <span className="text-sm font-medium text-white">Long (Buy)</span>
-                                      <span className="text-xs text-zinc-400">({buyTrades} trades)</span>
-                                    </div>
-                                    <span className={`font-mono font-bold ${buyProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                      {buyProfit >= 0 ? '+' : ''}${buyProfit.toFixed(2)}
-                                    </span>
-                                  </div>
-                                </div>
-                                
-                                {/* Short */}
-                                <div className="rounded-lg bg-zinc-800/50 p-3">
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                      <div className="h-3 w-3 rounded-full bg-red-500" />
-                                      <span className="text-sm font-medium text-white">Short (Sell)</span>
-                                      <span className="text-xs text-zinc-400">({sellTrades} trades)</span>
-                                    </div>
-                                    <span className={`font-mono font-bold ${sellProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                      {sellProfit >= 0 ? '+' : ''}${sellProfit.toFixed(2)}
-                                    </span>
-                                  </div>
-                                </div>
-                                
-                                {/* Comparison bar */}
-                                <div className="pt-2">
-                                  <div className="flex h-4 w-full overflow-hidden rounded-full bg-zinc-800">
-                                    <div 
-                                      className="h-full bg-gradient-to-r from-green-600 to-green-400 transition-all duration-500"
-                                      style={{ width: `${totalTrades > 0 ? (buyTrades / totalTrades) * 100 : 50}%` }}
-                                    />
-                                    <div 
-                                      className="h-full bg-gradient-to-r from-red-400 to-red-600 transition-all duration-500"
-                                      style={{ width: `${totalTrades > 0 ? (sellTrades / totalTrades) * 100 : 50}%` }}
-                                    />
-                                  </div>
-                                  <div className="mt-1 flex justify-between text-xs text-zinc-400">
-                                    <span>{totalTrades > 0 ? ((buyTrades / totalTrades) * 100).toFixed(0) : 0}% Long</span>
-                                    <span>{totalTrades > 0 ? ((sellTrades / totalTrades) * 100).toFixed(0) : 0}% Short</span>
-                                  </div>
-                                </div>
-                              </>
-                            );
-                          })()}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  {/* Fila 4: Mejores y Peores Trades */}
-                  <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
-                    <Card className="border-zinc-800 bg-zinc-900">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm text-white">🏆 Mejores Trades</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-2">
-                          {[...allTrades]
-                            .map(t => ({ ...t, pl: t.profit + t.swap + t.commission }))
-                            .sort((a, b) => b.pl - a.pl)
-                            .slice(0, 5)
-                            .map((t, i) => (
-                              <div key={i} className="flex items-center justify-between rounded-lg bg-zinc-800/50 px-3 py-2">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs text-zinc-400">#{i + 1}</span>
-                                  <span className="font-medium text-white">{t.symbol}</span>
-                                  <span className={`text-xs ${t.type === 'buy' ? 'text-green-400' : 'text-red-400'}`}>
-                                    {t.type.toUpperCase()}
-                                  </span>
-                                </div>
-                                <span className={`font-mono font-medium ${t.pl >= 0 ? 'text-green-400' : 'text-red-400'}`}>{t.pl >= 0 ? '+' : ''}${t.pl.toFixed(2)}</span>
-                              </div>
-                            ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card className="border-zinc-800 bg-zinc-900">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm text-white">💀 Peores Trades</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-2">
-                          {[...allTrades]
-                            .map(t => ({ ...t, pl: t.profit + t.swap + t.commission }))
-                            .sort((a, b) => a.pl - b.pl)
-                            .slice(0, 5)
-                            .map((t, i) => (
-                              <div key={i} className="flex items-center justify-between rounded-lg bg-zinc-800/50 px-3 py-2">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs text-zinc-400">#{i + 1}</span>
-                                  <span className="font-medium text-white">{t.symbol}</span>
-                                  <span className={`text-xs ${t.type === 'buy' ? 'text-green-400' : 'text-red-400'}`}>
-                                    {t.type.toUpperCase()}
-                                  </span>
-                                </div>
-                                <span className={`font-mono font-medium ${t.pl >= 0 ? 'text-green-400' : 'text-red-400'}`}>{t.pl >= 0 ? '+' : ''}${t.pl.toFixed(2)}</span>
-                              </div>
-                            ))}
-                        </div>
-                      </CardContent>
-                    </Card>
+                    )}
                   </div>
                 </>
               )}
-            </div>
-          )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-          {/* Tab: Posiciones Abiertas */}
-          {activeTab === "positions" && (
-            <Card className="border-zinc-800 bg-zinc-900">
-              <CardContent className="p-0">
-                {positions.length === 0 ? (
-                  <p className="py-16 text-center text-zinc-400">No hay posiciones abiertas</p>
+        {/* Analytics Tab */}
+        <TabsContent value="analytics" className="space-y-6">
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* Symbol Distribution */}
+            <Card className="border-border bg-card">
+              <CardHeader>
+                <CardTitle className="text-foreground">Distribución por Símbolo</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {symbolDistribution.length === 0 ? (
+                  <p className="py-16 text-center text-muted-foreground">Sin datos</p>
                 ) : (
-                  <>
-                    {/* Header con botón cerrar todas */}
-                    <div className="flex items-center justify-between border-b border-zinc-800 p-3 sm:p-4">
-                      <span className="text-xs sm:text-sm text-zinc-400">
-                        {positions.length} posición(es) abierta(s)
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20 text-xs"
-                        onClick={async () => {
-                          if (confirm("¿Cerrar TODAS las posiciones?")) {
-                            await fetch(`/api/accounts/${accountId}/close-all`, { method: "POST" });
-                          }
-                        }}
-                      >
-                        Cerrar Todas
-                      </Button>
+                  <div className="flex items-center gap-8">
+                    <div className="h-[200px] w-[200px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie data={symbolDistribution} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={4} dataKey="trades">
+                            {symbolDistribution.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip contentStyle={{ backgroundColor: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px" }} />
+                        </PieChart>
+                      </ResponsiveContainer>
                     </div>
-                    
-                    {/* Vista móvil: tarjetas */}
-                    <div className="block md:hidden divide-y divide-zinc-800">
-                      {paginatedPositions.map((p) => (
-                        <div key={p.ticket} className="p-3 space-y-2">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-white">{p.symbol}</span>
-                              <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${p.type === "buy" ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"}`}>
-                                {p.type.toUpperCase()}
-                              </span>
-                              <span className="text-xs text-zinc-400">{p.volume} lots</span>
-                            </div>
-                            <span className={`font-mono font-bold ${p.profit >= 0 ? "text-green-400" : "text-red-400"}`}>
-                              {p.profit >= 0 ? "+" : ""}${p.profit.toFixed(2)}
+                    <div className="flex-1 space-y-3">
+                      {symbolDistribution.map((symbol, index) => (
+                        <div key={symbol.name} className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="h-3 w-3 rounded-full" style={{ backgroundColor: COLORS[index] }} />
+                            <span className="text-sm text-foreground">{symbol.name}</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="font-mono text-sm text-foreground">{symbol.trades} trades</span>
+                            <span className={cn("ml-2 font-mono text-xs", symbol.profit >= 0 ? "text-profit" : "text-loss")}>
+                              {symbol.profit >= 0 ? "+" : ""}${symbol.profit.toFixed(0)}
                             </span>
                           </div>
-                          <div className="flex items-center justify-between text-xs">
-                            <div className="space-x-2 text-zinc-400">
-                              <span>Open: <span className="font-mono text-zinc-300">{p.open_price.toFixed(5)}</span></span>
-                              <span>→</span>
-                              <span className="font-mono text-zinc-300">{p.current_price.toFixed(5)}</span>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 px-2 text-xs text-red-400 hover:bg-red-500/10 hover:text-red-300"
-                              onClick={async () => {
-                                await fetch(`/api/accounts/${accountId}/close-trade`, {
-                                  method: "POST",
-                                  headers: { "Content-Type": "application/json" },
-                                  body: JSON.stringify({ ticket: p.ticket }),
-                                });
-                              }}
-                            >
-                              Cerrar
-                            </Button>
-                          </div>
-                          {(p.sl > 0 || p.tp > 0) && (
-                            <div className="flex gap-4 text-xs text-zinc-500">
-                              {p.sl > 0 && <span>SL: {p.sl.toFixed(5)}</span>}
-                              {p.tp > 0 && <span>TP: {p.tp.toFixed(5)}</span>}
-                            </div>
-                          )}
                         </div>
                       ))}
                     </div>
-                    
-                    {/* Vista desktop: tabla */}
-                    <div className="hidden md:block overflow-x-auto">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="border-b border-zinc-800 text-left text-xs text-zinc-400">
-                            <th className="p-4 font-medium">Ticket</th>
-                            <th className="p-4 font-medium">Hora</th>
-                            <th className="p-4 font-medium">Símbolo</th>
-                            <th className="p-4 font-medium">Tipo</th>
-                            <th className="p-4 font-medium">Volumen</th>
-                            <th className="p-4 font-medium">Apertura</th>
-                            <th className="p-4 font-medium">Actual</th>
-                            <th className="p-4 font-medium">SL</th>
-                            <th className="p-4 font-medium">TP</th>
-                            <th className="p-4 font-medium">Swap</th>
-                            <th className="p-4 font-medium">Comisión</th>
-                            <th className="p-4 font-medium text-right">Profit</th>
-                            <th className="p-4 font-medium">Comentario</th>
-                            <th className="p-4 font-medium"></th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {paginatedPositions.map((p) => (
-                            <tr key={p.ticket} className="border-b border-zinc-800/50 text-sm">
-                              <td className="p-4 font-mono text-white">{p.ticket}</td>
-                              <td className="p-4 text-zinc-400 text-xs">
-                                {new Date(p.open_time).toLocaleDateString()} <br />
-                                {new Date(p.open_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                              </td>
-                              <td className="p-4 font-medium text-white">{p.symbol}</td>
-                              <td className="p-4">
-                                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${p.type === "buy" ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"}`}>
-                                  {p.type.toUpperCase()}
-                                </span>
-                              </td>
-                              <td className="p-4 text-white">{p.volume}</td>
-                              <td className="p-4 font-mono text-zinc-300">{p.open_price.toFixed(5)}</td>
-                              <td className="p-4 font-mono text-zinc-300">{p.current_price.toFixed(5)}</td>
-                              <td className="p-4 font-mono text-zinc-400">{p.sl > 0 ? p.sl.toFixed(5) : "-"}</td>
-                              <td className="p-4 font-mono text-zinc-400">{p.tp > 0 ? p.tp.toFixed(5) : "-"}</td>
-                              <td className="p-4 font-mono text-zinc-400">${p.swap.toFixed(2)}</td>
-                              <td className="p-4 font-mono text-zinc-400">${p.commission.toFixed(2)}</td>
-                              <td className={`p-4 text-right font-medium ${p.profit >= 0 ? "text-green-400" : "text-red-400"}`}>
-                                {p.profit >= 0 ? "+" : ""}${p.profit.toFixed(2)}
-                              </td>
-                              <td className="p-4 text-xs text-zinc-500 max-w-[150px] truncate" title={p.comment}>
-                                {p.comment || "-"}
-                              </td>
-                              <td className="p-4">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-7 px-2 text-xs text-red-400 hover:bg-red-500/10 hover:text-red-300"
-                                  onClick={async () => {
-                                    await fetch(`/api/accounts/${accountId}/close-trade`, {
-                                      method: "POST",
-                                      headers: { "Content-Type": "application/json" },
-                                      body: JSON.stringify({ ticket: p.ticket }),
-                                    });
-                                  }}
-                                >
-                                  Cerrar
-                                </Button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                    {/* Paginación */}
-                    {totalPositionPages > 1 && (
-                      <div className="flex items-center justify-between border-t border-zinc-800 p-3 sm:p-4">
-                        <span className="text-xs sm:text-sm text-zinc-400">
-                          Página {positionsPage} de {totalPositionPages}
-                        </span>
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm" onClick={() => setPositionsPage(p => Math.max(1, p - 1))} disabled={positionsPage === 1} className="border-zinc-700">
-                            <ChevronLeft className="h-4 w-4" />
-                          </Button>
-                          <Button variant="outline" size="sm" onClick={() => setPositionsPage(p => Math.min(totalPositionPages, p + 1))} disabled={positionsPage === totalPositionPages} className="border-zinc-700">
-                            <ChevronRight className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </>
+                  </div>
                 )}
               </CardContent>
             </Card>
-          )}
 
-          {/* Tab: Historial */}
-          {activeTab === "history" && (
-            <Card className="border-zinc-800 bg-zinc-900">
-              <CardContent className="p-0">
-                {/* Filtros */}
-                <div className="border-b border-zinc-800 p-4 space-y-3">
-                  <div className="flex flex-wrap gap-3 items-end">
-                    {/* Período */}
-                    <div className="space-y-1">
-                      <label className="text-xs text-zinc-400">Período</label>
-                      <Select value={periodFilter} onValueChange={(v) => setPeriodFilter(v as typeof periodFilter)}>
-                        <SelectTrigger className="h-9 w-[140px] border-zinc-700 bg-zinc-800 text-white">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="border-zinc-700 bg-zinc-800">
-                          <SelectItem value="all">Todo</SelectItem>
-                          <SelectItem value="today">Hoy</SelectItem>
-                          <SelectItem value="week">Última semana</SelectItem>
-                          <SelectItem value="month">Último mes</SelectItem>
-                          <SelectItem value="custom">Personalizado</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    {/* Fechas personalizadas */}
-                    {periodFilter === "custom" && (
-                      <>
-                        <div className="space-y-1">
-                          <label className="text-xs text-zinc-400">Desde</label>
-                          <DatePicker date={dateFrom} onDateChange={setDateFrom} placeholder="Inicio" />
+            {/* Best/Worst Trades */}
+            <Card className="border-border bg-card">
+              <CardHeader>
+                <CardTitle className="text-foreground">Mejores y Peores Trades</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-sm font-medium text-profit mb-2">🏆 Mejores</h4>
+                    <div className="space-y-2">
+                      {[...allTrades].map(t => ({ ...t, pl: t.profit + t.swap + t.commission })).sort((a, b) => b.pl - a.pl).slice(0, 3).map((t, i) => (
+                        <div key={i} className="flex items-center justify-between rounded-lg bg-secondary/50 px-3 py-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground">#{i + 1}</span>
+                            <span className="font-medium text-foreground">{t.symbol}</span>
+                          </div>
+                          <span className="font-mono font-medium text-profit">+${t.pl.toFixed(2)}</span>
                         </div>
-                        <div className="space-y-1">
-                          <label className="text-xs text-zinc-400">Hasta</label>
-                          <DatePicker date={dateTo} onDateChange={setDateTo} placeholder="Fin" />
-                        </div>
-                      </>
-                    )}
-                    
-                    {/* Símbolo */}
-                    <div className="space-y-1">
-                      <label className="text-xs text-zinc-400">Símbolo</label>
-                      <Select value={symbolFilter || "all"} onValueChange={(v) => setSymbolFilter(v === "all" ? "" : v)}>
-                        <SelectTrigger className="h-9 w-[130px] border-zinc-700 bg-zinc-800 text-white">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="border-zinc-700 bg-zinc-800">
-                          <SelectItem value="all">Todos</SelectItem>
-                          {uniqueSymbols.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    {/* Tipo */}
-                    <div className="space-y-1">
-                      <label className="text-xs text-zinc-400">Tipo</label>
-                      <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as typeof typeFilter)}>
-                        <SelectTrigger className="h-9 w-[100px] border-zinc-700 bg-zinc-800 text-white">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="border-zinc-700 bg-zinc-800">
-                          <SelectItem value="all">Todos</SelectItem>
-                          <SelectItem value="buy">Buy</SelectItem>
-                          <SelectItem value="sell">Sell</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    {/* Paginación */}
-                    <div className="space-y-1">
-                      <label className="text-xs text-zinc-400">Mostrar</label>
-                      <Select value={String(historyPerPage)} onValueChange={(v) => setHistoryPerPage(Number(v))}>
-                        <SelectTrigger className="h-9 w-[90px] border-zinc-700 bg-zinc-800 text-white">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="border-zinc-700 bg-zinc-800">
-                          <SelectItem value="0">Todos</SelectItem>
-                          <SelectItem value="10">10</SelectItem>
-                          <SelectItem value="25">25</SelectItem>
-                          <SelectItem value="50">50</SelectItem>
-                          <SelectItem value="100">100</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      ))}
                     </div>
                   </div>
-                  
-                  {/* Resumen de filtro */}
-                  <div className="flex flex-wrap items-center gap-4 text-sm">
-                    <span className="text-zinc-400">
-                      <span className="text-white font-medium">{filteredTrades.length}</span> operaciones
-                      {filteredTrades.length !== allTrades.length && ` (de ${allTrades.length})`}
-                    </span>
-                    <span className="text-zinc-600">|</span>
-                    <span className="text-zinc-400">
-                      Ganadas: <span className="text-green-400 font-medium">{filteredWinning}</span>
-                    </span>
-                    <span className="text-zinc-400">
-                      Perdidas: <span className="text-red-400 font-medium">{filteredLosing}</span>
-                    </span>
-                    <span className="text-zinc-600">|</span>
-                    <span className={`font-bold ${filteredTotalProfit >= 0 ? "text-green-400" : "text-red-400"}`}>
-                      Total: {filteredTotalProfit >= 0 ? "+" : ""}${filteredTotalProfit.toFixed(2)}
-                    </span>
+                  <div>
+                    <h4 className="text-sm font-medium text-loss mb-2">💀 Peores</h4>
+                    <div className="space-y-2">
+                      {[...allTrades].map(t => ({ ...t, pl: t.profit + t.swap + t.commission })).sort((a, b) => a.pl - b.pl).slice(0, 3).map((t, i) => (
+                        <div key={i} className="flex items-center justify-between rounded-lg bg-secondary/50 px-3 py-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground">#{i + 1}</span>
+                            <span className="font-medium text-foreground">{t.symbol}</span>
+                          </div>
+                          <span className="font-mono font-medium text-loss">${t.pl.toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
-                
-                {filteredTrades.length === 0 ? (
-                  <p className="py-16 text-center text-zinc-400">No hay trades con los filtros seleccionados</p>
-                ) : (
-                  <>
-                    {/* Vista móvil: tarjetas */}
-                    <div className="block md:hidden divide-y divide-zinc-800">
-                      {paginatedTrades.map((t) => {
-                        const pl = t.profit + t.swap + t.commission;
-                        return (
-                          <div key={t.id} className="p-3 space-y-2">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium text-white">{t.symbol}</span>
-                                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${t.type === "buy" ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"}`}>
-                                  {t.type.toUpperCase()}
-                                </span>
-                                <span className="text-xs text-zinc-400">{t.volume} lots</span>
-                              </div>
-                              <span className={`font-mono font-bold ${pl >= 0 ? "text-green-400" : "text-red-400"}`}>
-                                {pl >= 0 ? "+" : ""}${pl.toFixed(2)}
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between text-xs text-zinc-400">
-                              <span>{new Date(t.closeTime).toLocaleDateString()}</span>
-                              <span className="font-mono">{t.openPrice.toFixed(5)} → {t.closePrice.toFixed(5)}</span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    
-                    {/* Vista desktop: tabla */}
-                    <div className="hidden md:block overflow-x-auto">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="border-b border-zinc-800 text-left text-xs text-zinc-400">
-                            <th className="p-4 font-medium">Ticket</th>
-                            <th className="p-4 font-medium">Apertura</th>
-                            <th className="p-4 font-medium">Cierre</th>
-                            <th className="p-4 font-medium">Símbolo</th>
-                            <th className="p-4 font-medium">Tipo</th>
-                            <th className="p-4 font-medium">Volumen</th>
-                            <th className="p-4 font-medium">Precio Open</th>
-                            <th className="p-4 font-medium">Precio Close</th>
-                            <th className="p-4 font-medium">Swap</th>
-                            <th className="p-4 font-medium">Comisión</th>
-                            <th className="p-4 font-medium text-right">Profit</th>
-                            <th className="p-4 font-medium">Comentario</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {paginatedTrades.map((t) => {
-                            const pl = t.profit + t.swap + t.commission;
-                            return (
-                              <tr key={t.id} className="border-b border-zinc-800/50 text-sm">
-                                <td className="p-4 font-mono text-white">{t.ticket}</td>
-                                <td className="p-4 text-zinc-400 text-xs">
-                                  {new Date(t.openTime).toLocaleDateString()} <br />
-                                  {new Date(t.openTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </td>
-                                <td className="p-4 text-zinc-400 text-xs">
-                                  {new Date(t.closeTime).toLocaleDateString()} <br />
-                                  {new Date(t.closeTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </td>
-                                <td className="p-4 font-medium text-white">{t.symbol}</td>
-                                <td className="p-4">
-                                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${t.type === "buy" ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"}`}>
-                                    {t.type.toUpperCase()}
-                                  </span>
-                                </td>
-                                <td className="p-4 text-white">{t.volume}</td>
-                                <td className="p-4 font-mono text-zinc-300">{t.openPrice.toFixed(5)}</td>
-                                <td className="p-4 font-mono text-zinc-300">{t.closePrice.toFixed(5)}</td>
-                                <td className="p-4 font-mono text-zinc-400">${t.swap.toFixed(2)}</td>
-                                <td className="p-4 font-mono text-zinc-400">${t.commission.toFixed(2)}</td>
-                                <td className={`p-4 text-right font-medium ${pl >= 0 ? "text-green-400" : "text-red-400"}`}>
-                                  {pl >= 0 ? "+" : ""}${pl.toFixed(2)}
-                                </td>
-                                <td className="p-4 text-xs text-zinc-500 max-w-[150px] truncate" title={t.comment || ""}>
-                                  {t.comment || "-"}
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                    {/* Paginación */}
-                    {totalHistoryPages > 1 && (
-                      <div className="flex items-center justify-between border-t border-zinc-800 p-3 sm:p-4">
-                        <span className="text-xs sm:text-sm text-zinc-400">
-                          Página {historyPage} de {totalHistoryPages}
-                        </span>
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm" onClick={() => setHistoryPage(p => Math.max(1, p - 1))} disabled={historyPage === 1} className="border-zinc-700">
-                            <ChevronLeft className="h-4 w-4" />
-                          </Button>
-                          <Button variant="outline" size="sm" onClick={() => setHistoryPage(p => Math.min(totalHistoryPages, p + 1))} disabled={historyPage === totalHistoryPages} className="border-zinc-700">
-                            <ChevronRight className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
               </CardContent>
             </Card>
-          )}
-        </>
+          </div>
+
+          {/* More Stats */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Card className="border-border bg-card">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-profit/20">
+                    <TrendingUp className="h-5 w-5 text-profit" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Mejor Trade</p>
+                    <p className="font-mono font-bold text-profit">
+                      +${allTrades.length > 0 ? Math.max(...allTrades.map(t => t.profit + t.swap + t.commission)).toFixed(2) : "0.00"}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-border bg-card">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-loss/20">
+                    <TrendingDown className="h-5 w-5 text-loss" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Peor Trade</p>
+                    <p className="font-mono font-bold text-loss">
+                      ${allTrades.length > 0 ? Math.min(...allTrades.map(t => t.profit + t.swap + t.commission)).toFixed(2) : "0.00"}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-border bg-card">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-chart-3/20">
+                    <Timer className="h-5 w-5 text-chart-3" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Total Trades</p>
+                    <p className="font-mono font-bold text-foreground">{totalTrades}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-border bg-card">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-warning/20">
+                    <Flame className="h-5 w-5 text-warning" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Apalancamiento</p>
+                    <p className="font-mono font-bold text-foreground">1:{liveData?.account?.leverage || 100}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
