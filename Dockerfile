@@ -35,17 +35,14 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Copiar archivos necesarios para el modo standalone de Next.js
-COPY --from=builder /app/public* ./public/
+# Copiar archivos necesarios
 COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static/
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/generated ./generated
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/server ./server
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
-# Copiar Prisma CLI para usar la versión 6.x instalada
-COPY --from=builder /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
 # Script de entrada
 COPY --chmod=755 docker-entrypoint.sh ./docker-entrypoint.sh

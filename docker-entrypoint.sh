@@ -9,7 +9,7 @@ sleep 3
 
 # Ejecutar migraciones de Prisma
 echo "📦 Running database migrations..."
-./node_modules/.bin/prisma db push --skip-generate
+bunx prisma db push --skip-generate
 
 # Iniciar el servidor WebSocket en background
 echo "🔌 Starting WebSocket server on port ${WS_PORT:-3001}..."
