@@ -49,6 +49,11 @@ export type AccountType = $Result.DefaultSelection<Prisma.$AccountTypePayload>
  */
 export type TradingAccount = $Result.DefaultSelection<Prisma.$TradingAccountPayload>
 /**
+ * Model ExpertAdvisor
+ * 
+ */
+export type ExpertAdvisor = $Result.DefaultSelection<Prisma.$ExpertAdvisorPayload>
+/**
  * Model TradeHistory
  * 
  */
@@ -253,6 +258,16 @@ export class PrismaClient<
     * ```
     */
   get tradingAccount(): Prisma.TradingAccountDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.expertAdvisor`: Exposes CRUD operations for the **ExpertAdvisor** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more ExpertAdvisors
+    * const expertAdvisors = await prisma.expertAdvisor.findMany()
+    * ```
+    */
+  get expertAdvisor(): Prisma.ExpertAdvisorDelegate<ExtArgs, ClientOptions>;
 
   /**
    * `prisma.tradeHistory`: Exposes CRUD operations for the **TradeHistory** model.
@@ -720,6 +735,7 @@ export namespace Prisma {
     Section: 'Section',
     AccountType: 'AccountType',
     TradingAccount: 'TradingAccount',
+    ExpertAdvisor: 'ExpertAdvisor',
     TradeHistory: 'TradeHistory',
     EquitySnapshot: 'EquitySnapshot'
   };
@@ -740,7 +756,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "user" | "session" | "account" | "verification" | "section" | "accountType" | "tradingAccount" | "tradeHistory" | "equitySnapshot"
+      modelProps: "user" | "session" | "account" | "verification" | "section" | "accountType" | "tradingAccount" | "expertAdvisor" | "tradeHistory" | "equitySnapshot"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1206,6 +1222,72 @@ export namespace Prisma {
           }
         }
       }
+      ExpertAdvisor: {
+        payload: Prisma.$ExpertAdvisorPayload<ExtArgs>
+        fields: Prisma.ExpertAdvisorFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.ExpertAdvisorFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ExpertAdvisorPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.ExpertAdvisorFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ExpertAdvisorPayload>
+          }
+          findFirst: {
+            args: Prisma.ExpertAdvisorFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ExpertAdvisorPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.ExpertAdvisorFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ExpertAdvisorPayload>
+          }
+          findMany: {
+            args: Prisma.ExpertAdvisorFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ExpertAdvisorPayload>[]
+          }
+          create: {
+            args: Prisma.ExpertAdvisorCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ExpertAdvisorPayload>
+          }
+          createMany: {
+            args: Prisma.ExpertAdvisorCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.ExpertAdvisorDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ExpertAdvisorPayload>
+          }
+          update: {
+            args: Prisma.ExpertAdvisorUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ExpertAdvisorPayload>
+          }
+          deleteMany: {
+            args: Prisma.ExpertAdvisorDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.ExpertAdvisorUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.ExpertAdvisorUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ExpertAdvisorPayload>
+          }
+          aggregate: {
+            args: Prisma.ExpertAdvisorAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateExpertAdvisor>
+          }
+          groupBy: {
+            args: Prisma.ExpertAdvisorGroupByArgs<ExtArgs>
+            result: $Utils.Optional<ExpertAdvisorGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.ExpertAdvisorCountArgs<ExtArgs>
+            result: $Utils.Optional<ExpertAdvisorCountAggregateOutputType> | number
+          }
+        }
+      }
       TradeHistory: {
         payload: Prisma.$TradeHistoryPayload<ExtArgs>
         fields: Prisma.TradeHistoryFieldRefs
@@ -1429,6 +1511,7 @@ export namespace Prisma {
     section?: SectionOmit
     accountType?: AccountTypeOmit
     tradingAccount?: TradingAccountOmit
+    expertAdvisor?: ExpertAdvisorOmit
     tradeHistory?: TradeHistoryOmit
     equitySnapshot?: EquitySnapshotOmit
   }
@@ -1656,11 +1739,13 @@ export namespace Prisma {
   export type TradingAccountCountOutputType = {
     trades: number
     snapshots: number
+    expertAdvisors: number
   }
 
   export type TradingAccountCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     trades?: boolean | TradingAccountCountOutputTypeCountTradesArgs
     snapshots?: boolean | TradingAccountCountOutputTypeCountSnapshotsArgs
+    expertAdvisors?: boolean | TradingAccountCountOutputTypeCountExpertAdvisorsArgs
   }
 
   // Custom InputTypes
@@ -1686,6 +1771,13 @@ export namespace Prisma {
    */
   export type TradingAccountCountOutputTypeCountSnapshotsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: EquitySnapshotWhereInput
+  }
+
+  /**
+   * TradingAccountCountOutputType without action
+   */
+  export type TradingAccountCountOutputTypeCountExpertAdvisorsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ExpertAdvisorWhereInput
   }
 
 
@@ -7613,6 +7705,7 @@ export namespace Prisma {
     equity: number | null
     createdAt: Date | null
     updatedAt: Date | null
+    snapshotted: boolean | null
   }
 
   export type TradingAccountMaxAggregateOutputType = {
@@ -7632,6 +7725,7 @@ export namespace Prisma {
     equity: number | null
     createdAt: Date | null
     updatedAt: Date | null
+    snapshotted: boolean | null
   }
 
   export type TradingAccountCountAggregateOutputType = {
@@ -7651,6 +7745,7 @@ export namespace Prisma {
     equity: number
     createdAt: number
     updatedAt: number
+    snapshotted: number
     _all: number
   }
 
@@ -7684,6 +7779,7 @@ export namespace Prisma {
     equity?: true
     createdAt?: true
     updatedAt?: true
+    snapshotted?: true
   }
 
   export type TradingAccountMaxAggregateInputType = {
@@ -7703,6 +7799,7 @@ export namespace Prisma {
     equity?: true
     createdAt?: true
     updatedAt?: true
+    snapshotted?: true
   }
 
   export type TradingAccountCountAggregateInputType = {
@@ -7722,6 +7819,7 @@ export namespace Prisma {
     equity?: true
     createdAt?: true
     updatedAt?: true
+    snapshotted?: true
     _all?: true
   }
 
@@ -7828,6 +7926,7 @@ export namespace Prisma {
     equity: number
     createdAt: Date
     updatedAt: Date
+    snapshotted: boolean
     _count: TradingAccountCountAggregateOutputType | null
     _avg: TradingAccountAvgAggregateOutputType | null
     _sum: TradingAccountSumAggregateOutputType | null
@@ -7866,11 +7965,13 @@ export namespace Prisma {
     equity?: boolean
     createdAt?: boolean
     updatedAt?: boolean
+    snapshotted?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
     section?: boolean | TradingAccount$sectionArgs<ExtArgs>
     accountType?: boolean | TradingAccount$accountTypeArgs<ExtArgs>
     trades?: boolean | TradingAccount$tradesArgs<ExtArgs>
     snapshots?: boolean | TradingAccount$snapshotsArgs<ExtArgs>
+    expertAdvisors?: boolean | TradingAccount$expertAdvisorsArgs<ExtArgs>
     _count?: boolean | TradingAccountCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["tradingAccount"]>
 
@@ -7893,15 +7994,17 @@ export namespace Prisma {
     equity?: boolean
     createdAt?: boolean
     updatedAt?: boolean
+    snapshotted?: boolean
   }
 
-  export type TradingAccountOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "sectionId" | "accountTypeId" | "connectionToken" | "accountNumber" | "broker" | "server" | "platform" | "nickname" | "isConnected" | "lastSeen" | "balance" | "equity" | "createdAt" | "updatedAt", ExtArgs["result"]["tradingAccount"]>
+  export type TradingAccountOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "sectionId" | "accountTypeId" | "connectionToken" | "accountNumber" | "broker" | "server" | "platform" | "nickname" | "isConnected" | "lastSeen" | "balance" | "equity" | "createdAt" | "updatedAt" | "snapshotted", ExtArgs["result"]["tradingAccount"]>
   export type TradingAccountInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
     section?: boolean | TradingAccount$sectionArgs<ExtArgs>
     accountType?: boolean | TradingAccount$accountTypeArgs<ExtArgs>
     trades?: boolean | TradingAccount$tradesArgs<ExtArgs>
     snapshots?: boolean | TradingAccount$snapshotsArgs<ExtArgs>
+    expertAdvisors?: boolean | TradingAccount$expertAdvisorsArgs<ExtArgs>
     _count?: boolean | TradingAccountCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -7913,6 +8016,7 @@ export namespace Prisma {
       accountType: Prisma.$AccountTypePayload<ExtArgs> | null
       trades: Prisma.$TradeHistoryPayload<ExtArgs>[]
       snapshots: Prisma.$EquitySnapshotPayload<ExtArgs>[]
+      expertAdvisors: Prisma.$ExpertAdvisorPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -7931,6 +8035,7 @@ export namespace Prisma {
       equity: number
       createdAt: Date
       updatedAt: Date
+      snapshotted: boolean
     }, ExtArgs["result"]["tradingAccount"]>
     composites: {}
   }
@@ -8276,6 +8381,7 @@ export namespace Prisma {
     accountType<T extends TradingAccount$accountTypeArgs<ExtArgs> = {}>(args?: Subset<T, TradingAccount$accountTypeArgs<ExtArgs>>): Prisma__AccountTypeClient<$Result.GetResult<Prisma.$AccountTypePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     trades<T extends TradingAccount$tradesArgs<ExtArgs> = {}>(args?: Subset<T, TradingAccount$tradesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TradeHistoryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     snapshots<T extends TradingAccount$snapshotsArgs<ExtArgs> = {}>(args?: Subset<T, TradingAccount$snapshotsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$EquitySnapshotPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    expertAdvisors<T extends TradingAccount$expertAdvisorsArgs<ExtArgs> = {}>(args?: Subset<T, TradingAccount$expertAdvisorsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ExpertAdvisorPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -8321,6 +8427,7 @@ export namespace Prisma {
     readonly equity: FieldRef<"TradingAccount", 'Float'>
     readonly createdAt: FieldRef<"TradingAccount", 'DateTime'>
     readonly updatedAt: FieldRef<"TradingAccount", 'DateTime'>
+    readonly snapshotted: FieldRef<"TradingAccount", 'Boolean'>
   }
     
 
@@ -8750,6 +8857,30 @@ export namespace Prisma {
   }
 
   /**
+   * TradingAccount.expertAdvisors
+   */
+  export type TradingAccount$expertAdvisorsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ExpertAdvisor
+     */
+    select?: ExpertAdvisorSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ExpertAdvisor
+     */
+    omit?: ExpertAdvisorOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ExpertAdvisorInclude<ExtArgs> | null
+    where?: ExpertAdvisorWhereInput
+    orderBy?: ExpertAdvisorOrderByWithRelationInput | ExpertAdvisorOrderByWithRelationInput[]
+    cursor?: ExpertAdvisorWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: ExpertAdvisorScalarFieldEnum | ExpertAdvisorScalarFieldEnum[]
+  }
+
+  /**
    * TradingAccount without action
    */
   export type TradingAccountDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -8765,6 +8896,980 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: TradingAccountInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model ExpertAdvisor
+   */
+
+  export type AggregateExpertAdvisor = {
+    _count: ExpertAdvisorCountAggregateOutputType | null
+    _avg: ExpertAdvisorAvgAggregateOutputType | null
+    _sum: ExpertAdvisorSumAggregateOutputType | null
+    _min: ExpertAdvisorMinAggregateOutputType | null
+    _max: ExpertAdvisorMaxAggregateOutputType | null
+  }
+
+  export type ExpertAdvisorAvgAggregateOutputType = {
+    magicNumber: number | null
+  }
+
+  export type ExpertAdvisorSumAggregateOutputType = {
+    magicNumber: number | null
+  }
+
+  export type ExpertAdvisorMinAggregateOutputType = {
+    id: string | null
+    accountId: string | null
+    name: string | null
+    magicNumber: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type ExpertAdvisorMaxAggregateOutputType = {
+    id: string | null
+    accountId: string | null
+    name: string | null
+    magicNumber: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type ExpertAdvisorCountAggregateOutputType = {
+    id: number
+    accountId: number
+    name: number
+    magicNumber: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type ExpertAdvisorAvgAggregateInputType = {
+    magicNumber?: true
+  }
+
+  export type ExpertAdvisorSumAggregateInputType = {
+    magicNumber?: true
+  }
+
+  export type ExpertAdvisorMinAggregateInputType = {
+    id?: true
+    accountId?: true
+    name?: true
+    magicNumber?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type ExpertAdvisorMaxAggregateInputType = {
+    id?: true
+    accountId?: true
+    name?: true
+    magicNumber?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type ExpertAdvisorCountAggregateInputType = {
+    id?: true
+    accountId?: true
+    name?: true
+    magicNumber?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type ExpertAdvisorAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ExpertAdvisor to aggregate.
+     */
+    where?: ExpertAdvisorWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ExpertAdvisors to fetch.
+     */
+    orderBy?: ExpertAdvisorOrderByWithRelationInput | ExpertAdvisorOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: ExpertAdvisorWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ExpertAdvisors from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ExpertAdvisors.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned ExpertAdvisors
+    **/
+    _count?: true | ExpertAdvisorCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: ExpertAdvisorAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: ExpertAdvisorSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: ExpertAdvisorMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: ExpertAdvisorMaxAggregateInputType
+  }
+
+  export type GetExpertAdvisorAggregateType<T extends ExpertAdvisorAggregateArgs> = {
+        [P in keyof T & keyof AggregateExpertAdvisor]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateExpertAdvisor[P]>
+      : GetScalarType<T[P], AggregateExpertAdvisor[P]>
+  }
+
+
+
+
+  export type ExpertAdvisorGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ExpertAdvisorWhereInput
+    orderBy?: ExpertAdvisorOrderByWithAggregationInput | ExpertAdvisorOrderByWithAggregationInput[]
+    by: ExpertAdvisorScalarFieldEnum[] | ExpertAdvisorScalarFieldEnum
+    having?: ExpertAdvisorScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: ExpertAdvisorCountAggregateInputType | true
+    _avg?: ExpertAdvisorAvgAggregateInputType
+    _sum?: ExpertAdvisorSumAggregateInputType
+    _min?: ExpertAdvisorMinAggregateInputType
+    _max?: ExpertAdvisorMaxAggregateInputType
+  }
+
+  export type ExpertAdvisorGroupByOutputType = {
+    id: string
+    accountId: string
+    name: string
+    magicNumber: number
+    createdAt: Date
+    updatedAt: Date
+    _count: ExpertAdvisorCountAggregateOutputType | null
+    _avg: ExpertAdvisorAvgAggregateOutputType | null
+    _sum: ExpertAdvisorSumAggregateOutputType | null
+    _min: ExpertAdvisorMinAggregateOutputType | null
+    _max: ExpertAdvisorMaxAggregateOutputType | null
+  }
+
+  type GetExpertAdvisorGroupByPayload<T extends ExpertAdvisorGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<ExpertAdvisorGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof ExpertAdvisorGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], ExpertAdvisorGroupByOutputType[P]>
+            : GetScalarType<T[P], ExpertAdvisorGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type ExpertAdvisorSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    accountId?: boolean
+    name?: boolean
+    magicNumber?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    account?: boolean | TradingAccountDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["expertAdvisor"]>
+
+
+
+  export type ExpertAdvisorSelectScalar = {
+    id?: boolean
+    accountId?: boolean
+    name?: boolean
+    magicNumber?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type ExpertAdvisorOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "accountId" | "name" | "magicNumber" | "createdAt" | "updatedAt", ExtArgs["result"]["expertAdvisor"]>
+  export type ExpertAdvisorInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    account?: boolean | TradingAccountDefaultArgs<ExtArgs>
+  }
+
+  export type $ExpertAdvisorPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "ExpertAdvisor"
+    objects: {
+      account: Prisma.$TradingAccountPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      accountId: string
+      name: string
+      magicNumber: number
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["expertAdvisor"]>
+    composites: {}
+  }
+
+  type ExpertAdvisorGetPayload<S extends boolean | null | undefined | ExpertAdvisorDefaultArgs> = $Result.GetResult<Prisma.$ExpertAdvisorPayload, S>
+
+  type ExpertAdvisorCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<ExpertAdvisorFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: ExpertAdvisorCountAggregateInputType | true
+    }
+
+  export interface ExpertAdvisorDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['ExpertAdvisor'], meta: { name: 'ExpertAdvisor' } }
+    /**
+     * Find zero or one ExpertAdvisor that matches the filter.
+     * @param {ExpertAdvisorFindUniqueArgs} args - Arguments to find a ExpertAdvisor
+     * @example
+     * // Get one ExpertAdvisor
+     * const expertAdvisor = await prisma.expertAdvisor.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends ExpertAdvisorFindUniqueArgs>(args: SelectSubset<T, ExpertAdvisorFindUniqueArgs<ExtArgs>>): Prisma__ExpertAdvisorClient<$Result.GetResult<Prisma.$ExpertAdvisorPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one ExpertAdvisor that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {ExpertAdvisorFindUniqueOrThrowArgs} args - Arguments to find a ExpertAdvisor
+     * @example
+     * // Get one ExpertAdvisor
+     * const expertAdvisor = await prisma.expertAdvisor.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends ExpertAdvisorFindUniqueOrThrowArgs>(args: SelectSubset<T, ExpertAdvisorFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ExpertAdvisorClient<$Result.GetResult<Prisma.$ExpertAdvisorPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first ExpertAdvisor that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ExpertAdvisorFindFirstArgs} args - Arguments to find a ExpertAdvisor
+     * @example
+     * // Get one ExpertAdvisor
+     * const expertAdvisor = await prisma.expertAdvisor.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends ExpertAdvisorFindFirstArgs>(args?: SelectSubset<T, ExpertAdvisorFindFirstArgs<ExtArgs>>): Prisma__ExpertAdvisorClient<$Result.GetResult<Prisma.$ExpertAdvisorPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first ExpertAdvisor that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ExpertAdvisorFindFirstOrThrowArgs} args - Arguments to find a ExpertAdvisor
+     * @example
+     * // Get one ExpertAdvisor
+     * const expertAdvisor = await prisma.expertAdvisor.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends ExpertAdvisorFindFirstOrThrowArgs>(args?: SelectSubset<T, ExpertAdvisorFindFirstOrThrowArgs<ExtArgs>>): Prisma__ExpertAdvisorClient<$Result.GetResult<Prisma.$ExpertAdvisorPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more ExpertAdvisors that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ExpertAdvisorFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all ExpertAdvisors
+     * const expertAdvisors = await prisma.expertAdvisor.findMany()
+     * 
+     * // Get first 10 ExpertAdvisors
+     * const expertAdvisors = await prisma.expertAdvisor.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const expertAdvisorWithIdOnly = await prisma.expertAdvisor.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends ExpertAdvisorFindManyArgs>(args?: SelectSubset<T, ExpertAdvisorFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ExpertAdvisorPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a ExpertAdvisor.
+     * @param {ExpertAdvisorCreateArgs} args - Arguments to create a ExpertAdvisor.
+     * @example
+     * // Create one ExpertAdvisor
+     * const ExpertAdvisor = await prisma.expertAdvisor.create({
+     *   data: {
+     *     // ... data to create a ExpertAdvisor
+     *   }
+     * })
+     * 
+     */
+    create<T extends ExpertAdvisorCreateArgs>(args: SelectSubset<T, ExpertAdvisorCreateArgs<ExtArgs>>): Prisma__ExpertAdvisorClient<$Result.GetResult<Prisma.$ExpertAdvisorPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many ExpertAdvisors.
+     * @param {ExpertAdvisorCreateManyArgs} args - Arguments to create many ExpertAdvisors.
+     * @example
+     * // Create many ExpertAdvisors
+     * const expertAdvisor = await prisma.expertAdvisor.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends ExpertAdvisorCreateManyArgs>(args?: SelectSubset<T, ExpertAdvisorCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a ExpertAdvisor.
+     * @param {ExpertAdvisorDeleteArgs} args - Arguments to delete one ExpertAdvisor.
+     * @example
+     * // Delete one ExpertAdvisor
+     * const ExpertAdvisor = await prisma.expertAdvisor.delete({
+     *   where: {
+     *     // ... filter to delete one ExpertAdvisor
+     *   }
+     * })
+     * 
+     */
+    delete<T extends ExpertAdvisorDeleteArgs>(args: SelectSubset<T, ExpertAdvisorDeleteArgs<ExtArgs>>): Prisma__ExpertAdvisorClient<$Result.GetResult<Prisma.$ExpertAdvisorPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one ExpertAdvisor.
+     * @param {ExpertAdvisorUpdateArgs} args - Arguments to update one ExpertAdvisor.
+     * @example
+     * // Update one ExpertAdvisor
+     * const expertAdvisor = await prisma.expertAdvisor.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends ExpertAdvisorUpdateArgs>(args: SelectSubset<T, ExpertAdvisorUpdateArgs<ExtArgs>>): Prisma__ExpertAdvisorClient<$Result.GetResult<Prisma.$ExpertAdvisorPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more ExpertAdvisors.
+     * @param {ExpertAdvisorDeleteManyArgs} args - Arguments to filter ExpertAdvisors to delete.
+     * @example
+     * // Delete a few ExpertAdvisors
+     * const { count } = await prisma.expertAdvisor.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends ExpertAdvisorDeleteManyArgs>(args?: SelectSubset<T, ExpertAdvisorDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ExpertAdvisors.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ExpertAdvisorUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many ExpertAdvisors
+     * const expertAdvisor = await prisma.expertAdvisor.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends ExpertAdvisorUpdateManyArgs>(args: SelectSubset<T, ExpertAdvisorUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one ExpertAdvisor.
+     * @param {ExpertAdvisorUpsertArgs} args - Arguments to update or create a ExpertAdvisor.
+     * @example
+     * // Update or create a ExpertAdvisor
+     * const expertAdvisor = await prisma.expertAdvisor.upsert({
+     *   create: {
+     *     // ... data to create a ExpertAdvisor
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the ExpertAdvisor we want to update
+     *   }
+     * })
+     */
+    upsert<T extends ExpertAdvisorUpsertArgs>(args: SelectSubset<T, ExpertAdvisorUpsertArgs<ExtArgs>>): Prisma__ExpertAdvisorClient<$Result.GetResult<Prisma.$ExpertAdvisorPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of ExpertAdvisors.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ExpertAdvisorCountArgs} args - Arguments to filter ExpertAdvisors to count.
+     * @example
+     * // Count the number of ExpertAdvisors
+     * const count = await prisma.expertAdvisor.count({
+     *   where: {
+     *     // ... the filter for the ExpertAdvisors we want to count
+     *   }
+     * })
+    **/
+    count<T extends ExpertAdvisorCountArgs>(
+      args?: Subset<T, ExpertAdvisorCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], ExpertAdvisorCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a ExpertAdvisor.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ExpertAdvisorAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends ExpertAdvisorAggregateArgs>(args: Subset<T, ExpertAdvisorAggregateArgs>): Prisma.PrismaPromise<GetExpertAdvisorAggregateType<T>>
+
+    /**
+     * Group by ExpertAdvisor.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ExpertAdvisorGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends ExpertAdvisorGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: ExpertAdvisorGroupByArgs['orderBy'] }
+        : { orderBy?: ExpertAdvisorGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, ExpertAdvisorGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetExpertAdvisorGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the ExpertAdvisor model
+   */
+  readonly fields: ExpertAdvisorFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for ExpertAdvisor.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__ExpertAdvisorClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    account<T extends TradingAccountDefaultArgs<ExtArgs> = {}>(args?: Subset<T, TradingAccountDefaultArgs<ExtArgs>>): Prisma__TradingAccountClient<$Result.GetResult<Prisma.$TradingAccountPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the ExpertAdvisor model
+   */
+  interface ExpertAdvisorFieldRefs {
+    readonly id: FieldRef<"ExpertAdvisor", 'String'>
+    readonly accountId: FieldRef<"ExpertAdvisor", 'String'>
+    readonly name: FieldRef<"ExpertAdvisor", 'String'>
+    readonly magicNumber: FieldRef<"ExpertAdvisor", 'Int'>
+    readonly createdAt: FieldRef<"ExpertAdvisor", 'DateTime'>
+    readonly updatedAt: FieldRef<"ExpertAdvisor", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * ExpertAdvisor findUnique
+   */
+  export type ExpertAdvisorFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ExpertAdvisor
+     */
+    select?: ExpertAdvisorSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ExpertAdvisor
+     */
+    omit?: ExpertAdvisorOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ExpertAdvisorInclude<ExtArgs> | null
+    /**
+     * Filter, which ExpertAdvisor to fetch.
+     */
+    where: ExpertAdvisorWhereUniqueInput
+  }
+
+  /**
+   * ExpertAdvisor findUniqueOrThrow
+   */
+  export type ExpertAdvisorFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ExpertAdvisor
+     */
+    select?: ExpertAdvisorSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ExpertAdvisor
+     */
+    omit?: ExpertAdvisorOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ExpertAdvisorInclude<ExtArgs> | null
+    /**
+     * Filter, which ExpertAdvisor to fetch.
+     */
+    where: ExpertAdvisorWhereUniqueInput
+  }
+
+  /**
+   * ExpertAdvisor findFirst
+   */
+  export type ExpertAdvisorFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ExpertAdvisor
+     */
+    select?: ExpertAdvisorSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ExpertAdvisor
+     */
+    omit?: ExpertAdvisorOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ExpertAdvisorInclude<ExtArgs> | null
+    /**
+     * Filter, which ExpertAdvisor to fetch.
+     */
+    where?: ExpertAdvisorWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ExpertAdvisors to fetch.
+     */
+    orderBy?: ExpertAdvisorOrderByWithRelationInput | ExpertAdvisorOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ExpertAdvisors.
+     */
+    cursor?: ExpertAdvisorWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ExpertAdvisors from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ExpertAdvisors.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ExpertAdvisors.
+     */
+    distinct?: ExpertAdvisorScalarFieldEnum | ExpertAdvisorScalarFieldEnum[]
+  }
+
+  /**
+   * ExpertAdvisor findFirstOrThrow
+   */
+  export type ExpertAdvisorFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ExpertAdvisor
+     */
+    select?: ExpertAdvisorSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ExpertAdvisor
+     */
+    omit?: ExpertAdvisorOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ExpertAdvisorInclude<ExtArgs> | null
+    /**
+     * Filter, which ExpertAdvisor to fetch.
+     */
+    where?: ExpertAdvisorWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ExpertAdvisors to fetch.
+     */
+    orderBy?: ExpertAdvisorOrderByWithRelationInput | ExpertAdvisorOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ExpertAdvisors.
+     */
+    cursor?: ExpertAdvisorWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ExpertAdvisors from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ExpertAdvisors.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ExpertAdvisors.
+     */
+    distinct?: ExpertAdvisorScalarFieldEnum | ExpertAdvisorScalarFieldEnum[]
+  }
+
+  /**
+   * ExpertAdvisor findMany
+   */
+  export type ExpertAdvisorFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ExpertAdvisor
+     */
+    select?: ExpertAdvisorSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ExpertAdvisor
+     */
+    omit?: ExpertAdvisorOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ExpertAdvisorInclude<ExtArgs> | null
+    /**
+     * Filter, which ExpertAdvisors to fetch.
+     */
+    where?: ExpertAdvisorWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ExpertAdvisors to fetch.
+     */
+    orderBy?: ExpertAdvisorOrderByWithRelationInput | ExpertAdvisorOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing ExpertAdvisors.
+     */
+    cursor?: ExpertAdvisorWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ExpertAdvisors from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ExpertAdvisors.
+     */
+    skip?: number
+    distinct?: ExpertAdvisorScalarFieldEnum | ExpertAdvisorScalarFieldEnum[]
+  }
+
+  /**
+   * ExpertAdvisor create
+   */
+  export type ExpertAdvisorCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ExpertAdvisor
+     */
+    select?: ExpertAdvisorSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ExpertAdvisor
+     */
+    omit?: ExpertAdvisorOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ExpertAdvisorInclude<ExtArgs> | null
+    /**
+     * The data needed to create a ExpertAdvisor.
+     */
+    data: XOR<ExpertAdvisorCreateInput, ExpertAdvisorUncheckedCreateInput>
+  }
+
+  /**
+   * ExpertAdvisor createMany
+   */
+  export type ExpertAdvisorCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many ExpertAdvisors.
+     */
+    data: ExpertAdvisorCreateManyInput | ExpertAdvisorCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ExpertAdvisor update
+   */
+  export type ExpertAdvisorUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ExpertAdvisor
+     */
+    select?: ExpertAdvisorSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ExpertAdvisor
+     */
+    omit?: ExpertAdvisorOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ExpertAdvisorInclude<ExtArgs> | null
+    /**
+     * The data needed to update a ExpertAdvisor.
+     */
+    data: XOR<ExpertAdvisorUpdateInput, ExpertAdvisorUncheckedUpdateInput>
+    /**
+     * Choose, which ExpertAdvisor to update.
+     */
+    where: ExpertAdvisorWhereUniqueInput
+  }
+
+  /**
+   * ExpertAdvisor updateMany
+   */
+  export type ExpertAdvisorUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update ExpertAdvisors.
+     */
+    data: XOR<ExpertAdvisorUpdateManyMutationInput, ExpertAdvisorUncheckedUpdateManyInput>
+    /**
+     * Filter which ExpertAdvisors to update
+     */
+    where?: ExpertAdvisorWhereInput
+    /**
+     * Limit how many ExpertAdvisors to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * ExpertAdvisor upsert
+   */
+  export type ExpertAdvisorUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ExpertAdvisor
+     */
+    select?: ExpertAdvisorSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ExpertAdvisor
+     */
+    omit?: ExpertAdvisorOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ExpertAdvisorInclude<ExtArgs> | null
+    /**
+     * The filter to search for the ExpertAdvisor to update in case it exists.
+     */
+    where: ExpertAdvisorWhereUniqueInput
+    /**
+     * In case the ExpertAdvisor found by the `where` argument doesn't exist, create a new ExpertAdvisor with this data.
+     */
+    create: XOR<ExpertAdvisorCreateInput, ExpertAdvisorUncheckedCreateInput>
+    /**
+     * In case the ExpertAdvisor was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<ExpertAdvisorUpdateInput, ExpertAdvisorUncheckedUpdateInput>
+  }
+
+  /**
+   * ExpertAdvisor delete
+   */
+  export type ExpertAdvisorDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ExpertAdvisor
+     */
+    select?: ExpertAdvisorSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ExpertAdvisor
+     */
+    omit?: ExpertAdvisorOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ExpertAdvisorInclude<ExtArgs> | null
+    /**
+     * Filter which ExpertAdvisor to delete.
+     */
+    where: ExpertAdvisorWhereUniqueInput
+  }
+
+  /**
+   * ExpertAdvisor deleteMany
+   */
+  export type ExpertAdvisorDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ExpertAdvisors to delete
+     */
+    where?: ExpertAdvisorWhereInput
+    /**
+     * Limit how many ExpertAdvisors to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * ExpertAdvisor without action
+   */
+  export type ExpertAdvisorDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ExpertAdvisor
+     */
+    select?: ExpertAdvisorSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ExpertAdvisor
+     */
+    omit?: ExpertAdvisorOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: ExpertAdvisorInclude<ExtArgs> | null
   }
 
 
@@ -11047,10 +12152,23 @@ export namespace Prisma {
     balance: 'balance',
     equity: 'equity',
     createdAt: 'createdAt',
-    updatedAt: 'updatedAt'
+    updatedAt: 'updatedAt',
+    snapshotted: 'snapshotted'
   };
 
   export type TradingAccountScalarFieldEnum = (typeof TradingAccountScalarFieldEnum)[keyof typeof TradingAccountScalarFieldEnum]
+
+
+  export const ExpertAdvisorScalarFieldEnum: {
+    id: 'id',
+    accountId: 'accountId',
+    name: 'name',
+    magicNumber: 'magicNumber',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type ExpertAdvisorScalarFieldEnum = (typeof ExpertAdvisorScalarFieldEnum)[keyof typeof ExpertAdvisorScalarFieldEnum]
 
 
   export const TradeHistoryScalarFieldEnum: {
@@ -11185,6 +12303,15 @@ export namespace Prisma {
   };
 
   export type TradingAccountOrderByRelevanceFieldEnum = (typeof TradingAccountOrderByRelevanceFieldEnum)[keyof typeof TradingAccountOrderByRelevanceFieldEnum]
+
+
+  export const ExpertAdvisorOrderByRelevanceFieldEnum: {
+    id: 'id',
+    accountId: 'accountId',
+    name: 'name'
+  };
+
+  export type ExpertAdvisorOrderByRelevanceFieldEnum = (typeof ExpertAdvisorOrderByRelevanceFieldEnum)[keyof typeof ExpertAdvisorOrderByRelevanceFieldEnum]
 
 
   export const TradeHistoryOrderByRelevanceFieldEnum: {
@@ -11698,11 +12825,13 @@ export namespace Prisma {
     equity?: FloatFilter<"TradingAccount"> | number
     createdAt?: DateTimeFilter<"TradingAccount"> | Date | string
     updatedAt?: DateTimeFilter<"TradingAccount"> | Date | string
+    snapshotted?: BoolFilter<"TradingAccount"> | boolean
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
     section?: XOR<SectionNullableScalarRelationFilter, SectionWhereInput> | null
     accountType?: XOR<AccountTypeNullableScalarRelationFilter, AccountTypeWhereInput> | null
     trades?: TradeHistoryListRelationFilter
     snapshots?: EquitySnapshotListRelationFilter
+    expertAdvisors?: ExpertAdvisorListRelationFilter
   }
 
   export type TradingAccountOrderByWithRelationInput = {
@@ -11722,11 +12851,13 @@ export namespace Prisma {
     equity?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+    snapshotted?: SortOrder
     user?: UserOrderByWithRelationInput
     section?: SectionOrderByWithRelationInput
     accountType?: AccountTypeOrderByWithRelationInput
     trades?: TradeHistoryOrderByRelationAggregateInput
     snapshots?: EquitySnapshotOrderByRelationAggregateInput
+    expertAdvisors?: ExpertAdvisorOrderByRelationAggregateInput
     _relevance?: TradingAccountOrderByRelevanceInput
   }
 
@@ -11750,11 +12881,13 @@ export namespace Prisma {
     equity?: FloatFilter<"TradingAccount"> | number
     createdAt?: DateTimeFilter<"TradingAccount"> | Date | string
     updatedAt?: DateTimeFilter<"TradingAccount"> | Date | string
+    snapshotted?: BoolFilter<"TradingAccount"> | boolean
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
     section?: XOR<SectionNullableScalarRelationFilter, SectionWhereInput> | null
     accountType?: XOR<AccountTypeNullableScalarRelationFilter, AccountTypeWhereInput> | null
     trades?: TradeHistoryListRelationFilter
     snapshots?: EquitySnapshotListRelationFilter
+    expertAdvisors?: ExpertAdvisorListRelationFilter
   }, "id" | "connectionToken">
 
   export type TradingAccountOrderByWithAggregationInput = {
@@ -11774,6 +12907,7 @@ export namespace Prisma {
     equity?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+    snapshotted?: SortOrder
     _count?: TradingAccountCountOrderByAggregateInput
     _avg?: TradingAccountAvgOrderByAggregateInput
     _max?: TradingAccountMaxOrderByAggregateInput
@@ -11801,6 +12935,71 @@ export namespace Prisma {
     equity?: FloatWithAggregatesFilter<"TradingAccount"> | number
     createdAt?: DateTimeWithAggregatesFilter<"TradingAccount"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"TradingAccount"> | Date | string
+    snapshotted?: BoolWithAggregatesFilter<"TradingAccount"> | boolean
+  }
+
+  export type ExpertAdvisorWhereInput = {
+    AND?: ExpertAdvisorWhereInput | ExpertAdvisorWhereInput[]
+    OR?: ExpertAdvisorWhereInput[]
+    NOT?: ExpertAdvisorWhereInput | ExpertAdvisorWhereInput[]
+    id?: StringFilter<"ExpertAdvisor"> | string
+    accountId?: StringFilter<"ExpertAdvisor"> | string
+    name?: StringFilter<"ExpertAdvisor"> | string
+    magicNumber?: IntFilter<"ExpertAdvisor"> | number
+    createdAt?: DateTimeFilter<"ExpertAdvisor"> | Date | string
+    updatedAt?: DateTimeFilter<"ExpertAdvisor"> | Date | string
+    account?: XOR<TradingAccountScalarRelationFilter, TradingAccountWhereInput>
+  }
+
+  export type ExpertAdvisorOrderByWithRelationInput = {
+    id?: SortOrder
+    accountId?: SortOrder
+    name?: SortOrder
+    magicNumber?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    account?: TradingAccountOrderByWithRelationInput
+    _relevance?: ExpertAdvisorOrderByRelevanceInput
+  }
+
+  export type ExpertAdvisorWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    accountId_magicNumber?: ExpertAdvisorAccountIdMagicNumberCompoundUniqueInput
+    AND?: ExpertAdvisorWhereInput | ExpertAdvisorWhereInput[]
+    OR?: ExpertAdvisorWhereInput[]
+    NOT?: ExpertAdvisorWhereInput | ExpertAdvisorWhereInput[]
+    accountId?: StringFilter<"ExpertAdvisor"> | string
+    name?: StringFilter<"ExpertAdvisor"> | string
+    magicNumber?: IntFilter<"ExpertAdvisor"> | number
+    createdAt?: DateTimeFilter<"ExpertAdvisor"> | Date | string
+    updatedAt?: DateTimeFilter<"ExpertAdvisor"> | Date | string
+    account?: XOR<TradingAccountScalarRelationFilter, TradingAccountWhereInput>
+  }, "id" | "accountId_magicNumber">
+
+  export type ExpertAdvisorOrderByWithAggregationInput = {
+    id?: SortOrder
+    accountId?: SortOrder
+    name?: SortOrder
+    magicNumber?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: ExpertAdvisorCountOrderByAggregateInput
+    _avg?: ExpertAdvisorAvgOrderByAggregateInput
+    _max?: ExpertAdvisorMaxOrderByAggregateInput
+    _min?: ExpertAdvisorMinOrderByAggregateInput
+    _sum?: ExpertAdvisorSumOrderByAggregateInput
+  }
+
+  export type ExpertAdvisorScalarWhereWithAggregatesInput = {
+    AND?: ExpertAdvisorScalarWhereWithAggregatesInput | ExpertAdvisorScalarWhereWithAggregatesInput[]
+    OR?: ExpertAdvisorScalarWhereWithAggregatesInput[]
+    NOT?: ExpertAdvisorScalarWhereWithAggregatesInput | ExpertAdvisorScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"ExpertAdvisor"> | string
+    accountId?: StringWithAggregatesFilter<"ExpertAdvisor"> | string
+    name?: StringWithAggregatesFilter<"ExpertAdvisor"> | string
+    magicNumber?: IntWithAggregatesFilter<"ExpertAdvisor"> | number
+    createdAt?: DateTimeWithAggregatesFilter<"ExpertAdvisor"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"ExpertAdvisor"> | Date | string
   }
 
   export type TradeHistoryWhereInput = {
@@ -12477,11 +13676,13 @@ export namespace Prisma {
     equity?: number
     createdAt?: Date | string
     updatedAt?: Date | string
+    snapshotted?: boolean
     user: UserCreateNestedOneWithoutTradingAccountsInput
     section?: SectionCreateNestedOneWithoutAccountsInput
     accountType?: AccountTypeCreateNestedOneWithoutAccountsInput
     trades?: TradeHistoryCreateNestedManyWithoutAccountInput
     snapshots?: EquitySnapshotCreateNestedManyWithoutAccountInput
+    expertAdvisors?: ExpertAdvisorCreateNestedManyWithoutAccountInput
   }
 
   export type TradingAccountUncheckedCreateInput = {
@@ -12501,8 +13702,10 @@ export namespace Prisma {
     equity?: number
     createdAt?: Date | string
     updatedAt?: Date | string
+    snapshotted?: boolean
     trades?: TradeHistoryUncheckedCreateNestedManyWithoutAccountInput
     snapshots?: EquitySnapshotUncheckedCreateNestedManyWithoutAccountInput
+    expertAdvisors?: ExpertAdvisorUncheckedCreateNestedManyWithoutAccountInput
   }
 
   export type TradingAccountUpdateInput = {
@@ -12519,11 +13722,13 @@ export namespace Prisma {
     equity?: FloatFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    snapshotted?: BoolFieldUpdateOperationsInput | boolean
     user?: UserUpdateOneRequiredWithoutTradingAccountsNestedInput
     section?: SectionUpdateOneWithoutAccountsNestedInput
     accountType?: AccountTypeUpdateOneWithoutAccountsNestedInput
     trades?: TradeHistoryUpdateManyWithoutAccountNestedInput
     snapshots?: EquitySnapshotUpdateManyWithoutAccountNestedInput
+    expertAdvisors?: ExpertAdvisorUpdateManyWithoutAccountNestedInput
   }
 
   export type TradingAccountUncheckedUpdateInput = {
@@ -12543,8 +13748,10 @@ export namespace Prisma {
     equity?: FloatFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    snapshotted?: BoolFieldUpdateOperationsInput | boolean
     trades?: TradeHistoryUncheckedUpdateManyWithoutAccountNestedInput
     snapshots?: EquitySnapshotUncheckedUpdateManyWithoutAccountNestedInput
+    expertAdvisors?: ExpertAdvisorUncheckedUpdateManyWithoutAccountNestedInput
   }
 
   export type TradingAccountCreateManyInput = {
@@ -12564,6 +13771,7 @@ export namespace Prisma {
     equity?: number
     createdAt?: Date | string
     updatedAt?: Date | string
+    snapshotted?: boolean
   }
 
   export type TradingAccountUpdateManyMutationInput = {
@@ -12580,6 +13788,7 @@ export namespace Prisma {
     equity?: FloatFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    snapshotted?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type TradingAccountUncheckedUpdateManyInput = {
@@ -12597,6 +13806,69 @@ export namespace Prisma {
     lastSeen?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     balance?: FloatFieldUpdateOperationsInput | number
     equity?: FloatFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    snapshotted?: BoolFieldUpdateOperationsInput | boolean
+  }
+
+  export type ExpertAdvisorCreateInput = {
+    id?: string
+    name: string
+    magicNumber: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    account: TradingAccountCreateNestedOneWithoutExpertAdvisorsInput
+  }
+
+  export type ExpertAdvisorUncheckedCreateInput = {
+    id?: string
+    accountId: string
+    name: string
+    magicNumber: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ExpertAdvisorUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    magicNumber?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    account?: TradingAccountUpdateOneRequiredWithoutExpertAdvisorsNestedInput
+  }
+
+  export type ExpertAdvisorUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    accountId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    magicNumber?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ExpertAdvisorCreateManyInput = {
+    id?: string
+    accountId: string
+    name: string
+    magicNumber: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ExpertAdvisorUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    magicNumber?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ExpertAdvisorUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    accountId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    magicNumber?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -13290,11 +14562,21 @@ export namespace Prisma {
     none?: EquitySnapshotWhereInput
   }
 
+  export type ExpertAdvisorListRelationFilter = {
+    every?: ExpertAdvisorWhereInput
+    some?: ExpertAdvisorWhereInput
+    none?: ExpertAdvisorWhereInput
+  }
+
   export type TradeHistoryOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
   export type EquitySnapshotOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type ExpertAdvisorOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -13321,6 +14603,7 @@ export namespace Prisma {
     equity?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+    snapshotted?: SortOrder
   }
 
   export type TradingAccountAvgOrderByAggregateInput = {
@@ -13346,6 +14629,7 @@ export namespace Prisma {
     equity?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+    snapshotted?: SortOrder
   }
 
   export type TradingAccountMinOrderByAggregateInput = {
@@ -13365,6 +14649,7 @@ export namespace Prisma {
     equity?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+    snapshotted?: SortOrder
   }
 
   export type TradingAccountSumOrderByAggregateInput = {
@@ -13405,6 +14690,57 @@ export namespace Prisma {
     _max?: NestedFloatFilter<$PrismaModel>
   }
 
+  export type TradingAccountScalarRelationFilter = {
+    is?: TradingAccountWhereInput
+    isNot?: TradingAccountWhereInput
+  }
+
+  export type ExpertAdvisorOrderByRelevanceInput = {
+    fields: ExpertAdvisorOrderByRelevanceFieldEnum | ExpertAdvisorOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type ExpertAdvisorAccountIdMagicNumberCompoundUniqueInput = {
+    accountId: string
+    magicNumber: number
+  }
+
+  export type ExpertAdvisorCountOrderByAggregateInput = {
+    id?: SortOrder
+    accountId?: SortOrder
+    name?: SortOrder
+    magicNumber?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ExpertAdvisorAvgOrderByAggregateInput = {
+    magicNumber?: SortOrder
+  }
+
+  export type ExpertAdvisorMaxOrderByAggregateInput = {
+    id?: SortOrder
+    accountId?: SortOrder
+    name?: SortOrder
+    magicNumber?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ExpertAdvisorMinOrderByAggregateInput = {
+    id?: SortOrder
+    accountId?: SortOrder
+    name?: SortOrder
+    magicNumber?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type ExpertAdvisorSumOrderByAggregateInput = {
+    magicNumber?: SortOrder
+  }
+
   export type BigIntFilter<$PrismaModel = never> = {
     equals?: bigint | number | BigIntFieldRefInput<$PrismaModel>
     in?: bigint[] | number[]
@@ -13436,11 +14772,6 @@ export namespace Prisma {
     gt?: number | IntFieldRefInput<$PrismaModel>
     gte?: number | IntFieldRefInput<$PrismaModel>
     not?: NestedIntNullableFilter<$PrismaModel> | number | null
-  }
-
-  export type TradingAccountScalarRelationFilter = {
-    is?: TradingAccountWhereInput
-    isNot?: TradingAccountWhereInput
   }
 
   export type TradeHistoryOrderByRelevanceInput = {
@@ -14053,6 +15384,13 @@ export namespace Prisma {
     connect?: EquitySnapshotWhereUniqueInput | EquitySnapshotWhereUniqueInput[]
   }
 
+  export type ExpertAdvisorCreateNestedManyWithoutAccountInput = {
+    create?: XOR<ExpertAdvisorCreateWithoutAccountInput, ExpertAdvisorUncheckedCreateWithoutAccountInput> | ExpertAdvisorCreateWithoutAccountInput[] | ExpertAdvisorUncheckedCreateWithoutAccountInput[]
+    connectOrCreate?: ExpertAdvisorCreateOrConnectWithoutAccountInput | ExpertAdvisorCreateOrConnectWithoutAccountInput[]
+    createMany?: ExpertAdvisorCreateManyAccountInputEnvelope
+    connect?: ExpertAdvisorWhereUniqueInput | ExpertAdvisorWhereUniqueInput[]
+  }
+
   export type TradeHistoryUncheckedCreateNestedManyWithoutAccountInput = {
     create?: XOR<TradeHistoryCreateWithoutAccountInput, TradeHistoryUncheckedCreateWithoutAccountInput> | TradeHistoryCreateWithoutAccountInput[] | TradeHistoryUncheckedCreateWithoutAccountInput[]
     connectOrCreate?: TradeHistoryCreateOrConnectWithoutAccountInput | TradeHistoryCreateOrConnectWithoutAccountInput[]
@@ -14065,6 +15403,13 @@ export namespace Prisma {
     connectOrCreate?: EquitySnapshotCreateOrConnectWithoutAccountInput | EquitySnapshotCreateOrConnectWithoutAccountInput[]
     createMany?: EquitySnapshotCreateManyAccountInputEnvelope
     connect?: EquitySnapshotWhereUniqueInput | EquitySnapshotWhereUniqueInput[]
+  }
+
+  export type ExpertAdvisorUncheckedCreateNestedManyWithoutAccountInput = {
+    create?: XOR<ExpertAdvisorCreateWithoutAccountInput, ExpertAdvisorUncheckedCreateWithoutAccountInput> | ExpertAdvisorCreateWithoutAccountInput[] | ExpertAdvisorUncheckedCreateWithoutAccountInput[]
+    connectOrCreate?: ExpertAdvisorCreateOrConnectWithoutAccountInput | ExpertAdvisorCreateOrConnectWithoutAccountInput[]
+    createMany?: ExpertAdvisorCreateManyAccountInputEnvelope
+    connect?: ExpertAdvisorWhereUniqueInput | ExpertAdvisorWhereUniqueInput[]
   }
 
   export type IntFieldUpdateOperationsInput = {
@@ -14139,6 +15484,20 @@ export namespace Prisma {
     deleteMany?: EquitySnapshotScalarWhereInput | EquitySnapshotScalarWhereInput[]
   }
 
+  export type ExpertAdvisorUpdateManyWithoutAccountNestedInput = {
+    create?: XOR<ExpertAdvisorCreateWithoutAccountInput, ExpertAdvisorUncheckedCreateWithoutAccountInput> | ExpertAdvisorCreateWithoutAccountInput[] | ExpertAdvisorUncheckedCreateWithoutAccountInput[]
+    connectOrCreate?: ExpertAdvisorCreateOrConnectWithoutAccountInput | ExpertAdvisorCreateOrConnectWithoutAccountInput[]
+    upsert?: ExpertAdvisorUpsertWithWhereUniqueWithoutAccountInput | ExpertAdvisorUpsertWithWhereUniqueWithoutAccountInput[]
+    createMany?: ExpertAdvisorCreateManyAccountInputEnvelope
+    set?: ExpertAdvisorWhereUniqueInput | ExpertAdvisorWhereUniqueInput[]
+    disconnect?: ExpertAdvisorWhereUniqueInput | ExpertAdvisorWhereUniqueInput[]
+    delete?: ExpertAdvisorWhereUniqueInput | ExpertAdvisorWhereUniqueInput[]
+    connect?: ExpertAdvisorWhereUniqueInput | ExpertAdvisorWhereUniqueInput[]
+    update?: ExpertAdvisorUpdateWithWhereUniqueWithoutAccountInput | ExpertAdvisorUpdateWithWhereUniqueWithoutAccountInput[]
+    updateMany?: ExpertAdvisorUpdateManyWithWhereWithoutAccountInput | ExpertAdvisorUpdateManyWithWhereWithoutAccountInput[]
+    deleteMany?: ExpertAdvisorScalarWhereInput | ExpertAdvisorScalarWhereInput[]
+  }
+
   export type TradeHistoryUncheckedUpdateManyWithoutAccountNestedInput = {
     create?: XOR<TradeHistoryCreateWithoutAccountInput, TradeHistoryUncheckedCreateWithoutAccountInput> | TradeHistoryCreateWithoutAccountInput[] | TradeHistoryUncheckedCreateWithoutAccountInput[]
     connectOrCreate?: TradeHistoryCreateOrConnectWithoutAccountInput | TradeHistoryCreateOrConnectWithoutAccountInput[]
@@ -14165,6 +15524,34 @@ export namespace Prisma {
     update?: EquitySnapshotUpdateWithWhereUniqueWithoutAccountInput | EquitySnapshotUpdateWithWhereUniqueWithoutAccountInput[]
     updateMany?: EquitySnapshotUpdateManyWithWhereWithoutAccountInput | EquitySnapshotUpdateManyWithWhereWithoutAccountInput[]
     deleteMany?: EquitySnapshotScalarWhereInput | EquitySnapshotScalarWhereInput[]
+  }
+
+  export type ExpertAdvisorUncheckedUpdateManyWithoutAccountNestedInput = {
+    create?: XOR<ExpertAdvisorCreateWithoutAccountInput, ExpertAdvisorUncheckedCreateWithoutAccountInput> | ExpertAdvisorCreateWithoutAccountInput[] | ExpertAdvisorUncheckedCreateWithoutAccountInput[]
+    connectOrCreate?: ExpertAdvisorCreateOrConnectWithoutAccountInput | ExpertAdvisorCreateOrConnectWithoutAccountInput[]
+    upsert?: ExpertAdvisorUpsertWithWhereUniqueWithoutAccountInput | ExpertAdvisorUpsertWithWhereUniqueWithoutAccountInput[]
+    createMany?: ExpertAdvisorCreateManyAccountInputEnvelope
+    set?: ExpertAdvisorWhereUniqueInput | ExpertAdvisorWhereUniqueInput[]
+    disconnect?: ExpertAdvisorWhereUniqueInput | ExpertAdvisorWhereUniqueInput[]
+    delete?: ExpertAdvisorWhereUniqueInput | ExpertAdvisorWhereUniqueInput[]
+    connect?: ExpertAdvisorWhereUniqueInput | ExpertAdvisorWhereUniqueInput[]
+    update?: ExpertAdvisorUpdateWithWhereUniqueWithoutAccountInput | ExpertAdvisorUpdateWithWhereUniqueWithoutAccountInput[]
+    updateMany?: ExpertAdvisorUpdateManyWithWhereWithoutAccountInput | ExpertAdvisorUpdateManyWithWhereWithoutAccountInput[]
+    deleteMany?: ExpertAdvisorScalarWhereInput | ExpertAdvisorScalarWhereInput[]
+  }
+
+  export type TradingAccountCreateNestedOneWithoutExpertAdvisorsInput = {
+    create?: XOR<TradingAccountCreateWithoutExpertAdvisorsInput, TradingAccountUncheckedCreateWithoutExpertAdvisorsInput>
+    connectOrCreate?: TradingAccountCreateOrConnectWithoutExpertAdvisorsInput
+    connect?: TradingAccountWhereUniqueInput
+  }
+
+  export type TradingAccountUpdateOneRequiredWithoutExpertAdvisorsNestedInput = {
+    create?: XOR<TradingAccountCreateWithoutExpertAdvisorsInput, TradingAccountUncheckedCreateWithoutExpertAdvisorsInput>
+    connectOrCreate?: TradingAccountCreateOrConnectWithoutExpertAdvisorsInput
+    upsert?: TradingAccountUpsertWithoutExpertAdvisorsInput
+    connect?: TradingAccountWhereUniqueInput
+    update?: XOR<XOR<TradingAccountUpdateToOneWithWhereWithoutExpertAdvisorsInput, TradingAccountUpdateWithoutExpertAdvisorsInput>, TradingAccountUncheckedUpdateWithoutExpertAdvisorsInput>
   }
 
   export type TradingAccountCreateNestedOneWithoutTradesInput = {
@@ -14565,10 +15952,12 @@ export namespace Prisma {
     equity?: number
     createdAt?: Date | string
     updatedAt?: Date | string
+    snapshotted?: boolean
     section?: SectionCreateNestedOneWithoutAccountsInput
     accountType?: AccountTypeCreateNestedOneWithoutAccountsInput
     trades?: TradeHistoryCreateNestedManyWithoutAccountInput
     snapshots?: EquitySnapshotCreateNestedManyWithoutAccountInput
+    expertAdvisors?: ExpertAdvisorCreateNestedManyWithoutAccountInput
   }
 
   export type TradingAccountUncheckedCreateWithoutUserInput = {
@@ -14587,8 +15976,10 @@ export namespace Prisma {
     equity?: number
     createdAt?: Date | string
     updatedAt?: Date | string
+    snapshotted?: boolean
     trades?: TradeHistoryUncheckedCreateNestedManyWithoutAccountInput
     snapshots?: EquitySnapshotUncheckedCreateNestedManyWithoutAccountInput
+    expertAdvisors?: ExpertAdvisorUncheckedCreateNestedManyWithoutAccountInput
   }
 
   export type TradingAccountCreateOrConnectWithoutUserInput = {
@@ -14755,6 +16146,7 @@ export namespace Prisma {
     equity?: FloatFilter<"TradingAccount"> | number
     createdAt?: DateTimeFilter<"TradingAccount"> | Date | string
     updatedAt?: DateTimeFilter<"TradingAccount"> | Date | string
+    snapshotted?: BoolFilter<"TradingAccount"> | boolean
   }
 
   export type SectionUpsertWithWhereUniqueWithoutUserInput = {
@@ -15003,10 +16395,12 @@ export namespace Prisma {
     equity?: number
     createdAt?: Date | string
     updatedAt?: Date | string
+    snapshotted?: boolean
     user: UserCreateNestedOneWithoutTradingAccountsInput
     accountType?: AccountTypeCreateNestedOneWithoutAccountsInput
     trades?: TradeHistoryCreateNestedManyWithoutAccountInput
     snapshots?: EquitySnapshotCreateNestedManyWithoutAccountInput
+    expertAdvisors?: ExpertAdvisorCreateNestedManyWithoutAccountInput
   }
 
   export type TradingAccountUncheckedCreateWithoutSectionInput = {
@@ -15025,8 +16419,10 @@ export namespace Prisma {
     equity?: number
     createdAt?: Date | string
     updatedAt?: Date | string
+    snapshotted?: boolean
     trades?: TradeHistoryUncheckedCreateNestedManyWithoutAccountInput
     snapshots?: EquitySnapshotUncheckedCreateNestedManyWithoutAccountInput
+    expertAdvisors?: ExpertAdvisorUncheckedCreateNestedManyWithoutAccountInput
   }
 
   export type TradingAccountCreateOrConnectWithoutSectionInput = {
@@ -15141,10 +16537,12 @@ export namespace Prisma {
     equity?: number
     createdAt?: Date | string
     updatedAt?: Date | string
+    snapshotted?: boolean
     user: UserCreateNestedOneWithoutTradingAccountsInput
     section?: SectionCreateNestedOneWithoutAccountsInput
     trades?: TradeHistoryCreateNestedManyWithoutAccountInput
     snapshots?: EquitySnapshotCreateNestedManyWithoutAccountInput
+    expertAdvisors?: ExpertAdvisorCreateNestedManyWithoutAccountInput
   }
 
   export type TradingAccountUncheckedCreateWithoutAccountTypeInput = {
@@ -15163,8 +16561,10 @@ export namespace Prisma {
     equity?: number
     createdAt?: Date | string
     updatedAt?: Date | string
+    snapshotted?: boolean
     trades?: TradeHistoryUncheckedCreateNestedManyWithoutAccountInput
     snapshots?: EquitySnapshotUncheckedCreateNestedManyWithoutAccountInput
+    expertAdvisors?: ExpertAdvisorUncheckedCreateNestedManyWithoutAccountInput
   }
 
   export type TradingAccountCreateOrConnectWithoutAccountTypeInput = {
@@ -15391,6 +16791,32 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type ExpertAdvisorCreateWithoutAccountInput = {
+    id?: string
+    name: string
+    magicNumber: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ExpertAdvisorUncheckedCreateWithoutAccountInput = {
+    id?: string
+    name: string
+    magicNumber: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type ExpertAdvisorCreateOrConnectWithoutAccountInput = {
+    where: ExpertAdvisorWhereUniqueInput
+    create: XOR<ExpertAdvisorCreateWithoutAccountInput, ExpertAdvisorUncheckedCreateWithoutAccountInput>
+  }
+
+  export type ExpertAdvisorCreateManyAccountInputEnvelope = {
+    data: ExpertAdvisorCreateManyAccountInput | ExpertAdvisorCreateManyAccountInput[]
+    skipDuplicates?: boolean
+  }
+
   export type UserUpsertWithoutTradingAccountsInput = {
     update: XOR<UserUpdateWithoutTradingAccountsInput, UserUncheckedUpdateWithoutTradingAccountsInput>
     create: XOR<UserCreateWithoutTradingAccountsInput, UserUncheckedCreateWithoutTradingAccountsInput>
@@ -15557,6 +16983,138 @@ export namespace Prisma {
     timestamp?: DateTimeFilter<"EquitySnapshot"> | Date | string
   }
 
+  export type ExpertAdvisorUpsertWithWhereUniqueWithoutAccountInput = {
+    where: ExpertAdvisorWhereUniqueInput
+    update: XOR<ExpertAdvisorUpdateWithoutAccountInput, ExpertAdvisorUncheckedUpdateWithoutAccountInput>
+    create: XOR<ExpertAdvisorCreateWithoutAccountInput, ExpertAdvisorUncheckedCreateWithoutAccountInput>
+  }
+
+  export type ExpertAdvisorUpdateWithWhereUniqueWithoutAccountInput = {
+    where: ExpertAdvisorWhereUniqueInput
+    data: XOR<ExpertAdvisorUpdateWithoutAccountInput, ExpertAdvisorUncheckedUpdateWithoutAccountInput>
+  }
+
+  export type ExpertAdvisorUpdateManyWithWhereWithoutAccountInput = {
+    where: ExpertAdvisorScalarWhereInput
+    data: XOR<ExpertAdvisorUpdateManyMutationInput, ExpertAdvisorUncheckedUpdateManyWithoutAccountInput>
+  }
+
+  export type ExpertAdvisorScalarWhereInput = {
+    AND?: ExpertAdvisorScalarWhereInput | ExpertAdvisorScalarWhereInput[]
+    OR?: ExpertAdvisorScalarWhereInput[]
+    NOT?: ExpertAdvisorScalarWhereInput | ExpertAdvisorScalarWhereInput[]
+    id?: StringFilter<"ExpertAdvisor"> | string
+    accountId?: StringFilter<"ExpertAdvisor"> | string
+    name?: StringFilter<"ExpertAdvisor"> | string
+    magicNumber?: IntFilter<"ExpertAdvisor"> | number
+    createdAt?: DateTimeFilter<"ExpertAdvisor"> | Date | string
+    updatedAt?: DateTimeFilter<"ExpertAdvisor"> | Date | string
+  }
+
+  export type TradingAccountCreateWithoutExpertAdvisorsInput = {
+    id?: string
+    connectionToken?: string
+    accountNumber: number
+    broker: string
+    server: string
+    platform?: string
+    nickname?: string | null
+    isConnected?: boolean
+    lastSeen?: Date | string | null
+    balance?: number
+    equity?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    snapshotted?: boolean
+    user: UserCreateNestedOneWithoutTradingAccountsInput
+    section?: SectionCreateNestedOneWithoutAccountsInput
+    accountType?: AccountTypeCreateNestedOneWithoutAccountsInput
+    trades?: TradeHistoryCreateNestedManyWithoutAccountInput
+    snapshots?: EquitySnapshotCreateNestedManyWithoutAccountInput
+  }
+
+  export type TradingAccountUncheckedCreateWithoutExpertAdvisorsInput = {
+    id?: string
+    userId: string
+    sectionId?: string | null
+    accountTypeId?: string | null
+    connectionToken?: string
+    accountNumber: number
+    broker: string
+    server: string
+    platform?: string
+    nickname?: string | null
+    isConnected?: boolean
+    lastSeen?: Date | string | null
+    balance?: number
+    equity?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    snapshotted?: boolean
+    trades?: TradeHistoryUncheckedCreateNestedManyWithoutAccountInput
+    snapshots?: EquitySnapshotUncheckedCreateNestedManyWithoutAccountInput
+  }
+
+  export type TradingAccountCreateOrConnectWithoutExpertAdvisorsInput = {
+    where: TradingAccountWhereUniqueInput
+    create: XOR<TradingAccountCreateWithoutExpertAdvisorsInput, TradingAccountUncheckedCreateWithoutExpertAdvisorsInput>
+  }
+
+  export type TradingAccountUpsertWithoutExpertAdvisorsInput = {
+    update: XOR<TradingAccountUpdateWithoutExpertAdvisorsInput, TradingAccountUncheckedUpdateWithoutExpertAdvisorsInput>
+    create: XOR<TradingAccountCreateWithoutExpertAdvisorsInput, TradingAccountUncheckedCreateWithoutExpertAdvisorsInput>
+    where?: TradingAccountWhereInput
+  }
+
+  export type TradingAccountUpdateToOneWithWhereWithoutExpertAdvisorsInput = {
+    where?: TradingAccountWhereInput
+    data: XOR<TradingAccountUpdateWithoutExpertAdvisorsInput, TradingAccountUncheckedUpdateWithoutExpertAdvisorsInput>
+  }
+
+  export type TradingAccountUpdateWithoutExpertAdvisorsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    connectionToken?: StringFieldUpdateOperationsInput | string
+    accountNumber?: IntFieldUpdateOperationsInput | number
+    broker?: StringFieldUpdateOperationsInput | string
+    server?: StringFieldUpdateOperationsInput | string
+    platform?: StringFieldUpdateOperationsInput | string
+    nickname?: NullableStringFieldUpdateOperationsInput | string | null
+    isConnected?: BoolFieldUpdateOperationsInput | boolean
+    lastSeen?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    balance?: FloatFieldUpdateOperationsInput | number
+    equity?: FloatFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    snapshotted?: BoolFieldUpdateOperationsInput | boolean
+    user?: UserUpdateOneRequiredWithoutTradingAccountsNestedInput
+    section?: SectionUpdateOneWithoutAccountsNestedInput
+    accountType?: AccountTypeUpdateOneWithoutAccountsNestedInput
+    trades?: TradeHistoryUpdateManyWithoutAccountNestedInput
+    snapshots?: EquitySnapshotUpdateManyWithoutAccountNestedInput
+  }
+
+  export type TradingAccountUncheckedUpdateWithoutExpertAdvisorsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    sectionId?: NullableStringFieldUpdateOperationsInput | string | null
+    accountTypeId?: NullableStringFieldUpdateOperationsInput | string | null
+    connectionToken?: StringFieldUpdateOperationsInput | string
+    accountNumber?: IntFieldUpdateOperationsInput | number
+    broker?: StringFieldUpdateOperationsInput | string
+    server?: StringFieldUpdateOperationsInput | string
+    platform?: StringFieldUpdateOperationsInput | string
+    nickname?: NullableStringFieldUpdateOperationsInput | string | null
+    isConnected?: BoolFieldUpdateOperationsInput | boolean
+    lastSeen?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    balance?: FloatFieldUpdateOperationsInput | number
+    equity?: FloatFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    snapshotted?: BoolFieldUpdateOperationsInput | boolean
+    trades?: TradeHistoryUncheckedUpdateManyWithoutAccountNestedInput
+    snapshots?: EquitySnapshotUncheckedUpdateManyWithoutAccountNestedInput
+  }
+
   export type TradingAccountCreateWithoutTradesInput = {
     id?: string
     connectionToken?: string
@@ -15571,10 +17129,12 @@ export namespace Prisma {
     equity?: number
     createdAt?: Date | string
     updatedAt?: Date | string
+    snapshotted?: boolean
     user: UserCreateNestedOneWithoutTradingAccountsInput
     section?: SectionCreateNestedOneWithoutAccountsInput
     accountType?: AccountTypeCreateNestedOneWithoutAccountsInput
     snapshots?: EquitySnapshotCreateNestedManyWithoutAccountInput
+    expertAdvisors?: ExpertAdvisorCreateNestedManyWithoutAccountInput
   }
 
   export type TradingAccountUncheckedCreateWithoutTradesInput = {
@@ -15594,7 +17154,9 @@ export namespace Prisma {
     equity?: number
     createdAt?: Date | string
     updatedAt?: Date | string
+    snapshotted?: boolean
     snapshots?: EquitySnapshotUncheckedCreateNestedManyWithoutAccountInput
+    expertAdvisors?: ExpertAdvisorUncheckedCreateNestedManyWithoutAccountInput
   }
 
   export type TradingAccountCreateOrConnectWithoutTradesInput = {
@@ -15627,10 +17189,12 @@ export namespace Prisma {
     equity?: FloatFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    snapshotted?: BoolFieldUpdateOperationsInput | boolean
     user?: UserUpdateOneRequiredWithoutTradingAccountsNestedInput
     section?: SectionUpdateOneWithoutAccountsNestedInput
     accountType?: AccountTypeUpdateOneWithoutAccountsNestedInput
     snapshots?: EquitySnapshotUpdateManyWithoutAccountNestedInput
+    expertAdvisors?: ExpertAdvisorUpdateManyWithoutAccountNestedInput
   }
 
   export type TradingAccountUncheckedUpdateWithoutTradesInput = {
@@ -15650,7 +17214,9 @@ export namespace Prisma {
     equity?: FloatFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    snapshotted?: BoolFieldUpdateOperationsInput | boolean
     snapshots?: EquitySnapshotUncheckedUpdateManyWithoutAccountNestedInput
+    expertAdvisors?: ExpertAdvisorUncheckedUpdateManyWithoutAccountNestedInput
   }
 
   export type TradingAccountCreateWithoutSnapshotsInput = {
@@ -15667,10 +17233,12 @@ export namespace Prisma {
     equity?: number
     createdAt?: Date | string
     updatedAt?: Date | string
+    snapshotted?: boolean
     user: UserCreateNestedOneWithoutTradingAccountsInput
     section?: SectionCreateNestedOneWithoutAccountsInput
     accountType?: AccountTypeCreateNestedOneWithoutAccountsInput
     trades?: TradeHistoryCreateNestedManyWithoutAccountInput
+    expertAdvisors?: ExpertAdvisorCreateNestedManyWithoutAccountInput
   }
 
   export type TradingAccountUncheckedCreateWithoutSnapshotsInput = {
@@ -15690,7 +17258,9 @@ export namespace Prisma {
     equity?: number
     createdAt?: Date | string
     updatedAt?: Date | string
+    snapshotted?: boolean
     trades?: TradeHistoryUncheckedCreateNestedManyWithoutAccountInput
+    expertAdvisors?: ExpertAdvisorUncheckedCreateNestedManyWithoutAccountInput
   }
 
   export type TradingAccountCreateOrConnectWithoutSnapshotsInput = {
@@ -15723,10 +17293,12 @@ export namespace Prisma {
     equity?: FloatFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    snapshotted?: BoolFieldUpdateOperationsInput | boolean
     user?: UserUpdateOneRequiredWithoutTradingAccountsNestedInput
     section?: SectionUpdateOneWithoutAccountsNestedInput
     accountType?: AccountTypeUpdateOneWithoutAccountsNestedInput
     trades?: TradeHistoryUpdateManyWithoutAccountNestedInput
+    expertAdvisors?: ExpertAdvisorUpdateManyWithoutAccountNestedInput
   }
 
   export type TradingAccountUncheckedUpdateWithoutSnapshotsInput = {
@@ -15746,7 +17318,9 @@ export namespace Prisma {
     equity?: FloatFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    snapshotted?: BoolFieldUpdateOperationsInput | boolean
     trades?: TradeHistoryUncheckedUpdateManyWithoutAccountNestedInput
+    expertAdvisors?: ExpertAdvisorUncheckedUpdateManyWithoutAccountNestedInput
   }
 
   export type SessionCreateManyUserInput = {
@@ -15789,6 +17363,7 @@ export namespace Prisma {
     equity?: number
     createdAt?: Date | string
     updatedAt?: Date | string
+    snapshotted?: boolean
   }
 
   export type SectionCreateManyUserInput = {
@@ -15892,10 +17467,12 @@ export namespace Prisma {
     equity?: FloatFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    snapshotted?: BoolFieldUpdateOperationsInput | boolean
     section?: SectionUpdateOneWithoutAccountsNestedInput
     accountType?: AccountTypeUpdateOneWithoutAccountsNestedInput
     trades?: TradeHistoryUpdateManyWithoutAccountNestedInput
     snapshots?: EquitySnapshotUpdateManyWithoutAccountNestedInput
+    expertAdvisors?: ExpertAdvisorUpdateManyWithoutAccountNestedInput
   }
 
   export type TradingAccountUncheckedUpdateWithoutUserInput = {
@@ -15914,8 +17491,10 @@ export namespace Prisma {
     equity?: FloatFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    snapshotted?: BoolFieldUpdateOperationsInput | boolean
     trades?: TradeHistoryUncheckedUpdateManyWithoutAccountNestedInput
     snapshots?: EquitySnapshotUncheckedUpdateManyWithoutAccountNestedInput
+    expertAdvisors?: ExpertAdvisorUncheckedUpdateManyWithoutAccountNestedInput
   }
 
   export type TradingAccountUncheckedUpdateManyWithoutUserInput = {
@@ -15934,6 +17513,7 @@ export namespace Prisma {
     equity?: FloatFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    snapshotted?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type SectionUpdateWithoutUserInput = {
@@ -16001,6 +17581,7 @@ export namespace Prisma {
     equity?: number
     createdAt?: Date | string
     updatedAt?: Date | string
+    snapshotted?: boolean
   }
 
   export type TradingAccountUpdateWithoutSectionInput = {
@@ -16017,10 +17598,12 @@ export namespace Prisma {
     equity?: FloatFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    snapshotted?: BoolFieldUpdateOperationsInput | boolean
     user?: UserUpdateOneRequiredWithoutTradingAccountsNestedInput
     accountType?: AccountTypeUpdateOneWithoutAccountsNestedInput
     trades?: TradeHistoryUpdateManyWithoutAccountNestedInput
     snapshots?: EquitySnapshotUpdateManyWithoutAccountNestedInput
+    expertAdvisors?: ExpertAdvisorUpdateManyWithoutAccountNestedInput
   }
 
   export type TradingAccountUncheckedUpdateWithoutSectionInput = {
@@ -16039,8 +17622,10 @@ export namespace Prisma {
     equity?: FloatFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    snapshotted?: BoolFieldUpdateOperationsInput | boolean
     trades?: TradeHistoryUncheckedUpdateManyWithoutAccountNestedInput
     snapshots?: EquitySnapshotUncheckedUpdateManyWithoutAccountNestedInput
+    expertAdvisors?: ExpertAdvisorUncheckedUpdateManyWithoutAccountNestedInput
   }
 
   export type TradingAccountUncheckedUpdateManyWithoutSectionInput = {
@@ -16059,6 +17644,7 @@ export namespace Prisma {
     equity?: FloatFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    snapshotted?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type TradingAccountCreateManyAccountTypeInput = {
@@ -16077,6 +17663,7 @@ export namespace Prisma {
     equity?: number
     createdAt?: Date | string
     updatedAt?: Date | string
+    snapshotted?: boolean
   }
 
   export type TradingAccountUpdateWithoutAccountTypeInput = {
@@ -16093,10 +17680,12 @@ export namespace Prisma {
     equity?: FloatFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    snapshotted?: BoolFieldUpdateOperationsInput | boolean
     user?: UserUpdateOneRequiredWithoutTradingAccountsNestedInput
     section?: SectionUpdateOneWithoutAccountsNestedInput
     trades?: TradeHistoryUpdateManyWithoutAccountNestedInput
     snapshots?: EquitySnapshotUpdateManyWithoutAccountNestedInput
+    expertAdvisors?: ExpertAdvisorUpdateManyWithoutAccountNestedInput
   }
 
   export type TradingAccountUncheckedUpdateWithoutAccountTypeInput = {
@@ -16115,8 +17704,10 @@ export namespace Prisma {
     equity?: FloatFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    snapshotted?: BoolFieldUpdateOperationsInput | boolean
     trades?: TradeHistoryUncheckedUpdateManyWithoutAccountNestedInput
     snapshots?: EquitySnapshotUncheckedUpdateManyWithoutAccountNestedInput
+    expertAdvisors?: ExpertAdvisorUncheckedUpdateManyWithoutAccountNestedInput
   }
 
   export type TradingAccountUncheckedUpdateManyWithoutAccountTypeInput = {
@@ -16135,6 +17726,7 @@ export namespace Prisma {
     equity?: FloatFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    snapshotted?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type TradeHistoryCreateManyAccountInput = {
@@ -16166,6 +17758,14 @@ export namespace Prisma {
     marginLevel?: number | null
     openPositions?: number
     timestamp?: Date | string
+  }
+
+  export type ExpertAdvisorCreateManyAccountInput = {
+    id?: string
+    name: string
+    magicNumber: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
   }
 
   export type TradeHistoryUpdateWithoutAccountInput = {
@@ -16259,6 +17859,30 @@ export namespace Prisma {
     marginLevel?: NullableFloatFieldUpdateOperationsInput | number | null
     openPositions?: IntFieldUpdateOperationsInput | number
     timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ExpertAdvisorUpdateWithoutAccountInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    magicNumber?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ExpertAdvisorUncheckedUpdateWithoutAccountInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    magicNumber?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ExpertAdvisorUncheckedUpdateManyWithoutAccountInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    magicNumber?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
 

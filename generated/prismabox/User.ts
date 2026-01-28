@@ -74,6 +74,7 @@ export const UserRelations = t.Object(
           equity: t.Number(),
           createdAt: t.Date(),
           updatedAt: t.Date(),
+          snapshotted: t.Boolean(),
         },
         { additionalProperties: false },
       ),

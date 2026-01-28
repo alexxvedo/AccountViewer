@@ -85,6 +85,8 @@ interface TradingAccount {
   accountTypeId: string | null;
   accountType?: AccountType | null;
   liveData: LiveData | null;
+  balance: number,
+  equity: number,
   stats?: {
     winRate: number;
     trades: number;
@@ -205,6 +207,7 @@ export default function DashboardPage() {
       ]);
       const sectionsData = await sectionsRes.json();
       const accountsData = await accountsRes.json();
+
       const typesData = await typesRes.json();
       
       const accountsMap = new Map<string, TradingAccount>();
@@ -533,7 +536,7 @@ export default function DashboardPage() {
   };
 
   const navigateToAccount = (accountId: string) => {
-    router.push(`/dashboard/accounts/${accountId}`);
+    router.push(`/accounts/${accountId}`);
   };
 
   // Status config
@@ -643,10 +646,7 @@ export default function DashboardPage() {
 
       {/* Section Filter */}
       <section>
-        <div className="mb-3">
-          <h2 className="text-lg font-semibold text-foreground">Filtrar por Sección</h2>
-          <p className="text-sm text-muted-foreground">Selecciona una sección para ver sus cuentas</p>
-        </div>
+        
         <div className="relative group/scroll">
           {/* Flecha izquierda - solo si hay overflow */}
           {hasOverflow && (
@@ -678,7 +678,7 @@ export default function DashboardPage() {
             variant="outline"
             onClick={() => setSelectedSection("all")}
             className={cn(
-              "flex h-auto shrink-0 flex-col items-start gap-1 border-border px-4 py-3 text-left transition-all",
+              "flex h-auto shrink-0 flex-col items-start gap-1 border-zinc-600 px-4 py-3 text-left transition-all",
               selectedSection === "all"
                 ? "border-accent bg-accent/10 text-foreground"
                 : "bg-card text-muted-foreground hover:border-accent/50 hover:bg-secondary"
@@ -709,7 +709,7 @@ export default function DashboardPage() {
                   "group relative flex h-auto shrink-0 flex-col items-start gap-1 rounded-lg border px-4 py-3 text-left transition-all cursor-pointer",
                   isSelected
                     ? "border-accent bg-accent/10 text-foreground"
-                    : "border-border bg-card text-muted-foreground hover:border-accent/50 hover:bg-secondary"
+                    : "border-zinc-600 bg-card text-muted-foreground hover:border-accent/50 hover:bg-secondary"
                 )}
                 onClick={() => setSelectedSection(section.id)}
               >
@@ -809,10 +809,13 @@ export default function DashboardPage() {
         {filteredAccounts.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 p-4">
             {filteredAccounts.map((account) => {
+
               const data = getAccountData(account);
+
+              
               const profit = data?.floatingPL || 0;
-              const balance = data?.balance || 0;
-              const equity = data?.equity || balance;
+              const balance = data?.balance || account.balance || 0;
+              const equity = data?.equity || account.equity ;
               const profitPercent = balance > 0 ? (profit / balance) * 100 : 0;
               
               const matchedType = accountTypes.find(t => t.id === account.accountTypeId);
@@ -900,9 +903,7 @@ export default function DashboardPage() {
                         {typeName}
                       </Badge>
                     )}
-                    <Badge variant="outline" className={cn("text-xs", account.isConnected ? "border-green-500/50 text-green-500 bg-green-500/10" : "border-muted text-muted-foreground")}>
-                      {account.isConnected ? "Activa" : "Inactiva"}
-                    </Badge>
+                    
                     <Badge variant="outline" className="text-xs border-muted-foreground/30 text-muted-foreground">
                       {account.platform}
                     </Badge>
@@ -913,7 +914,7 @@ export default function DashboardPage() {
                     <div>
                       <p className="text-xs text-muted-foreground mb-1">Balance</p>
                       <p className="text-xl font-bold text-foreground font-mono">
-                        ${balance.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                        ${balance.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 3 })}
                       </p>
                     </div>
                     <div>
@@ -925,7 +926,7 @@ export default function DashboardPage() {
                           <TrendingDown className="h-4 w-4 text-loss" />
                         )}
                         <p className={cn("text-xl font-bold font-mono", profit >= 0 ? "text-profit" : "text-loss")}>
-                          {profit >= 0 ? "+" : ""}${Math.abs(profit).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                          {profit >= 0 ? "+" : ""}${Math.abs(profit).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 3 })}
                         </p>
                       </div>
                     </div>

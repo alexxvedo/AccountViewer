@@ -5,6 +5,7 @@ export * from "./Verification";
 export * from "./Section";
 export * from "./AccountType";
 export * from "./TradingAccount";
+export * from "./ExpertAdvisor";
 export * from "./TradeHistory";
 export * from "./EquitySnapshot";
 export * from "./__nullable__";

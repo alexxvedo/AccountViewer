@@ -22,6 +22,7 @@ export const TradingAccountPlain = t.Object(
     equity: t.Number(),
     createdAt: t.Date(),
     updatedAt: t.Date(),
+    snapshotted: t.Boolean(),
   },
   { additionalProperties: false },
 );
@@ -108,6 +109,20 @@ export const TradingAccountRelations = t.Object(
       ),
       { additionalProperties: false },
     ),
+    expertAdvisors: t.Array(
+      t.Object(
+        {
+          id: t.String(),
+          accountId: t.String(),
+          name: t.String(),
+          magicNumber: t.Integer(),
+          createdAt: t.Date(),
+          updatedAt: t.Date(),
+        },
+        { additionalProperties: false },
+      ),
+      { additionalProperties: false },
+    ),
   },
   { additionalProperties: false },
 );
@@ -124,6 +139,7 @@ export const TradingAccountPlainInputCreate = t.Object(
     lastSeen: t.Optional(__nullable__(t.Date())),
     balance: t.Optional(t.Number()),
     equity: t.Optional(t.Number()),
+    snapshotted: t.Optional(t.Boolean()),
   },
   { additionalProperties: false },
 );
@@ -140,6 +156,7 @@ export const TradingAccountPlainInputUpdate = t.Object(
     lastSeen: t.Optional(__nullable__(t.Date())),
     balance: t.Optional(t.Number()),
     equity: t.Optional(t.Number()),
+    snapshotted: t.Optional(t.Boolean()),
   },
   { additionalProperties: false },
 );
@@ -200,6 +217,22 @@ export const TradingAccountRelationsInputCreate = t.Object(
       ),
     ),
     snapshots: t.Optional(
+      t.Object(
+        {
+          connect: t.Array(
+            t.Object(
+              {
+                id: t.String({ additionalProperties: false }),
+              },
+              { additionalProperties: false },
+            ),
+            { additionalProperties: false },
+          ),
+        },
+        { additionalProperties: false },
+      ),
+    ),
+    expertAdvisors: t.Optional(
       t.Object(
         {
           connect: t.Array(
@@ -311,6 +344,31 @@ export const TradingAccountRelationsInputUpdate = t.Partial(
           { additionalProperties: false },
         ),
       ),
+      expertAdvisors: t.Partial(
+        t.Object(
+          {
+            connect: t.Array(
+              t.Object(
+                {
+                  id: t.String({ additionalProperties: false }),
+                },
+                { additionalProperties: false },
+              ),
+              { additionalProperties: false },
+            ),
+            disconnect: t.Array(
+              t.Object(
+                {
+                  id: t.String({ additionalProperties: false }),
+                },
+                { additionalProperties: false },
+              ),
+              { additionalProperties: false },
+            ),
+          },
+          { additionalProperties: false },
+        ),
+      ),
     },
     { additionalProperties: false },
   ),
@@ -340,6 +398,7 @@ export const TradingAccountWhere = t.Partial(
           equity: t.Number(),
           createdAt: t.Date(),
           updatedAt: t.Date(),
+          snapshotted: t.Boolean(),
         },
         { additionalProperties: false },
       ),
@@ -398,6 +457,7 @@ export const TradingAccountWhereUnique = t.Recursive(
               equity: t.Number(),
               createdAt: t.Date(),
               updatedAt: t.Date(),
+              snapshotted: t.Boolean(),
             },
             { additionalProperties: false },
           ),
@@ -427,11 +487,13 @@ export const TradingAccountSelect = t.Partial(
       equity: t.Boolean(),
       createdAt: t.Boolean(),
       updatedAt: t.Boolean(),
+      snapshotted: t.Boolean(),
       user: t.Boolean(),
       section: t.Boolean(),
       accountType: t.Boolean(),
       trades: t.Boolean(),
       snapshots: t.Boolean(),
+      expertAdvisors: t.Boolean(),
       _count: t.Boolean(),
     },
     { additionalProperties: false },
@@ -446,6 +508,7 @@ export const TradingAccountInclude = t.Partial(
       accountType: t.Boolean(),
       trades: t.Boolean(),
       snapshots: t.Boolean(),
+      expertAdvisors: t.Boolean(),
       _count: t.Boolean(),
     },
     { additionalProperties: false },
@@ -501,6 +564,9 @@ export const TradingAccountOrderBy = t.Partial(
         additionalProperties: false,
       }),
       updatedAt: t.Union([t.Literal("asc"), t.Literal("desc")], {
+        additionalProperties: false,
+      }),
+      snapshotted: t.Union([t.Literal("asc"), t.Literal("desc")], {
         additionalProperties: false,
       }),
     },

@@ -151,18 +151,40 @@ model TradingAccount {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  snapshotted Boolean @default(false)
+
   // Relaciones
-  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  section     Section?         @relation(fields: [sectionId], references: [id], onDelete: SetNull)
-  accountType AccountType?     @relation(fields: [accountTypeId], references: [id], onDelete: SetNull)
-  trades      TradeHistory[]
-  snapshots   EquitySnapshot[]
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  section        Section?         @relation(fields: [sectionId], references: [id], onDelete: SetNull)
+  accountType    AccountType?     @relation(fields: [accountTypeId], references: [id], onDelete: SetNull)
+  trades         TradeHistory[]
+  snapshots      EquitySnapshot[]
+  expertAdvisors ExpertAdvisor[]
 
   @@index([userId])
   @@index([sectionId])
   @@index([accountTypeId])
   @@index([connectionToken])
   @@map("trading_accounts")
+}
+
+// ============================================
+// Expert Advisors (EAs)
+// ============================================
+model ExpertAdvisor {
+  id          String @id @default(cuid())
+  accountId   String
+  name        String
+  magicNumber Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  account TradingAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@unique([accountId, magicNumber])
+  @@index([accountId])
+  @@map("expert_advisors")
 }
 
 // ============================================

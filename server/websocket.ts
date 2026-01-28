@@ -10,7 +10,33 @@ import { Elysia, t } from "elysia";
 import { cors } from "@elysiajs/cors";
 import { PrismaClient } from "../generated/prisma";
 
+
 const prisma = new PrismaClient();
+
+// Helper para persistir estadísticas de la cuenta
+async function persistAccountStats(accountId: string, balance?: number, equity?: number) {
+  try {
+    if (balance === undefined && equity === undefined) {
+        // Si no hay datos, solo actualizamos lastSeen
+        await prisma.tradingAccount.update({
+            where: { id: accountId },
+            data: { lastSeen: new Date() }
+        });
+        return;
+    }
+
+    await prisma.tradingAccount.update({
+      where: { id: accountId },
+      data: {
+        balance: balance,
+        equity: equity,
+        lastSeen: new Date(),
+      }
+    });
+  } catch (error) {
+    console.error(`[WS] Error persisting stats for ${accountId}:`, error);
+  }
+}
 
 // ============================================
 // In-Memory Store para datos en vivo
@@ -188,6 +214,11 @@ const app = new Elysia()
 
         console.log(`[WS/EA] Autenticado: Cuenta ${account.accountNumber} (${account.broker})`);
 
+        // Si el mensaje de conexión trae datos iniciales, los persistimos
+        if (msg.balance !== undefined || msg.equity !== undefined) {
+             persistAccountStats(account.id, msg.balance, msg.equity);
+        }
+
         broadcastToFrontend(account.id, account.userId, {
           type: "connection_status",
           account_id: account.id,
@@ -200,9 +231,18 @@ const app = new Elysia()
 
       // Procesar mensajes
       switch (msg.msg_type) {
+
+
         case "update":
           const state = liveStore.update(data.token, msg);
           if (state) {
+            // Persistir siempre balance y equity
+            persistAccountStats(
+                data.accountId, 
+                msg.account?.balance, 
+                msg.account?.equity
+            );
+
             broadcastToFrontend(data.accountId, data.userId, {
               type: "account_update",
               account_id: data.accountId,
@@ -217,10 +257,26 @@ const app = new Elysia()
 
         case "ping":
           liveStore.ping(data.token);
+          // Actualizar lastSeen en DB también periódicamente (opcional, pero bueno para keepalive)
+          // Lo hacemos async para no bloquear
+          prisma.tradingAccount.update({
+             where: { id: data.accountId },
+             data: { lastSeen: new Date() } 
+          }).catch(() => {});
           break;
 
         case "trade_closed":
           try {
+            // Si el mensaje incluye el nuevo balance, lo actualizamos también
+            // (Depende de si el EA lo envía, si no el siguiente 'update' lo hará)
+            if (msg.account) {
+                 persistAccountStats(
+                    data.accountId, 
+                    msg.account.balance, 
+                    msg.account.equity
+                );
+            }
+
             await prisma.tradeHistory.create({
               data: {
                 accountId: data.accountId,

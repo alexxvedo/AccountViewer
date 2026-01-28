@@ -198,6 +198,16 @@ exports.Prisma.TradingAccountScalarFieldEnum = {
   balance: 'balance',
   equity: 'equity',
   createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  snapshotted: 'snapshotted'
+};
+
+exports.Prisma.ExpertAdvisorScalarFieldEnum = {
+  id: 'id',
+  accountId: 'accountId',
+  name: 'name',
+  magicNumber: 'magicNumber',
+  createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
 
@@ -302,6 +312,12 @@ exports.Prisma.TradingAccountOrderByRelevanceFieldEnum = {
   nickname: 'nickname'
 };
 
+exports.Prisma.ExpertAdvisorOrderByRelevanceFieldEnum = {
+  id: 'id',
+  accountId: 'accountId',
+  name: 'name'
+};
+
 exports.Prisma.TradeHistoryOrderByRelevanceFieldEnum = {
   id: 'id',
   accountId: 'accountId',
@@ -324,6 +340,7 @@ exports.Prisma.ModelName = {
   Section: 'Section',
   AccountType: 'AccountType',
   TradingAccount: 'TradingAccount',
+  ExpertAdvisor: 'ExpertAdvisor',
   TradeHistory: 'TradeHistory',
   EquitySnapshot: 'EquitySnapshot'
 };

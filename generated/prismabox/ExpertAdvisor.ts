@@ -4,22 +4,19 @@ import { __transformDate__ } from "./__transformDate__";
 
 import { __nullable__ } from "./__nullable__";
 
-export const EquitySnapshotPlain = t.Object(
+export const ExpertAdvisorPlain = t.Object(
   {
     id: t.String(),
     accountId: t.String(),
-    balance: t.Number(),
-    equity: t.Number(),
-    margin: t.Number(),
-    freeMargin: t.Number(),
-    marginLevel: __nullable__(t.Number()),
-    openPositions: t.Integer(),
-    timestamp: t.Date(),
+    name: t.String(),
+    magicNumber: t.Integer(),
+    createdAt: t.Date(),
+    updatedAt: t.Date(),
   },
   { additionalProperties: false },
 );
 
-export const EquitySnapshotRelations = t.Object(
+export const ExpertAdvisorRelations = t.Object(
   {
     account: t.Object(
       {
@@ -47,33 +44,17 @@ export const EquitySnapshotRelations = t.Object(
   { additionalProperties: false },
 );
 
-export const EquitySnapshotPlainInputCreate = t.Object(
-  {
-    balance: t.Number(),
-    equity: t.Number(),
-    margin: t.Number(),
-    freeMargin: t.Number(),
-    marginLevel: t.Optional(__nullable__(t.Number())),
-    openPositions: t.Optional(t.Integer()),
-    timestamp: t.Optional(t.Date()),
-  },
+export const ExpertAdvisorPlainInputCreate = t.Object(
+  { name: t.String(), magicNumber: t.Integer() },
   { additionalProperties: false },
 );
 
-export const EquitySnapshotPlainInputUpdate = t.Object(
-  {
-    balance: t.Optional(t.Number()),
-    equity: t.Optional(t.Number()),
-    margin: t.Optional(t.Number()),
-    freeMargin: t.Optional(t.Number()),
-    marginLevel: t.Optional(__nullable__(t.Number())),
-    openPositions: t.Optional(t.Integer()),
-    timestamp: t.Optional(t.Date()),
-  },
+export const ExpertAdvisorPlainInputUpdate = t.Object(
+  { name: t.Optional(t.String()), magicNumber: t.Optional(t.Integer()) },
   { additionalProperties: false },
 );
 
-export const EquitySnapshotRelationsInputCreate = t.Object(
+export const ExpertAdvisorRelationsInputCreate = t.Object(
   {
     account: t.Object(
       {
@@ -90,7 +71,7 @@ export const EquitySnapshotRelationsInputCreate = t.Object(
   { additionalProperties: false },
 );
 
-export const EquitySnapshotRelationsInputUpdate = t.Partial(
+export const ExpertAdvisorRelationsInputUpdate = t.Partial(
   t.Object(
     {
       account: t.Object(
@@ -109,7 +90,7 @@ export const EquitySnapshotRelationsInputUpdate = t.Partial(
   ),
 );
 
-export const EquitySnapshotWhere = t.Partial(
+export const ExpertAdvisorWhere = t.Partial(
   t.Recursive(
     (Self) =>
       t.Object(
@@ -119,31 +100,46 @@ export const EquitySnapshotWhere = t.Partial(
           OR: t.Array(Self, { additionalProperties: false }),
           id: t.String(),
           accountId: t.String(),
-          balance: t.Number(),
-          equity: t.Number(),
-          margin: t.Number(),
-          freeMargin: t.Number(),
-          marginLevel: t.Number(),
-          openPositions: t.Integer(),
-          timestamp: t.Date(),
+          name: t.String(),
+          magicNumber: t.Integer(),
+          createdAt: t.Date(),
+          updatedAt: t.Date(),
         },
         { additionalProperties: false },
       ),
-    { $id: "EquitySnapshot" },
+    { $id: "ExpertAdvisor" },
   ),
 );
 
-export const EquitySnapshotWhereUnique = t.Recursive(
+export const ExpertAdvisorWhereUnique = t.Recursive(
   (Self) =>
     t.Intersect(
       [
         t.Partial(
-          t.Object({ id: t.String() }, { additionalProperties: false }),
+          t.Object(
+            {
+              id: t.String(),
+              accountId_magicNumber: t.Object(
+                { accountId: t.String(), magicNumber: t.Integer() },
+                { additionalProperties: false },
+              ),
+            },
+            { additionalProperties: false },
+          ),
           { additionalProperties: false },
         ),
-        t.Union([t.Object({ id: t.String() })], {
-          additionalProperties: false,
-        }),
+        t.Union(
+          [
+            t.Object({ id: t.String() }),
+            t.Object({
+              accountId_magicNumber: t.Object(
+                { accountId: t.String(), magicNumber: t.Integer() },
+                { additionalProperties: false },
+              ),
+            }),
+          ],
+          { additionalProperties: false },
+        ),
         t.Partial(
           t.Object({
             AND: t.Union([
@@ -163,13 +159,10 @@ export const EquitySnapshotWhereUnique = t.Recursive(
             {
               id: t.String(),
               accountId: t.String(),
-              balance: t.Number(),
-              equity: t.Number(),
-              margin: t.Number(),
-              freeMargin: t.Number(),
-              marginLevel: t.Number(),
-              openPositions: t.Integer(),
-              timestamp: t.Date(),
+              name: t.String(),
+              magicNumber: t.Integer(),
+              createdAt: t.Date(),
+              updatedAt: t.Date(),
             },
             { additionalProperties: false },
           ),
@@ -177,21 +170,18 @@ export const EquitySnapshotWhereUnique = t.Recursive(
       ],
       { additionalProperties: false },
     ),
-  { $id: "EquitySnapshot" },
+  { $id: "ExpertAdvisor" },
 );
 
-export const EquitySnapshotSelect = t.Partial(
+export const ExpertAdvisorSelect = t.Partial(
   t.Object(
     {
       id: t.Boolean(),
       accountId: t.Boolean(),
-      balance: t.Boolean(),
-      equity: t.Boolean(),
-      margin: t.Boolean(),
-      freeMargin: t.Boolean(),
-      marginLevel: t.Boolean(),
-      openPositions: t.Boolean(),
-      timestamp: t.Boolean(),
+      name: t.Boolean(),
+      magicNumber: t.Boolean(),
+      createdAt: t.Boolean(),
+      updatedAt: t.Boolean(),
       account: t.Boolean(),
       _count: t.Boolean(),
     },
@@ -199,14 +189,14 @@ export const EquitySnapshotSelect = t.Partial(
   ),
 );
 
-export const EquitySnapshotInclude = t.Partial(
+export const ExpertAdvisorInclude = t.Partial(
   t.Object(
     { account: t.Boolean(), _count: t.Boolean() },
     { additionalProperties: false },
   ),
 );
 
-export const EquitySnapshotOrderBy = t.Partial(
+export const ExpertAdvisorOrderBy = t.Partial(
   t.Object(
     {
       id: t.Union([t.Literal("asc"), t.Literal("desc")], {
@@ -215,25 +205,16 @@ export const EquitySnapshotOrderBy = t.Partial(
       accountId: t.Union([t.Literal("asc"), t.Literal("desc")], {
         additionalProperties: false,
       }),
-      balance: t.Union([t.Literal("asc"), t.Literal("desc")], {
+      name: t.Union([t.Literal("asc"), t.Literal("desc")], {
         additionalProperties: false,
       }),
-      equity: t.Union([t.Literal("asc"), t.Literal("desc")], {
+      magicNumber: t.Union([t.Literal("asc"), t.Literal("desc")], {
         additionalProperties: false,
       }),
-      margin: t.Union([t.Literal("asc"), t.Literal("desc")], {
+      createdAt: t.Union([t.Literal("asc"), t.Literal("desc")], {
         additionalProperties: false,
       }),
-      freeMargin: t.Union([t.Literal("asc"), t.Literal("desc")], {
-        additionalProperties: false,
-      }),
-      marginLevel: t.Union([t.Literal("asc"), t.Literal("desc")], {
-        additionalProperties: false,
-      }),
-      openPositions: t.Union([t.Literal("asc"), t.Literal("desc")], {
-        additionalProperties: false,
-      }),
-      timestamp: t.Union([t.Literal("asc"), t.Literal("desc")], {
+      updatedAt: t.Union([t.Literal("asc"), t.Literal("desc")], {
         additionalProperties: false,
       }),
     },
@@ -241,17 +222,17 @@ export const EquitySnapshotOrderBy = t.Partial(
   ),
 );
 
-export const EquitySnapshot = t.Composite(
-  [EquitySnapshotPlain, EquitySnapshotRelations],
+export const ExpertAdvisor = t.Composite(
+  [ExpertAdvisorPlain, ExpertAdvisorRelations],
   { additionalProperties: false },
 );
 
-export const EquitySnapshotInputCreate = t.Composite(
-  [EquitySnapshotPlainInputCreate, EquitySnapshotRelationsInputCreate],
+export const ExpertAdvisorInputCreate = t.Composite(
+  [ExpertAdvisorPlainInputCreate, ExpertAdvisorRelationsInputCreate],
   { additionalProperties: false },
 );
 
-export const EquitySnapshotInputUpdate = t.Composite(
-  [EquitySnapshotPlainInputUpdate, EquitySnapshotRelationsInputUpdate],
+export const ExpertAdvisorInputUpdate = t.Composite(
+  [ExpertAdvisorPlainInputUpdate, ExpertAdvisorRelationsInputUpdate],
   { additionalProperties: false },
 );
