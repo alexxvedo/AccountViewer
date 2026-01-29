@@ -36,7 +36,7 @@ interface Trade {
   openTime: string;
   closeTime: string;
   comment?: string | null;
-  magicNumber: number;
+  magicNumber?: number | null;
 }
 
 interface AccountHistoryTabProps {
