@@ -25,7 +25,130 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
   liveDataCache: Map<string, { data: any; timestamp: number }>;
   commandQueue: Map<string, { commands: { id: string; type: string; ticket?: number; createdAt: number }[] }>;
+  // Cache para rate limiting de alertas (evitar spam)
+  alertCooldowns: Map<string, number>;
 };
+
+// Telegraf instance
+import { Telegraf } from 'telegraf';
+// Lazy initialization of bot to avoid issues if token is missing
+const getBot = () => {
+    if (process.env.TELEGRAM_BOT_TOKEN) {
+        return new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
+    }
+    return null;
+}
+
+const alertCooldowns = globalForPrisma.alertCooldowns ?? new Map<string, number>();
+if (process.env.NODE_ENV !== "production") globalForPrisma.alertCooldowns = alertCooldowns;
+
+// Set para evitar procesamiento duplicado de alertas
+const alertsBeingProcessed = new Set<string>();
+
+// Función para procesar alertas
+const checkAlerts = async (account: any) => {
+    try {
+        // 1. Obtener alertas activas para esta cuenta
+        const alerts = await prisma.alert.findMany({
+            where: { 
+                accountId: account.id,
+                active: true,
+                triggered: false 
+            },
+            include: { user: { select: { telegramChatId: true } } }
+        });
+
+        if (alerts.length === 0) return;
+
+        const bot = getBot();
+        if (!bot) return;
+
+        for (const alert of alerts) {
+            // Verificar cooldown (ej: no spammear la misma alerta si no se ha reseteado)
+            // En este modelo simple, 'triggered' se pone a true, así que es one-time shot hasta reset manual.
+            // Para 'triggered=false' (recurrentes), usaríamos cooldown.
+            
+            let isTriggered = false;
+            let currentsVal = 0;
+
+            if (alert.type === 'BALANCE') {
+                currentsVal = account.balance;
+            } else if (alert.type === 'EQUITY') {
+                currentsVal = account.equity;
+                // Para equity, a veces queremos cooldown si oscila
+            } else if (alert.type === 'MARGIN') {
+                currentsVal = account.margin;
+            }
+
+            if (alert.condition === 'GT') {
+                if (currentsVal > alert.value) isTriggered = true;
+            } else if (alert.condition === 'LT') {
+                if (currentsVal < alert.value) isTriggered = true;
+            }
+
+            if (isTriggered) {
+                // Evitar procesamiento duplicado
+                if (alertsBeingProcessed.has(alert.id)) {
+                    console.log(`[ALERTS] Alert ${alert.id} already being processed, skipping`);
+                    continue;
+                }
+                alertsBeingProcessed.add(alert.id);
+
+                // Enviar mensaje
+                if (alert.user.telegramChatId) {
+                    const typeLabels: Record<string, string> = {
+                        'BALANCE': 'Balance',
+                        'EQUITY': 'Equity',
+                        'MARGIN': 'Margen'
+                    };
+                    const typeLabel = typeLabels[alert.type] || alert.type;
+                    const conditionText = alert.condition === 'GT' ? 'ha superado' : 'ha bajado de';
+                    const accountName = account.nickname || `#${account.accountNumber}`;
+                    const diff = currentsVal - alert.value;
+                    const diffText = diff >= 0 ? `+${diff.toFixed(2)}` : diff.toFixed(2);
+
+                    const msg = `🚨 *ALERTA ACTIVADA* 🚨
+
+📊 *${typeLabel} ${conditionText} tu límite*
+
+🏦 *Cuenta:* ${accountName}
+🏢 *Broker:* ${account.broker}
+📈 *Servidor:* ${account.server}
+
+━━━━━━━━━━━━━━━
+⚙️ *Condición:* ${typeLabel} ${alert.condition === 'GT' ? '>' : '<'} $${alert.value.toLocaleString()}
+💰 *Valor actual:* $${currentsVal.toLocaleString()}
+📉 *Diferencia:* $${diffText}
+━━━━━━━━━━━━━━━
+
+⏰ ${new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' })}`;
+
+                    try {
+                        // Marcar como disparada ANTES de enviar para evitar duplicados
+                        await prisma.alert.update({
+                            where: { id: alert.id },
+                            data: {
+                                triggered: true,
+                                lastTriggeredAt: new Date()
+                            }
+                        });
+
+                        await bot.telegram.sendMessage(alert.user.telegramChatId, msg, { parse_mode: 'Markdown' });
+                        console.log(`[ALERTS] Notification sent to ${alert.user.telegramChatId}`);
+                    } catch (e) {
+                        console.error(`[ALERTS] Failed to send telegram:`, e);
+                    } finally {
+                        alertsBeingProcessed.delete(alert.id);
+                    }
+                } else {
+                    alertsBeingProcessed.delete(alert.id);
+                }
+            }
+        }
+    } catch (e) {
+        console.error("[ALERTS] Error processing alerts:", e);
+    }
+}
 
 const prisma = globalForPrisma.prisma ?? new PrismaClient();
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
@@ -126,6 +249,42 @@ const app = new Elysia({ prefix: "/api" })
       });
 
       return accounts;
+    },
+    {
+      params: t.Object({
+        id: t.String(),
+      }),
+    }
+  )
+
+  // ============================================
+  // Expert Advisors (EAs) - Listar TODOS por usuario (para Sidebar)
+  // ============================================
+  .get(
+    "/users/:id/eas",
+    async ({ params, request }) => {
+      await verifySession(request.headers, params.id);
+      
+      // 1. Obtener IDs de cuentas del usuario
+      const accounts = await prisma.tradingAccount.findMany({
+          where: { userId: params.id },
+          select: { id: true }
+      });
+      
+      const accountIds = accounts.map(a => a.id);
+      
+      // 2. Buscar EAs de esas cuentas
+      const eas = await prisma.expertAdvisor.findMany({
+          where: { accountId: { in: accountIds } },
+          include: {
+              account: {
+                  select: { nickname: true, accountNumber: true } // Para mostrar info extra si hace falta
+              }
+          },
+          orderBy: { createdAt: "desc" }
+      });
+      
+      return eas;
     },
     {
       params: t.Object({
@@ -841,6 +1000,293 @@ const app = new Elysia({ prefix: "/api" })
   )
 
   // ============================================
+  // Expert Advisors (EAs) - Reporte CONSOLIDADO (Todas las EAs)
+  // ============================================
+  .get(
+    "/accounts/:id/eas-report",
+    async ({ params, query, request }) => {
+      const account = await prisma.tradingAccount.findUnique({ where: { id: params.id } });
+      if (!account) throw new Error("Account not found");
+      await verifySession(request.headers, account.userId);
+
+      const eas = await prisma.expertAdvisor.findMany({
+        where: { accountId: params.id },
+      });
+
+      // Map magic number to EA Name for easy lookup
+      const eaMap = new Map<number, string>();
+      eas.forEach(ea => eaMap.set(ea.magicNumber, ea.name));
+
+      // Filtros de fecha (apply to all trades)
+      const whereClause: any = { 
+          accountId: params.id,
+          magicNumber: { in: eas.map(e => e.magicNumber) } // Only trades from these EAs
+      };
+      
+      if (query.from || query.to) {
+          whereClause.closeTime = {};
+          if (query.from) whereClause.closeTime.gte = new Date(Number(query.from));
+          if (query.to) whereClause.closeTime.lte = new Date(Number(query.to));
+      }
+
+      const trades = await prisma.tradeHistory.findMany({ 
+          where: whereClause, 
+          orderBy: { closeTime: "asc" } 
+      });
+
+      // --- CÁLCULO DE ESTADÍSTICAS POR EA ---
+      const statsByEA: Record<number, any> = {};
+      
+      // Initialize stats for all EAs (even those with 0 trades)
+      eas.forEach(ea => {
+          statsByEA[ea.magicNumber] = {
+              name: ea.name,
+              magic: ea.magicNumber,
+              totalTrades: 0,
+              winningTrades: 0,
+              losingTrades: 0,
+              totalProfit: 0,
+              grossProfit: 0,
+              grossLoss: 0,
+              maxDrawdown: 0,
+              runningBalance: 0,
+              peakBalance: 0
+          };
+      });
+
+      trades.forEach(t => {
+          // Safety check if trade magic number is in our list (should be due to query filter)
+          if (!t.magicNumber || !statsByEA[t.magicNumber]) return;
+          
+          const s = statsByEA[t.magicNumber];
+          const net = t.profit + (t.commission || 0) + (t.swap || 0);
+          
+          s.totalTrades++;
+          s.totalProfit += net;
+          s.runningBalance += net;
+
+          if (s.runningBalance > s.peakBalance) s.peakBalance = s.runningBalance;
+          const drawdown = s.peakBalance - s.runningBalance;
+          if (drawdown > s.maxDrawdown) s.maxDrawdown = drawdown;
+
+          if (net > 0) {
+              s.winningTrades++;
+              s.grossProfit += net;
+          } else {
+              s.losingTrades++;
+              s.grossLoss += Math.abs(net);
+          }
+      });
+
+      // Finalize calc (Win Rate, Profit Factor, etc)
+      const summaryList = Object.values(statsByEA).map((s: any) => {
+          const winRate = s.totalTrades > 0 ? (s.winningTrades / s.totalTrades) : 0;
+          const profitFactor = s.grossLoss > 0 ? s.grossProfit / s.grossLoss : s.grossProfit > 0 ? 999 : 0;
+          const avgTrade = s.totalTrades > 0 ? s.totalProfit / s.totalTrades : 0;
+          
+          return {
+              ...s,
+              winRate,
+              profitFactor,
+              avgTrade
+          };
+      });
+
+
+      // --- GENERACIÓN EXCEL ---
+      const workbook = new ExcelJS.Workbook();
+      workbook.creator = "AccountViewer App";
+      workbook.created = new Date();
+
+      // HOJA 1: RESUMEN COMPARATIVO
+      const summarySheet = workbook.addWorksheet("Resumen EAs");
+      
+      summarySheet.columns = [
+          { header: "EA Name", key: "name", width: 25 },
+          { header: "Magic #", key: "magic", width: 12 },
+          { header: "Total Trades", key: "totalTrades", width: 15 },
+          { header: "Net Profit", key: "totalProfit", width: 18 },
+          { header: "Profit Factor", key: "profitFactor", width: 15 },
+          { header: "Win Rate", key: "winRate", width: 12 },
+          { header: "Max Drawdown", key: "maxDrawdown", width: 18 },
+          { header: "Avg Trade", key: "avgTrade", width: 15 },
+      ];
+
+      // Header Style
+      const sumHeader = summarySheet.getRow(1);
+      sumHeader.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 12 };
+      sumHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } }; // Slate 900
+      sumHeader.alignment = { horizontal: 'center', vertical: 'middle' };
+      sumHeader.height = 30;
+
+      summaryList.forEach((s, idx) => {
+          const row = summarySheet.addRow({
+              name: s.name,
+              magic: s.magic,
+              totalTrades: s.totalTrades,
+              totalProfit: s.totalProfit,
+              profitFactor: s.profitFactor,
+              winRate: s.winRate,
+              maxDrawdown: s.maxDrawdown,
+              avgTrade: s.avgTrade
+          });
+
+          // Formats
+          row.height = 20;
+          row.getCell(4).numFmt = '"$"#,##0.00'; // Net Profit
+          row.getCell(4).font = { color: { argb: s.totalProfit >= 0 ? 'FF16A34A' : 'FFDC2626' }, bold: true };
+          row.getCell(5).numFmt = '0.00'; // PF
+          row.getCell(6).numFmt = '0.00%'; // Win Rate
+          row.getCell(7).numFmt = '"$"#,##0.00'; // DD
+          row.getCell(8).numFmt = '"$"#,##0.00'; // Avg
+          
+          row.alignment = { vertical: 'middle' };
+
+          if (idx % 2 !== 0) {
+              row.eachCell({ includeEmpty: true }, (cell) => {
+                  cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+              });
+          }
+      });
+      
+      // Total Row
+      const grandTotalProfit = summaryList.reduce((acc, s) => acc + s.totalProfit, 0);
+      const totalRow = summarySheet.addRow({
+          name: "TOTAL",
+          totalTrades: summaryList.reduce((acc, s) => acc + s.totalTrades, 0),
+          totalProfit: grandTotalProfit
+      });
+      totalRow.font = { bold: true };
+      totalRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } }; // Slate 800
+      totalRow.getCell(1).font = { color: { argb: 'FFFFFFFF' }, bold: true };
+      totalRow.getCell(4).numFmt = '"$"#,##0.00';
+      totalRow.getCell(4).font = { color: { argb: grandTotalProfit >= 0 ? 'FF16A34A' : 'FFDC2626' }, bold: true };
+
+
+      summarySheet.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: 8 } };
+
+
+      // HOJA 2: OPERACIONES DETALLADAS (Por EA)
+      const dataSheet = workbook.addWorksheet("Operaciones");
+      
+      dataSheet.columns = [
+        { header: "Ticket", key: "ticket", width: 12 },
+        { header: "Símbolo", key: "symbol", width: 12 },
+        { header: "Tipo", key: "type", width: 10 },
+        { header: "Volumen", key: "volume", width: 10 },
+        { header: "Apertura", key: "openTime", width: 22 },
+        { header: "Cierre", key: "closeTime", width: 22 },
+        { header: "Precio Open", key: "openPrice", width: 12 },
+        { header: "Precio Close", key: "closePrice", width: 12 },
+        { header: "Beneficio", key: "profit", width: 12 },
+        { header: "Comisión", key: "commission", width: 12 },
+        { header: "Swap", key: "swap", width: 12 },
+        { header: "Neto", key: "netProfit", width: 15 },
+      ];
+
+      const dataHeader = dataSheet.getRow(1);
+      dataHeader.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      dataHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } }; // Dark Slate
+      dataHeader.alignment = { horizontal: 'center' };
+      dataHeader.height = 25;
+
+      // Group trades by EA using the map we made earlier
+      // We want to iterate existing EAs to keep order and include empty ones if needed (skipping empty for ops sheet makes sense though)
+      
+      eas.forEach(ea => {
+          const eaTrades = trades.filter(t => t.magicNumber === ea.magicNumber).sort((a,b) => b.closeTime.getTime() - a.closeTime.getTime());
+          
+          if (eaTrades.length === 0) return;
+
+          // Separator / Header Row for EA
+          dataSheet.addRow([]); // Spacer
+          const eaHeaderRow = dataSheet.addRow([
+             `EA: ${ea.name} (Magic: ${ea.magicNumber})`,
+             "", "", "", "", "", "", "",
+             `Trades: ${eaTrades.length}`,
+             "", "",
+             `Net: $${eaTrades.reduce((acc, t) => acc + t.profit + (t.commission||0) + (t.swap||0), 0).toFixed(2)}`
+          ]);
+          
+          // Merge cells for title
+          dataSheet.mergeCells(`A${eaHeaderRow.number}:H${eaHeaderRow.number}`);
+          
+          eaHeaderRow.getCell(1).font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+          eaHeaderRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF334155' } }; // Slate 700
+          eaHeaderRow.getCell(1).alignment = { vertical: 'middle', indent: 1 };
+          
+          // Style summary cells in header
+          eaHeaderRow.getCell(9).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+          eaHeaderRow.getCell(9).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF334155' } };
+          eaHeaderRow.getCell(12).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+          eaHeaderRow.getCell(12).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF334155' } };
+          eaHeaderRow.height = 25;
+
+          eaTrades.forEach((t, index) => {
+             const net = t.profit + (t.commission || 0) + (t.swap || 0);
+             const row = dataSheet.addRow({
+                 ticket: t.ticket.toString(),
+                 symbol: t.symbol,
+                 type: t.type,
+                 volume: t.volume,
+                 openTime: t.openTime,
+                 closeTime: t.closeTime,
+                 openPrice: t.openPrice,
+                 closePrice: t.closePrice,
+                 profit: t.profit,
+                 commission: t.commission,
+                 swap: t.swap,
+                 netProfit: net
+             });
+             
+             // Styling
+             row.getCell(3).font = { color: { argb: t.type === 'buy' ? 'FF2563EB' : 'FFDB2777' } }; // Buy=Blue, Sell=Pink
+             row.getCell(5).numFmt = 'dd/mm/yyyy hh:mm:ss';
+             row.getCell(6).numFmt = 'dd/mm/yyyy hh:mm:ss';
+             row.getCell(9).font = { color: { argb: t.profit >= 0 ? 'FF16A34A' : 'FFDC2626' } };
+             row.getCell(12).font = { color: { argb: net >= 0 ? 'FF16A34A' : 'FFDC2626' }, bold: true };
+             row.getCell(12).numFmt = '"$"#,##0.00';
+             
+             if (index % 2 !== 0) {
+                 row.eachCell({ includeEmpty: true }, (cell) => {
+                     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+                 });
+             }
+          });
+      });
+
+      dataSheet.views = [{ state: 'frozen', xSplit: 0, ySplit: 1 }];
+
+      // Filename generation
+      const safeName = (account.nickname || account.accountNumber.toString()).replace(/[^a-z0-9]/gi, '_');
+      const dateStr = new Date().toISOString().slice(0,10);
+      let rangeStr = "ALL";
+      if (query.from && query.to) {
+          rangeStr = `${new Date(Number(query.from)).toISOString().slice(0,10)}_to_${new Date(Number(query.to)).toISOString().slice(0,10)}`;
+      }
+      
+      const fileName = `Report_${safeName}_${rangeStr}.xlsx`;
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      
+      return new Response(buffer, {
+        headers: {
+            "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "Content-Disposition": `attachment; filename="${fileName}"`
+        }
+      });
+    },
+    {
+      params: t.Object({ id: t.String() }),
+      query: t.Object({
+          from: t.Optional(t.String()),
+          to: t.Optional(t.String())
+      })
+    }
+  )
+  
+
+  // ============================================
   // Expert Advisors (EAs) - Crear
   // ============================================
   .post(
@@ -893,9 +1339,9 @@ const app = new Elysia({ prefix: "/api" })
       if (!ea) return { success: false, message: "EA no encontrado" };
       
       const account = await prisma.tradingAccount.findUnique({ where: { id: ea.accountId } });
-      if (account) {
-          await verifySession(request.headers, account.userId);
-      }
+      if (!account) throw new Error("Account not found");
+      await verifySession(request.headers, account.userId);
+      
       
       await prisma.expertAdvisor.delete({ where: { id: params.id } });
       return { success: true, message: "EA eliminado" };
@@ -915,9 +1361,8 @@ const app = new Elysia({ prefix: "/api" })
       if (!ea) throw new Error("EA not found");
       
       const account = await prisma.tradingAccount.findUnique({ where: { id: ea.accountId } });
-      if (account) {
-          await verifySession(request.headers, account.userId);
-      }
+      if (!account) throw new Error("Account not found");
+      await verifySession(request.headers, account.userId);
       return ea;
     },
     {
@@ -936,9 +1381,8 @@ const app = new Elysia({ prefix: "/api" })
       if (!ea) throw new Error("EA not found");
       
       const account = await prisma.tradingAccount.findUnique({ where: { id: ea.accountId } });
-      if (account) {
-          await verifySession(request.headers, account.userId);
-      }
+      if (!account) throw new Error("Account not found");
+      await verifySession(request.headers, account.userId);
       
       // Filtros de fecha
       const whereClause: any = { 
@@ -1301,7 +1745,7 @@ const app = new Elysia({ prefix: "/api" })
       });
 
       // Actualizar lastSeen y datos de la cuenta
-      await prisma.tradingAccount.update({
+      const updatedAccount = await prisma.tradingAccount.update({
         where: { id: account.id },
         data: {
           isConnected: true,
@@ -1313,6 +1757,9 @@ const app = new Elysia({ prefix: "/api" })
           equity: body.account.equity,
         },
       });
+
+      // Validar alertas asíncronamente (no bloquear respuesta)
+      checkAlerts(updatedAccount); // Pasamos la cuenta actualizada
 
       return { success: true, accountId: account.id };
     },
@@ -1722,6 +2169,289 @@ const app = new Elysia({ prefix: "/api" })
           comment: t.Optional(t.String()),
         })),
       }),
+    }
+  )
+
+  // ============================================
+  // ALERTAS - Listar
+  // ============================================
+  .get(
+    "/accounts/:id/alerts",
+    async ({ params, request }) => {
+      const account = await prisma.tradingAccount.findUnique({ where: { id: params.id } });
+      if (!account) throw new Error("Account not found");
+      await verifySession(request.headers, account.userId);
+
+      const alerts = await prisma.alert.findMany({
+        where: { accountId: params.id },
+        orderBy: { createdAt: 'desc' }
+      });
+
+      return alerts;
+    },
+    {
+      params: t.Object({ id: t.String() }),
+    }
+  )
+
+  // ============================================
+  // ALERTAS - Crear
+  // ============================================
+  .post(
+    "/accounts/:id/alerts",
+    async ({ params, body, request }) => {
+      const account = await prisma.tradingAccount.findUnique({ where: { id: params.id } });
+      if (!account) throw new Error("Account not found");
+      await verifySession(request.headers, account.userId);
+
+      const alert = await prisma.alert.create({
+        data: {
+          userId: account.userId,
+          accountId: params.id,
+          type: body.type,
+          condition: body.condition,
+          value: body.value,
+        }
+      });
+
+      return { success: true, alert };
+    },
+    {
+      params: t.Object({ id: t.String() }),
+      body: t.Object({
+        type: t.String(),
+        condition: t.String(),
+        value: t.Number(),
+      }),
+    }
+  )
+
+  // ============================================
+  // ALERTAS - Eliminar
+  // ============================================
+  .delete(
+    "/alerts/:id",
+    async ({ params, request }) => {
+      const alert = await prisma.alert.findUnique({ where: { id: params.id } });
+      if (!alert) return { success: false, message: "Alert not found" };
+      await verifySession(request.headers, alert.userId);
+
+      await prisma.alert.delete({ where: { id: params.id } });
+      return { success: true, message: "Alert deleted" };
+    },
+    {
+      params: t.Object({ id: t.String() }),
+    }
+  )
+
+  // ============================================
+  // TELEGRAM - Generar Link
+  // ============================================
+  .post(
+    "/telegram/link",
+    async ({ request }) => {
+      const session = await auth.api.getSession({ headers: request.headers });
+      if (!session) throw new Error("Unauthorized");
+
+      // Generate token
+      const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      
+      await prisma.user.update({
+        where: { id: session.user.id },
+        data: { telegramConnectionToken: token }
+      });
+
+      return { success: true, token };
+    }
+  )
+
+  // ============================================
+  // TELEGRAM - Status
+  // ============================================
+  .get(
+    "/telegram/status",
+    async ({ request }) => {
+      const session = await auth.api.getSession({ headers: request.headers });
+      if (!session) return { connected: false };
+
+      const user = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { telegramChatId: true }
+      });
+
+      return { connected: !!user?.telegramChatId };
+    }
+  )
+
+  // ============================================
+  // TELEGRAM - Webhook (recibe mensajes de Telegram)
+  // ============================================
+  .post(
+    "/telegram/webhook",
+    async ({ body }) => {
+      console.log("[TELEGRAM WEBHOOK] ====== REQUEST RECIBIDA ======");
+      console.log("[TELEGRAM WEBHOOK] Body:", JSON.stringify(body, null, 2));
+
+      try {
+        // Telegram envía updates en este formato
+        const update = body as any;
+
+        // Solo procesamos mensajes de texto
+        if (!update.message?.text) {
+          console.log("[TELEGRAM WEBHOOK] No es mensaje de texto, ignorando");
+          return { ok: true };
+        }
+
+        const chatId = update.message.chat.id;
+        const text = update.message.text;
+        const bot = getBot();
+
+        if (!bot) {
+          console.error("[TELEGRAM] Bot no configurado (falta TELEGRAM_BOT_TOKEN)");
+          return { ok: true };
+        }
+
+        // Comando /start con token
+        if (text.startsWith("/start")) {
+          const parts = text.split(" ");
+          const token = parts.length > 1 ? parts[1] : null;
+
+          if (!token) {
+            await bot.telegram.sendMessage(
+              chatId,
+              "👋 *Hola! Bienvenido.*\n\nPara conectar tu cuenta, ve a la web y pulsa en 'Conectar Telegram'.",
+              { parse_mode: "Markdown" }
+            );
+            return { ok: true };
+          }
+
+          console.log(`[TELEGRAM] Buscando usuario con token: ${token}`);
+
+          const user = await prisma.user.findUnique({
+            where: { telegramConnectionToken: token }
+          });
+
+          if (!user) {
+            await bot.telegram.sendMessage(
+              chatId,
+              "⚠️ El enlace es inválido o ya ha sido utilizado."
+            );
+            return { ok: true };
+          }
+
+          // Vincular cuenta
+          await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              telegramChatId: chatId.toString(),
+              telegramConnectionToken: null // Invalidar token (one-time use)
+            }
+          });
+
+          await bot.telegram.sendMessage(
+            chatId,
+            `✅ *¡Conexión exitosa!*\n\nCuenta: ${user.email}\nYa puedes recibir notificaciones de tus alertas.`,
+            { parse_mode: "Markdown" }
+          );
+
+          console.log(`[TELEGRAM] Usuario ${user.email} vinculado con chatId ${chatId}`);
+        }
+
+        return { ok: true };
+      } catch (error) {
+        console.error("[TELEGRAM] Error procesando webhook:", error);
+        return { ok: true }; // Siempre responder 200 a Telegram
+      }
+    }
+  )
+
+  // ============================================
+  // TELEGRAM - Configurar Webhook (llamar una vez)
+  // ============================================
+  .post(
+    "/telegram/setup-webhook",
+    async ({ request }) => {
+      const session = await auth.api.getSession({ headers: request.headers });
+      if (!session) throw new Error("Unauthorized");
+
+      const bot = getBot();
+      if (!bot) {
+        return { success: false, error: "TELEGRAM_BOT_TOKEN no configurado" };
+      }
+
+      // URL donde Telegram enviará las actualizaciones
+      const webhookUrl = `${process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL}/api/telegram/webhook`;
+
+      try {
+        // Configurar webhook en Telegram
+        await bot.telegram.setWebhook(webhookUrl);
+
+        // Verificar que se configuró correctamente
+        const info = await bot.telegram.getWebhookInfo();
+
+        return {
+          success: true,
+          message: "Webhook configurado correctamente",
+          webhookUrl: info.url,
+          pendingUpdates: info.pending_update_count
+        };
+      } catch (error: any) {
+        console.error("[TELEGRAM] Error configurando webhook:", error);
+        return { success: false, error: error.message };
+      }
+    }
+  )
+
+  // ============================================
+  // TELEGRAM - Eliminar Webhook (para debug/desarrollo)
+  // ============================================
+  .delete(
+    "/telegram/webhook",
+    async ({ request }) => {
+      const session = await auth.api.getSession({ headers: request.headers });
+      if (!session) throw new Error("Unauthorized");
+
+      const bot = getBot();
+      if (!bot) {
+        return { success: false, error: "TELEGRAM_BOT_TOKEN no configurado" };
+      }
+
+      try {
+        await bot.telegram.deleteWebhook();
+        return { success: true, message: "Webhook eliminado" };
+      } catch (error: any) {
+        return { success: false, error: error.message };
+      }
+    }
+  )
+
+  // ============================================
+  // TELEGRAM - Info del Webhook (para debug)
+  // ============================================
+  .get(
+    "/telegram/webhook-info",
+    async ({ request }) => {
+      const session = await auth.api.getSession({ headers: request.headers });
+      if (!session) throw new Error("Unauthorized");
+
+      const bot = getBot();
+      if (!bot) {
+        return { success: false, error: "TELEGRAM_BOT_TOKEN no configurado" };
+      }
+
+      try {
+        const info = await bot.telegram.getWebhookInfo();
+        return {
+          success: true,
+          url: info.url,
+          hasCustomCertificate: info.has_custom_certificate,
+          pendingUpdateCount: info.pending_update_count,
+          lastErrorDate: info.last_error_date,
+          lastErrorMessage: info.last_error_message,
+        };
+      } catch (error: any) {
+        return { success: false, error: error.message };
+      }
     }
   );
 

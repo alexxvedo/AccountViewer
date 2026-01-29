@@ -57,6 +57,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CalendarPnL } from "@/components/CalendarPnL";
+import { AccountHistoryTab } from "@/components/AccountHistoryTab";
+import { EAPageSkeleton } from "@/components/skeletons/EAPageSkeleton";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -112,7 +114,6 @@ interface Position {
 }
 
 const COLORS = ["var(--chart-1)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)", "var(--muted-foreground)"];
-const TRADES_PER_PAGE = 50;
 
 export default function EADetailsPage() {
   const params = useParams();
@@ -125,8 +126,6 @@ export default function EADetailsPage() {
   const [isLive, setIsLive] = useState(false);
   const [loading, setLoading] = useState(true);
   
-  // Pagination State
-  const [historyPage, setHistoryPage] = useState(1);
   const [closingTickets, setClosingTickets] = useState<Set<number>>(new Set());
 
   // Report State
@@ -202,7 +201,7 @@ export default function EADetailsPage() {
       const data = await res.json();
       
       if (ea) {
-          const filtered = data.filter((t: any) => t.magicNumber == ea.magicNumber);
+          const filtered = data.filter((t: any) => t.magicNumber === ea.magicNumber);
           
           setAllTrades(prev => {
               if (prev.length === filtered.length) {
@@ -230,7 +229,7 @@ export default function EADetailsPage() {
              const allPos = data.data.positions as Position[];
              if (ea) {
                  // Open positions for this EA
-                 const eaPos = allPos.filter(p => p.magic_number == ea.magicNumber);
+                 const eaPos = allPos.filter(p => p.magic_number ===     ea.magicNumber);
                  setLivePositions(eaPos);
              }
           } else {
@@ -312,31 +311,29 @@ export default function EADetailsPage() {
   // Balance Curve
   const balanceCurve = useMemo(() => {
       let balance = 0; 
+      // Sort trades by close time. If timestamps are equal, sort by ticket to ensure consistent order.
       return allTrades
-        .sort((a, b) => new Date(a.closeTime).getTime() - new Date(b.closeTime).getTime())
-        .map(t => {
+        .sort((a, b) => {
+             const timeDiff = new Date(a.closeTime).getTime() - new Date(b.closeTime).getTime();
+             if (timeDiff !== 0) return timeDiff;
+             return a.ticket - b.ticket;
+        })
+        .map((t, index) => {
             const pl = t.profit + t.swap + t.commission;
             balance += pl;
             return {
+                tradeNum: index + 1,
                 date: new Date(t.closeTime).toLocaleDateString(),
+                ticket: t.ticket,
                 balance
             };
         });
   }, [allTrades]);
 
-  // Filtered History for Pagination
-  const { paginatedTrades, totalPages } = useMemo(() => {
-     // Sort desc by close time (or ticket)
-     const sorted = [...allTrades].sort((a, b) => b.ticket - a.ticket);
-     const totalPages = Math.ceil(sorted.length / TRADES_PER_PAGE);
-     const start = (historyPage - 1) * TRADES_PER_PAGE;
-     const paginatedTrades = sorted.slice(start, start + TRADES_PER_PAGE);
-     return { paginatedTrades, totalPages };
-  }, [allTrades, historyPage]);
 
 
   if (loading && !ea) {
-      return <div className="p-8 flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>;
+      return <EAPageSkeleton />;
   }
 
   if (!ea) return <div className="p-8">EA no encontrado</div>;
@@ -513,55 +510,64 @@ export default function EADetailsPage() {
 
         {/* TAB 1: OVERVIEW (Charts & Calendar) */}
         <TabsContent value="overview" className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-                <Card className="col-span-4 border-border bg-card">
+            <div className="grid gap-4 ">
+                <Card className="col-span- border-border bg-card">
                     <CardHeader>
                         <CardTitle>Crecimiento</CardTitle>
                         <CardDescription>Curva de equity (operaciones cerradas).</CardDescription>
                     </CardHeader>
-                    <CardContent className="pl-2">
-                            <div className="h-[300px] w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={balanceCurve}>
-                                    <defs>
-                                        <linearGradient id="colorBalance" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.3}/>
-                                            <stop offset="95%" stopColor="var(--primary)" stopOpacity={0}/>
-                                        </linearGradient>
-                                    </defs>
-                                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                                    <XAxis dataKey="date" className="text-xs" tickLine={false} axisLine={false} minTickGap={30} />
-                                    <YAxis className="text-xs" tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
-                                    <Tooltip 
-                                        contentStyle={{ backgroundColor: "var(--card)", borderColor: "var(--border)", borderRadius: "8px" }}
-                                        formatter={(value: any) => [`$${Number(value).toFixed(2)}`, "Balance"]}
-                                    />
-                                    <Area type="monotone" dataKey="balance" stroke="var(--primary)" fillOpacity={1} fill="url(#colorBalance)" />
-                                </AreaChart>
-                            </ResponsiveContainer>
-                            </div>
-                    </CardContent>
-                </Card>
-
-                <Card className="col-span-3 border-border bg-card">
-                    <CardHeader>
-                        <CardTitle>Símbolos</CardTitle>
-                    </CardHeader>
                     <CardContent>
-                        <div className="h-[300px] w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie data={stats.symbolDist} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={2} dataKey="value">
-                                        {stats.symbolDist.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip contentStyle={{ backgroundColor: "var(--card)", borderRadius: "8px" }} />
-                                </PieChart>
-                            </ResponsiveContainer>
+                        <div className="h-[300px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={balanceCurve}>
+                            <defs>
+                                <linearGradient id="balanceGradient" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.3} />
+                                <stop offset="95%" stopColor="var(--chart-1)" stopOpacity={0} />
+                                </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                            <XAxis 
+                                dataKey="tradeNum" 
+                                axisLine={false} 
+                                tickLine={false} 
+                                tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
+                                minTickGap={30}
+                            />
+                            <YAxis 
+                                axisLine={false} 
+                                tickLine={false} 
+                                tick={{ fill: "var(--muted-foreground)", fontSize: 12 }} 
+                                tickFormatter={(v) => `$${(v / 1000).toFixed(1)}k`} 
+                                domain={['auto', 'auto']} 
+                            />
+                            <Tooltip 
+                                contentStyle={{ backgroundColor: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px" }}
+                                formatter={(value: number | undefined) => [`$${(value || 0).toLocaleString("en-US", {minimumFractionDigits: 2})}`, "Balance"]}
+                                labelFormatter={(label, payload) => {
+                                    if (payload && payload.length > 0) {
+                                        const data = payload[0].payload;
+                                        return `Trade #${label} (${data.date})`;
+                                    }
+                                    return `Trade #${label}`;
+                                }}
+                            />
+                            <Area 
+                                type="monotone" 
+                                dataKey="balance" 
+                                stroke="var(--chart-1)" 
+                                strokeWidth={2} 
+                                fill="url(#balanceGradient)" 
+                                name="balance" 
+                                animationDuration={500}
+                            />
+                            </AreaChart>
+                        </ResponsiveContainer>
                         </div>
                     </CardContent>
                 </Card>
+
+                
             </div>
             
             <CalendarPnL trades={allTrades} />
@@ -571,135 +577,86 @@ export default function EADetailsPage() {
         <TabsContent value="positions" className="space-y-4">
             <Card className="border-border bg-card">
                 <CardHeader>
-                    <CardTitle>Operaciones en Curso</CardTitle>
-                    <CardDescription>Gestión de trades activos del EA.</CardDescription>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <CardTitle className="text-foreground">Posiciones Abiertas</CardTitle>
+                            <CardDescription>
+                                {livePositions.length} posiciones | P&L Flotante:{" "}
+                                <span className={cn("font-mono font-medium", stats.floatingPnL >= 0 ? "text-profit" : "text-loss")}>
+                                    {stats.floatingPnL >= 0 ? "+" : ""}${stats.floatingPnL.toFixed(2)}
+                                </span>
+                            </CardDescription>
+                        </div>
+                    </div>
                 </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Ticket</TableHead>
-                                <TableHead>Símbolo</TableHead>
-                                <TableHead>Tipo</TableHead>
-                                <TableHead>Volumen</TableHead>
-                                <TableHead>Open</TableHead>
-                                <TableHead>Current</TableHead>
-                                <TableHead className="text-right">P/L</TableHead>
-                                <TableHead className="w-[50px]"></TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {livePositions.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={8} className="h-24 text-center">
-                                        No hay operaciones abiertas.
-                                    </TableCell>
-                                </TableRow>
-                            ) : (
-                                livePositions.map((pos) => (
-                                    <TableRow key={pos.ticket}>
-                                        <TableCell className="font-mono">{pos.ticket}</TableCell>
-                                        <TableCell>{pos.symbol}</TableCell>
-                                        <TableCell>
-                                            <Badge variant={pos.type === 'buy' ? 'default' : 'destructive'} className="uppercase text-[10px]">
-                                                {pos.type}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell>{pos.volume}</TableCell>
-                                        <TableCell>{pos.open_price}</TableCell>
-                                        <TableCell>{pos.current_price}</TableCell>
-                                        <TableCell className={cn("text-right font-mono font-medium", pos.profit >= 0 ? "text-profit" : "text-loss")}>
-                                            ${(pos.profit + pos.swap + pos.commission).toFixed(2)}
-                                        </TableCell>
-                                        <TableCell>
-                                            <Button 
-                                                variant="ghost" 
-                                                size="icon" 
-                                                className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                                                onClick={() => closePosition(pos.ticket)}
-                                                disabled={closingTickets.has(pos.ticket)}
-                                            >
-                                                {closingTickets.has(pos.ticket) ? (
-                                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                                ) : (
-                                                    <X className="h-4 w-4" />
-                                                )}
-                                            </Button>
-                                        </TableCell>
+                <CardContent className="p-0">
+                    {livePositions.length === 0 ? (
+                        <div className="flex items-center justify-center py-16 text-muted-foreground">
+                            No hay posiciones abiertas
+                        </div>
+                    ) : (
+                        <div className="overflow-auto">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow className="border-border hover:bg-transparent">
+                                        <TableHead className="text-muted-foreground">Ticket</TableHead>
+                                        <TableHead className="text-muted-foreground">Símbolo</TableHead>
+                                        <TableHead className="text-muted-foreground">Tipo</TableHead>
+                                        <TableHead className="text-muted-foreground">Volumen</TableHead>
+                                        <TableHead className="text-muted-foreground">Apertura</TableHead>
+                                        <TableHead className="text-muted-foreground">Actual</TableHead>
+                                        <TableHead className="text-muted-foreground">SL</TableHead>
+                                        <TableHead className="text-muted-foreground">TP</TableHead>
+                                        <TableHead className="text-muted-foreground">P&L</TableHead>
+                                        <TableHead className="text-right text-muted-foreground">Acción</TableHead>
                                     </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
+                                </TableHeader>
+                                <TableBody>
+                                    {livePositions.map((p) => (
+                                        <TableRow key={p.ticket} className="border-border hover:bg-secondary/50">
+                                            <TableCell className="font-mono text-sm text-muted-foreground">#{p.ticket}</TableCell>
+                                            <TableCell className="font-medium text-foreground">{p.symbol}</TableCell>
+                                            <TableCell>
+                                                <Badge variant="outline" className={cn("font-medium uppercase", p.type === "buy" ? "bg-profit/20 text-profit border-profit/30" : "bg-loss/20 text-loss border-loss/30")}>
+                                                    {p.type}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="font-mono">{p.volume}</TableCell>
+                                            <TableCell className="font-mono">{p.open_price.toFixed(5)}</TableCell>
+                                            <TableCell className="font-mono">{p.current_price.toFixed(5)}</TableCell>
+                                            <TableCell className="font-mono text-loss">{p.sl > 0 ? p.sl.toFixed(5) : "—"}</TableCell>
+                                            <TableCell className="font-mono text-profit">{p.tp > 0 ? p.tp.toFixed(5) : "—"}</TableCell>
+                                            <TableCell className={cn("font-mono font-medium", p.profit >= 0 ? "text-profit" : "text-loss")}>
+                                                {p.profit >= 0 ? "+" : ""}${p.profit.toFixed(2)}
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => closePosition(p.ticket)}
+                                                    disabled={closingTickets.has(p.ticket)}
+                                                    className="text-loss hover:text-loss hover:bg-loss/10"
+                                                >
+                                                    {closingTickets.has(p.ticket) ? (
+                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                    ) : (
+                                                        <X className="h-4 w-4" />
+                                                    )}
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         </TabsContent>
 
         {/* TAB 3: HISTORY */}
         <TabsContent value="history" className="space-y-4">
-             <Card className="border-border bg-card">
-                <CardHeader>
-                    <CardTitle>Historial de Operaciones</CardTitle>
-                    <CardDescription>Registro completo de ejecuciones.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Ticket</TableHead>
-                                <TableHead>Símbolo</TableHead>
-                                <TableHead>Tipo</TableHead>
-                                <TableHead>Volumen</TableHead>
-                                <TableHead>Open</TableHead>
-                                <TableHead>Close</TableHead>
-                                <TableHead className="text-right">Profit</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {paginatedTrades.map((t) => (
-                                <TableRow key={t.ticket}>
-                                    <TableCell className="font-mono">{t.ticket}</TableCell>
-                                    <TableCell>{t.symbol}</TableCell>
-                                    <TableCell>
-                                        <Badge variant={t.type === 'buy' ? 'default' : 'destructive'} className="uppercase text-[10px]">
-                                            {t.type}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell>{t.volume}</TableCell>
-                                    <TableCell>{t.openPrice}</TableCell>
-                                    <TableCell>{t.closePrice}</TableCell>
-                                    <TableCell className={cn("text-right font-mono font-medium", t.profit + t.swap + t.commission >= 0 ? "text-profit" : "text-loss")}>
-                                        ${(t.profit + t.swap + t.commission).toFixed(2)}
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                    
-                    {/* Pagination Controls */}
-                    <div className="flex items-center justify-end space-x-2 py-4">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setHistoryPage((p) => Math.max(1, p - 1))}
-                            disabled={historyPage === 1}
-                        >
-                            Anterior
-                        </Button>
-                        <div className="text-sm text-muted-foreground">
-                            Página {historyPage} de {totalPages}
-                        </div>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setHistoryPage((p) => Math.min(totalPages, p + 1))}
-                            disabled={historyPage === totalPages}
-                        >
-                            Siguiente
-                        </Button>
-                    </div>
-                </CardContent>
-            </Card>
+            <AccountHistoryTab trades={allTrades} />
         </TabsContent>
       </Tabs>
 

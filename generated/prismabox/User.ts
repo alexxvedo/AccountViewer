@@ -13,6 +13,8 @@ export const UserPlain = t.Object(
     image: __nullable__(t.String()),
     createdAt: t.Date(),
     updatedAt: t.Date(),
+    telegramChatId: __nullable__(t.String()),
+    telegramConnectionToken: __nullable__(t.String()),
   },
   { additionalProperties: false },
 );
@@ -107,6 +109,25 @@ export const UserRelations = t.Object(
       ),
       { additionalProperties: false },
     ),
+    alerts: t.Array(
+      t.Object(
+        {
+          id: t.String(),
+          userId: t.String(),
+          accountId: t.String(),
+          type: t.String(),
+          condition: t.String(),
+          value: t.Number(),
+          active: t.Boolean(),
+          triggered: t.Boolean(),
+          lastTriggeredAt: __nullable__(t.Date()),
+          createdAt: t.Date(),
+          updatedAt: t.Date(),
+        },
+        { additionalProperties: false },
+      ),
+      { additionalProperties: false },
+    ),
   },
   { additionalProperties: false },
 );
@@ -117,6 +138,7 @@ export const UserPlainInputCreate = t.Object(
     name: t.Optional(__nullable__(t.String())),
     emailVerified: t.Optional(t.Boolean()),
     image: t.Optional(__nullable__(t.String())),
+    telegramConnectionToken: t.Optional(__nullable__(t.String())),
   },
   { additionalProperties: false },
 );
@@ -127,6 +149,7 @@ export const UserPlainInputUpdate = t.Object(
     name: t.Optional(__nullable__(t.String())),
     emailVerified: t.Optional(t.Boolean()),
     image: t.Optional(__nullable__(t.String())),
+    telegramConnectionToken: t.Optional(__nullable__(t.String())),
   },
   { additionalProperties: false },
 );
@@ -198,6 +221,22 @@ export const UserRelationsInputCreate = t.Object(
       ),
     ),
     accountTypes: t.Optional(
+      t.Object(
+        {
+          connect: t.Array(
+            t.Object(
+              {
+                id: t.String({ additionalProperties: false }),
+              },
+              { additionalProperties: false },
+            ),
+            { additionalProperties: false },
+          ),
+        },
+        { additionalProperties: false },
+      ),
+    ),
+    alerts: t.Optional(
       t.Object(
         {
           connect: t.Array(
@@ -345,6 +384,31 @@ export const UserRelationsInputUpdate = t.Partial(
           { additionalProperties: false },
         ),
       ),
+      alerts: t.Partial(
+        t.Object(
+          {
+            connect: t.Array(
+              t.Object(
+                {
+                  id: t.String({ additionalProperties: false }),
+                },
+                { additionalProperties: false },
+              ),
+              { additionalProperties: false },
+            ),
+            disconnect: t.Array(
+              t.Object(
+                {
+                  id: t.String({ additionalProperties: false }),
+                },
+                { additionalProperties: false },
+              ),
+              { additionalProperties: false },
+            ),
+          },
+          { additionalProperties: false },
+        ),
+      ),
     },
     { additionalProperties: false },
   ),
@@ -365,6 +429,8 @@ export const UserWhere = t.Partial(
           image: t.String(),
           createdAt: t.Date(),
           updatedAt: t.Date(),
+          telegramChatId: t.String(),
+          telegramConnectionToken: t.String(),
         },
         { additionalProperties: false },
       ),
@@ -378,13 +444,21 @@ export const UserWhereUnique = t.Recursive(
       [
         t.Partial(
           t.Object(
-            { id: t.String(), email: t.String() },
+            {
+              id: t.String(),
+              email: t.String(),
+              telegramConnectionToken: t.String(),
+            },
             { additionalProperties: false },
           ),
           { additionalProperties: false },
         ),
         t.Union(
-          [t.Object({ id: t.String() }), t.Object({ email: t.String() })],
+          [
+            t.Object({ id: t.String() }),
+            t.Object({ email: t.String() }),
+            t.Object({ telegramConnectionToken: t.String() }),
+          ],
           { additionalProperties: false },
         ),
         t.Partial(
@@ -411,6 +485,8 @@ export const UserWhereUnique = t.Recursive(
               image: t.String(),
               createdAt: t.Date(),
               updatedAt: t.Date(),
+              telegramChatId: t.String(),
+              telegramConnectionToken: t.String(),
             },
             { additionalProperties: false },
           ),
@@ -436,6 +512,9 @@ export const UserSelect = t.Partial(
       tradingAccounts: t.Boolean(),
       sections: t.Boolean(),
       accountTypes: t.Boolean(),
+      alerts: t.Boolean(),
+      telegramChatId: t.Boolean(),
+      telegramConnectionToken: t.Boolean(),
       _count: t.Boolean(),
     },
     { additionalProperties: false },
@@ -450,6 +529,7 @@ export const UserInclude = t.Partial(
       tradingAccounts: t.Boolean(),
       sections: t.Boolean(),
       accountTypes: t.Boolean(),
+      alerts: t.Boolean(),
       _count: t.Boolean(),
     },
     { additionalProperties: false },
@@ -478,6 +558,12 @@ export const UserOrderBy = t.Partial(
         additionalProperties: false,
       }),
       updatedAt: t.Union([t.Literal("asc"), t.Literal("desc")], {
+        additionalProperties: false,
+      }),
+      telegramChatId: t.Union([t.Literal("asc"), t.Literal("desc")], {
+        additionalProperties: false,
+      }),
+      telegramConnectionToken: t.Union([t.Literal("asc"), t.Literal("desc")], {
         additionalProperties: false,
       }),
     },

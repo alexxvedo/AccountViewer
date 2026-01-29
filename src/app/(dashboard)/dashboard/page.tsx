@@ -42,7 +42,6 @@ import {
 } from "@/components/ui/select";
 import {
   Plus,
-  Loader2,
   X,
   Copy,
   Check,
@@ -54,10 +53,10 @@ import {
   Activity,
   MoreHorizontal,
   ExternalLink,
-  RefreshCw,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton";
 
 interface LiveData {
   balance: number;
@@ -548,11 +547,7 @@ export default function DashboardPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex h-[50vh] items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   return (
@@ -565,17 +560,7 @@ export default function DashboardPage() {
             Última actualización: {lastUpdate.toLocaleTimeString()}
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => fetchStructure()}
-            className="h-9 w-9 border-border bg-transparent text-muted-foreground hover:bg-secondary hover:text-foreground"
-          >
-            <RefreshCw className="h-4 w-4" />
-          </Button>
-          
-        </div>
+        
       </div>
 
       {/* Stats Cards */}

@@ -29,6 +29,8 @@ export const SessionRelations = t.Object(
         image: __nullable__(t.String()),
         createdAt: t.Date(),
         updatedAt: t.Date(),
+        telegramChatId: __nullable__(t.String()),
+        telegramConnectionToken: __nullable__(t.String()),
       },
       { additionalProperties: false },
     ),

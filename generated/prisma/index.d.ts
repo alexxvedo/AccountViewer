@@ -63,6 +63,11 @@ export type TradeHistory = $Result.DefaultSelection<Prisma.$TradeHistoryPayload>
  * 
  */
 export type EquitySnapshot = $Result.DefaultSelection<Prisma.$EquitySnapshotPayload>
+/**
+ * Model Alert
+ * 
+ */
+export type Alert = $Result.DefaultSelection<Prisma.$AlertPayload>
 
 /**
  * ##  Prisma Client ʲˢ
@@ -288,6 +293,16 @@ export class PrismaClient<
     * ```
     */
   get equitySnapshot(): Prisma.EquitySnapshotDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.alert`: Exposes CRUD operations for the **Alert** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more Alerts
+    * const alerts = await prisma.alert.findMany()
+    * ```
+    */
+  get alert(): Prisma.AlertDelegate<ExtArgs, ClientOptions>;
 }
 
 export namespace Prisma {
@@ -737,7 +752,8 @@ export namespace Prisma {
     TradingAccount: 'TradingAccount',
     ExpertAdvisor: 'ExpertAdvisor',
     TradeHistory: 'TradeHistory',
-    EquitySnapshot: 'EquitySnapshot'
+    EquitySnapshot: 'EquitySnapshot',
+    Alert: 'Alert'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -756,7 +772,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "user" | "session" | "account" | "verification" | "section" | "accountType" | "tradingAccount" | "expertAdvisor" | "tradeHistory" | "equitySnapshot"
+      modelProps: "user" | "session" | "account" | "verification" | "section" | "accountType" | "tradingAccount" | "expertAdvisor" | "tradeHistory" | "equitySnapshot" | "alert"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1420,6 +1436,72 @@ export namespace Prisma {
           }
         }
       }
+      Alert: {
+        payload: Prisma.$AlertPayload<ExtArgs>
+        fields: Prisma.AlertFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.AlertFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AlertPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.AlertFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AlertPayload>
+          }
+          findFirst: {
+            args: Prisma.AlertFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AlertPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.AlertFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AlertPayload>
+          }
+          findMany: {
+            args: Prisma.AlertFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AlertPayload>[]
+          }
+          create: {
+            args: Prisma.AlertCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AlertPayload>
+          }
+          createMany: {
+            args: Prisma.AlertCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.AlertDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AlertPayload>
+          }
+          update: {
+            args: Prisma.AlertUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AlertPayload>
+          }
+          deleteMany: {
+            args: Prisma.AlertDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.AlertUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.AlertUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$AlertPayload>
+          }
+          aggregate: {
+            args: Prisma.AlertAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateAlert>
+          }
+          groupBy: {
+            args: Prisma.AlertGroupByArgs<ExtArgs>
+            result: $Utils.Optional<AlertGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.AlertCountArgs<ExtArgs>
+            result: $Utils.Optional<AlertCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -1514,6 +1596,7 @@ export namespace Prisma {
     expertAdvisor?: ExpertAdvisorOmit
     tradeHistory?: TradeHistoryOmit
     equitySnapshot?: EquitySnapshotOmit
+    alert?: AlertOmit
   }
 
   /* Types for Logging */
@@ -1613,6 +1696,7 @@ export namespace Prisma {
     tradingAccounts: number
     sections: number
     accountTypes: number
+    alerts: number
   }
 
   export type UserCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -1621,6 +1705,7 @@ export namespace Prisma {
     tradingAccounts?: boolean | UserCountOutputTypeCountTradingAccountsArgs
     sections?: boolean | UserCountOutputTypeCountSectionsArgs
     accountTypes?: boolean | UserCountOutputTypeCountAccountTypesArgs
+    alerts?: boolean | UserCountOutputTypeCountAlertsArgs
   }
 
   // Custom InputTypes
@@ -1667,6 +1752,13 @@ export namespace Prisma {
    */
   export type UserCountOutputTypeCountAccountTypesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: AccountTypeWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountAlertsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: AlertWhereInput
   }
 
 
@@ -1740,12 +1832,14 @@ export namespace Prisma {
     trades: number
     snapshots: number
     expertAdvisors: number
+    alerts: number
   }
 
   export type TradingAccountCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     trades?: boolean | TradingAccountCountOutputTypeCountTradesArgs
     snapshots?: boolean | TradingAccountCountOutputTypeCountSnapshotsArgs
     expertAdvisors?: boolean | TradingAccountCountOutputTypeCountExpertAdvisorsArgs
+    alerts?: boolean | TradingAccountCountOutputTypeCountAlertsArgs
   }
 
   // Custom InputTypes
@@ -1780,6 +1874,13 @@ export namespace Prisma {
     where?: ExpertAdvisorWhereInput
   }
 
+  /**
+   * TradingAccountCountOutputType without action
+   */
+  export type TradingAccountCountOutputTypeCountAlertsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: AlertWhereInput
+  }
+
 
   /**
    * Models
@@ -1803,6 +1904,8 @@ export namespace Prisma {
     image: string | null
     createdAt: Date | null
     updatedAt: Date | null
+    telegramChatId: string | null
+    telegramConnectionToken: string | null
   }
 
   export type UserMaxAggregateOutputType = {
@@ -1813,6 +1916,8 @@ export namespace Prisma {
     image: string | null
     createdAt: Date | null
     updatedAt: Date | null
+    telegramChatId: string | null
+    telegramConnectionToken: string | null
   }
 
   export type UserCountAggregateOutputType = {
@@ -1823,6 +1928,8 @@ export namespace Prisma {
     image: number
     createdAt: number
     updatedAt: number
+    telegramChatId: number
+    telegramConnectionToken: number
     _all: number
   }
 
@@ -1835,6 +1942,8 @@ export namespace Prisma {
     image?: true
     createdAt?: true
     updatedAt?: true
+    telegramChatId?: true
+    telegramConnectionToken?: true
   }
 
   export type UserMaxAggregateInputType = {
@@ -1845,6 +1954,8 @@ export namespace Prisma {
     image?: true
     createdAt?: true
     updatedAt?: true
+    telegramChatId?: true
+    telegramConnectionToken?: true
   }
 
   export type UserCountAggregateInputType = {
@@ -1855,6 +1966,8 @@ export namespace Prisma {
     image?: true
     createdAt?: true
     updatedAt?: true
+    telegramChatId?: true
+    telegramConnectionToken?: true
     _all?: true
   }
 
@@ -1938,6 +2051,8 @@ export namespace Prisma {
     image: string | null
     createdAt: Date
     updatedAt: Date
+    telegramChatId: string | null
+    telegramConnectionToken: string | null
     _count: UserCountAggregateOutputType | null
     _min: UserMinAggregateOutputType | null
     _max: UserMaxAggregateOutputType | null
@@ -1965,11 +2080,14 @@ export namespace Prisma {
     image?: boolean
     createdAt?: boolean
     updatedAt?: boolean
+    telegramChatId?: boolean
+    telegramConnectionToken?: boolean
     sessions?: boolean | User$sessionsArgs<ExtArgs>
     accounts?: boolean | User$accountsArgs<ExtArgs>
     tradingAccounts?: boolean | User$tradingAccountsArgs<ExtArgs>
     sections?: boolean | User$sectionsArgs<ExtArgs>
     accountTypes?: boolean | User$accountTypesArgs<ExtArgs>
+    alerts?: boolean | User$alertsArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["user"]>
 
@@ -1983,15 +2101,18 @@ export namespace Prisma {
     image?: boolean
     createdAt?: boolean
     updatedAt?: boolean
+    telegramChatId?: boolean
+    telegramConnectionToken?: boolean
   }
 
-  export type UserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "email" | "name" | "emailVerified" | "image" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
+  export type UserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "email" | "name" | "emailVerified" | "image" | "createdAt" | "updatedAt" | "telegramChatId" | "telegramConnectionToken", ExtArgs["result"]["user"]>
   export type UserInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     sessions?: boolean | User$sessionsArgs<ExtArgs>
     accounts?: boolean | User$accountsArgs<ExtArgs>
     tradingAccounts?: boolean | User$tradingAccountsArgs<ExtArgs>
     sections?: boolean | User$sectionsArgs<ExtArgs>
     accountTypes?: boolean | User$accountTypesArgs<ExtArgs>
+    alerts?: boolean | User$alertsArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -2003,6 +2124,7 @@ export namespace Prisma {
       tradingAccounts: Prisma.$TradingAccountPayload<ExtArgs>[]
       sections: Prisma.$SectionPayload<ExtArgs>[]
       accountTypes: Prisma.$AccountTypePayload<ExtArgs>[]
+      alerts: Prisma.$AlertPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -2012,6 +2134,8 @@ export namespace Prisma {
       image: string | null
       createdAt: Date
       updatedAt: Date
+      telegramChatId: string | null
+      telegramConnectionToken: string | null
     }, ExtArgs["result"]["user"]>
     composites: {}
   }
@@ -2357,6 +2481,7 @@ export namespace Prisma {
     tradingAccounts<T extends User$tradingAccountsArgs<ExtArgs> = {}>(args?: Subset<T, User$tradingAccountsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TradingAccountPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     sections<T extends User$sectionsArgs<ExtArgs> = {}>(args?: Subset<T, User$sectionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SectionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     accountTypes<T extends User$accountTypesArgs<ExtArgs> = {}>(args?: Subset<T, User$accountTypesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AccountTypePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    alerts<T extends User$alertsArgs<ExtArgs> = {}>(args?: Subset<T, User$alertsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AlertPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2393,6 +2518,8 @@ export namespace Prisma {
     readonly image: FieldRef<"User", 'String'>
     readonly createdAt: FieldRef<"User", 'DateTime'>
     readonly updatedAt: FieldRef<"User", 'DateTime'>
+    readonly telegramChatId: FieldRef<"User", 'String'>
+    readonly telegramConnectionToken: FieldRef<"User", 'String'>
   }
     
 
@@ -2853,6 +2980,30 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: AccountTypeScalarFieldEnum | AccountTypeScalarFieldEnum[]
+  }
+
+  /**
+   * User.alerts
+   */
+  export type User$alertsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Alert
+     */
+    select?: AlertSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Alert
+     */
+    omit?: AlertOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AlertInclude<ExtArgs> | null
+    where?: AlertWhereInput
+    orderBy?: AlertOrderByWithRelationInput | AlertOrderByWithRelationInput[]
+    cursor?: AlertWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: AlertScalarFieldEnum | AlertScalarFieldEnum[]
   }
 
   /**
@@ -7972,6 +8123,7 @@ export namespace Prisma {
     trades?: boolean | TradingAccount$tradesArgs<ExtArgs>
     snapshots?: boolean | TradingAccount$snapshotsArgs<ExtArgs>
     expertAdvisors?: boolean | TradingAccount$expertAdvisorsArgs<ExtArgs>
+    alerts?: boolean | TradingAccount$alertsArgs<ExtArgs>
     _count?: boolean | TradingAccountCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["tradingAccount"]>
 
@@ -8005,6 +8157,7 @@ export namespace Prisma {
     trades?: boolean | TradingAccount$tradesArgs<ExtArgs>
     snapshots?: boolean | TradingAccount$snapshotsArgs<ExtArgs>
     expertAdvisors?: boolean | TradingAccount$expertAdvisorsArgs<ExtArgs>
+    alerts?: boolean | TradingAccount$alertsArgs<ExtArgs>
     _count?: boolean | TradingAccountCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -8017,6 +8170,7 @@ export namespace Prisma {
       trades: Prisma.$TradeHistoryPayload<ExtArgs>[]
       snapshots: Prisma.$EquitySnapshotPayload<ExtArgs>[]
       expertAdvisors: Prisma.$ExpertAdvisorPayload<ExtArgs>[]
+      alerts: Prisma.$AlertPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -8382,6 +8536,7 @@ export namespace Prisma {
     trades<T extends TradingAccount$tradesArgs<ExtArgs> = {}>(args?: Subset<T, TradingAccount$tradesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TradeHistoryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     snapshots<T extends TradingAccount$snapshotsArgs<ExtArgs> = {}>(args?: Subset<T, TradingAccount$snapshotsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$EquitySnapshotPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     expertAdvisors<T extends TradingAccount$expertAdvisorsArgs<ExtArgs> = {}>(args?: Subset<T, TradingAccount$expertAdvisorsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ExpertAdvisorPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    alerts<T extends TradingAccount$alertsArgs<ExtArgs> = {}>(args?: Subset<T, TradingAccount$alertsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AlertPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -8878,6 +9033,30 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: ExpertAdvisorScalarFieldEnum | ExpertAdvisorScalarFieldEnum[]
+  }
+
+  /**
+   * TradingAccount.alerts
+   */
+  export type TradingAccount$alertsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Alert
+     */
+    select?: AlertSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Alert
+     */
+    omit?: AlertOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AlertInclude<ExtArgs> | null
+    where?: AlertWhereInput
+    orderBy?: AlertOrderByWithRelationInput | AlertOrderByWithRelationInput[]
+    cursor?: AlertWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: AlertScalarFieldEnum | AlertScalarFieldEnum[]
   }
 
   /**
@@ -12043,6 +12222,1039 @@ export namespace Prisma {
 
 
   /**
+   * Model Alert
+   */
+
+  export type AggregateAlert = {
+    _count: AlertCountAggregateOutputType | null
+    _avg: AlertAvgAggregateOutputType | null
+    _sum: AlertSumAggregateOutputType | null
+    _min: AlertMinAggregateOutputType | null
+    _max: AlertMaxAggregateOutputType | null
+  }
+
+  export type AlertAvgAggregateOutputType = {
+    value: number | null
+  }
+
+  export type AlertSumAggregateOutputType = {
+    value: number | null
+  }
+
+  export type AlertMinAggregateOutputType = {
+    id: string | null
+    userId: string | null
+    accountId: string | null
+    type: string | null
+    condition: string | null
+    value: number | null
+    active: boolean | null
+    triggered: boolean | null
+    lastTriggeredAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type AlertMaxAggregateOutputType = {
+    id: string | null
+    userId: string | null
+    accountId: string | null
+    type: string | null
+    condition: string | null
+    value: number | null
+    active: boolean | null
+    triggered: boolean | null
+    lastTriggeredAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type AlertCountAggregateOutputType = {
+    id: number
+    userId: number
+    accountId: number
+    type: number
+    condition: number
+    value: number
+    active: number
+    triggered: number
+    lastTriggeredAt: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type AlertAvgAggregateInputType = {
+    value?: true
+  }
+
+  export type AlertSumAggregateInputType = {
+    value?: true
+  }
+
+  export type AlertMinAggregateInputType = {
+    id?: true
+    userId?: true
+    accountId?: true
+    type?: true
+    condition?: true
+    value?: true
+    active?: true
+    triggered?: true
+    lastTriggeredAt?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type AlertMaxAggregateInputType = {
+    id?: true
+    userId?: true
+    accountId?: true
+    type?: true
+    condition?: true
+    value?: true
+    active?: true
+    triggered?: true
+    lastTriggeredAt?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type AlertCountAggregateInputType = {
+    id?: true
+    userId?: true
+    accountId?: true
+    type?: true
+    condition?: true
+    value?: true
+    active?: true
+    triggered?: true
+    lastTriggeredAt?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type AlertAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which Alert to aggregate.
+     */
+    where?: AlertWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Alerts to fetch.
+     */
+    orderBy?: AlertOrderByWithRelationInput | AlertOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: AlertWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Alerts from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Alerts.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned Alerts
+    **/
+    _count?: true | AlertCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: AlertAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: AlertSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: AlertMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: AlertMaxAggregateInputType
+  }
+
+  export type GetAlertAggregateType<T extends AlertAggregateArgs> = {
+        [P in keyof T & keyof AggregateAlert]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateAlert[P]>
+      : GetScalarType<T[P], AggregateAlert[P]>
+  }
+
+
+
+
+  export type AlertGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: AlertWhereInput
+    orderBy?: AlertOrderByWithAggregationInput | AlertOrderByWithAggregationInput[]
+    by: AlertScalarFieldEnum[] | AlertScalarFieldEnum
+    having?: AlertScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: AlertCountAggregateInputType | true
+    _avg?: AlertAvgAggregateInputType
+    _sum?: AlertSumAggregateInputType
+    _min?: AlertMinAggregateInputType
+    _max?: AlertMaxAggregateInputType
+  }
+
+  export type AlertGroupByOutputType = {
+    id: string
+    userId: string
+    accountId: string
+    type: string
+    condition: string
+    value: number
+    active: boolean
+    triggered: boolean
+    lastTriggeredAt: Date | null
+    createdAt: Date
+    updatedAt: Date
+    _count: AlertCountAggregateOutputType | null
+    _avg: AlertAvgAggregateOutputType | null
+    _sum: AlertSumAggregateOutputType | null
+    _min: AlertMinAggregateOutputType | null
+    _max: AlertMaxAggregateOutputType | null
+  }
+
+  type GetAlertGroupByPayload<T extends AlertGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<AlertGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof AlertGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], AlertGroupByOutputType[P]>
+            : GetScalarType<T[P], AlertGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type AlertSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    accountId?: boolean
+    type?: boolean
+    condition?: boolean
+    value?: boolean
+    active?: boolean
+    triggered?: boolean
+    lastTriggeredAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+    account?: boolean | TradingAccountDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["alert"]>
+
+
+
+  export type AlertSelectScalar = {
+    id?: boolean
+    userId?: boolean
+    accountId?: boolean
+    type?: boolean
+    condition?: boolean
+    value?: boolean
+    active?: boolean
+    triggered?: boolean
+    lastTriggeredAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type AlertOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "accountId" | "type" | "condition" | "value" | "active" | "triggered" | "lastTriggeredAt" | "createdAt" | "updatedAt", ExtArgs["result"]["alert"]>
+  export type AlertInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+    account?: boolean | TradingAccountDefaultArgs<ExtArgs>
+  }
+
+  export type $AlertPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "Alert"
+    objects: {
+      user: Prisma.$UserPayload<ExtArgs>
+      account: Prisma.$TradingAccountPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      userId: string
+      accountId: string
+      type: string
+      condition: string
+      value: number
+      active: boolean
+      triggered: boolean
+      lastTriggeredAt: Date | null
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["alert"]>
+    composites: {}
+  }
+
+  type AlertGetPayload<S extends boolean | null | undefined | AlertDefaultArgs> = $Result.GetResult<Prisma.$AlertPayload, S>
+
+  type AlertCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<AlertFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: AlertCountAggregateInputType | true
+    }
+
+  export interface AlertDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['Alert'], meta: { name: 'Alert' } }
+    /**
+     * Find zero or one Alert that matches the filter.
+     * @param {AlertFindUniqueArgs} args - Arguments to find a Alert
+     * @example
+     * // Get one Alert
+     * const alert = await prisma.alert.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends AlertFindUniqueArgs>(args: SelectSubset<T, AlertFindUniqueArgs<ExtArgs>>): Prisma__AlertClient<$Result.GetResult<Prisma.$AlertPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one Alert that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {AlertFindUniqueOrThrowArgs} args - Arguments to find a Alert
+     * @example
+     * // Get one Alert
+     * const alert = await prisma.alert.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends AlertFindUniqueOrThrowArgs>(args: SelectSubset<T, AlertFindUniqueOrThrowArgs<ExtArgs>>): Prisma__AlertClient<$Result.GetResult<Prisma.$AlertPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first Alert that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AlertFindFirstArgs} args - Arguments to find a Alert
+     * @example
+     * // Get one Alert
+     * const alert = await prisma.alert.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends AlertFindFirstArgs>(args?: SelectSubset<T, AlertFindFirstArgs<ExtArgs>>): Prisma__AlertClient<$Result.GetResult<Prisma.$AlertPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first Alert that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AlertFindFirstOrThrowArgs} args - Arguments to find a Alert
+     * @example
+     * // Get one Alert
+     * const alert = await prisma.alert.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends AlertFindFirstOrThrowArgs>(args?: SelectSubset<T, AlertFindFirstOrThrowArgs<ExtArgs>>): Prisma__AlertClient<$Result.GetResult<Prisma.$AlertPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more Alerts that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AlertFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all Alerts
+     * const alerts = await prisma.alert.findMany()
+     * 
+     * // Get first 10 Alerts
+     * const alerts = await prisma.alert.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const alertWithIdOnly = await prisma.alert.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends AlertFindManyArgs>(args?: SelectSubset<T, AlertFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AlertPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a Alert.
+     * @param {AlertCreateArgs} args - Arguments to create a Alert.
+     * @example
+     * // Create one Alert
+     * const Alert = await prisma.alert.create({
+     *   data: {
+     *     // ... data to create a Alert
+     *   }
+     * })
+     * 
+     */
+    create<T extends AlertCreateArgs>(args: SelectSubset<T, AlertCreateArgs<ExtArgs>>): Prisma__AlertClient<$Result.GetResult<Prisma.$AlertPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many Alerts.
+     * @param {AlertCreateManyArgs} args - Arguments to create many Alerts.
+     * @example
+     * // Create many Alerts
+     * const alert = await prisma.alert.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends AlertCreateManyArgs>(args?: SelectSubset<T, AlertCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a Alert.
+     * @param {AlertDeleteArgs} args - Arguments to delete one Alert.
+     * @example
+     * // Delete one Alert
+     * const Alert = await prisma.alert.delete({
+     *   where: {
+     *     // ... filter to delete one Alert
+     *   }
+     * })
+     * 
+     */
+    delete<T extends AlertDeleteArgs>(args: SelectSubset<T, AlertDeleteArgs<ExtArgs>>): Prisma__AlertClient<$Result.GetResult<Prisma.$AlertPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one Alert.
+     * @param {AlertUpdateArgs} args - Arguments to update one Alert.
+     * @example
+     * // Update one Alert
+     * const alert = await prisma.alert.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends AlertUpdateArgs>(args: SelectSubset<T, AlertUpdateArgs<ExtArgs>>): Prisma__AlertClient<$Result.GetResult<Prisma.$AlertPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more Alerts.
+     * @param {AlertDeleteManyArgs} args - Arguments to filter Alerts to delete.
+     * @example
+     * // Delete a few Alerts
+     * const { count } = await prisma.alert.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends AlertDeleteManyArgs>(args?: SelectSubset<T, AlertDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more Alerts.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AlertUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many Alerts
+     * const alert = await prisma.alert.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends AlertUpdateManyArgs>(args: SelectSubset<T, AlertUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one Alert.
+     * @param {AlertUpsertArgs} args - Arguments to update or create a Alert.
+     * @example
+     * // Update or create a Alert
+     * const alert = await prisma.alert.upsert({
+     *   create: {
+     *     // ... data to create a Alert
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the Alert we want to update
+     *   }
+     * })
+     */
+    upsert<T extends AlertUpsertArgs>(args: SelectSubset<T, AlertUpsertArgs<ExtArgs>>): Prisma__AlertClient<$Result.GetResult<Prisma.$AlertPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of Alerts.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AlertCountArgs} args - Arguments to filter Alerts to count.
+     * @example
+     * // Count the number of Alerts
+     * const count = await prisma.alert.count({
+     *   where: {
+     *     // ... the filter for the Alerts we want to count
+     *   }
+     * })
+    **/
+    count<T extends AlertCountArgs>(
+      args?: Subset<T, AlertCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], AlertCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a Alert.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AlertAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends AlertAggregateArgs>(args: Subset<T, AlertAggregateArgs>): Prisma.PrismaPromise<GetAlertAggregateType<T>>
+
+    /**
+     * Group by Alert.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {AlertGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends AlertGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: AlertGroupByArgs['orderBy'] }
+        : { orderBy?: AlertGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, AlertGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetAlertGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the Alert model
+   */
+  readonly fields: AlertFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for Alert.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__AlertClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    user<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    account<T extends TradingAccountDefaultArgs<ExtArgs> = {}>(args?: Subset<T, TradingAccountDefaultArgs<ExtArgs>>): Prisma__TradingAccountClient<$Result.GetResult<Prisma.$TradingAccountPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the Alert model
+   */
+  interface AlertFieldRefs {
+    readonly id: FieldRef<"Alert", 'String'>
+    readonly userId: FieldRef<"Alert", 'String'>
+    readonly accountId: FieldRef<"Alert", 'String'>
+    readonly type: FieldRef<"Alert", 'String'>
+    readonly condition: FieldRef<"Alert", 'String'>
+    readonly value: FieldRef<"Alert", 'Float'>
+    readonly active: FieldRef<"Alert", 'Boolean'>
+    readonly triggered: FieldRef<"Alert", 'Boolean'>
+    readonly lastTriggeredAt: FieldRef<"Alert", 'DateTime'>
+    readonly createdAt: FieldRef<"Alert", 'DateTime'>
+    readonly updatedAt: FieldRef<"Alert", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * Alert findUnique
+   */
+  export type AlertFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Alert
+     */
+    select?: AlertSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Alert
+     */
+    omit?: AlertOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AlertInclude<ExtArgs> | null
+    /**
+     * Filter, which Alert to fetch.
+     */
+    where: AlertWhereUniqueInput
+  }
+
+  /**
+   * Alert findUniqueOrThrow
+   */
+  export type AlertFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Alert
+     */
+    select?: AlertSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Alert
+     */
+    omit?: AlertOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AlertInclude<ExtArgs> | null
+    /**
+     * Filter, which Alert to fetch.
+     */
+    where: AlertWhereUniqueInput
+  }
+
+  /**
+   * Alert findFirst
+   */
+  export type AlertFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Alert
+     */
+    select?: AlertSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Alert
+     */
+    omit?: AlertOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AlertInclude<ExtArgs> | null
+    /**
+     * Filter, which Alert to fetch.
+     */
+    where?: AlertWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Alerts to fetch.
+     */
+    orderBy?: AlertOrderByWithRelationInput | AlertOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for Alerts.
+     */
+    cursor?: AlertWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Alerts from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Alerts.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Alerts.
+     */
+    distinct?: AlertScalarFieldEnum | AlertScalarFieldEnum[]
+  }
+
+  /**
+   * Alert findFirstOrThrow
+   */
+  export type AlertFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Alert
+     */
+    select?: AlertSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Alert
+     */
+    omit?: AlertOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AlertInclude<ExtArgs> | null
+    /**
+     * Filter, which Alert to fetch.
+     */
+    where?: AlertWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Alerts to fetch.
+     */
+    orderBy?: AlertOrderByWithRelationInput | AlertOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for Alerts.
+     */
+    cursor?: AlertWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Alerts from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Alerts.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Alerts.
+     */
+    distinct?: AlertScalarFieldEnum | AlertScalarFieldEnum[]
+  }
+
+  /**
+   * Alert findMany
+   */
+  export type AlertFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Alert
+     */
+    select?: AlertSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Alert
+     */
+    omit?: AlertOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AlertInclude<ExtArgs> | null
+    /**
+     * Filter, which Alerts to fetch.
+     */
+    where?: AlertWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Alerts to fetch.
+     */
+    orderBy?: AlertOrderByWithRelationInput | AlertOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing Alerts.
+     */
+    cursor?: AlertWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Alerts from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Alerts.
+     */
+    skip?: number
+    distinct?: AlertScalarFieldEnum | AlertScalarFieldEnum[]
+  }
+
+  /**
+   * Alert create
+   */
+  export type AlertCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Alert
+     */
+    select?: AlertSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Alert
+     */
+    omit?: AlertOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AlertInclude<ExtArgs> | null
+    /**
+     * The data needed to create a Alert.
+     */
+    data: XOR<AlertCreateInput, AlertUncheckedCreateInput>
+  }
+
+  /**
+   * Alert createMany
+   */
+  export type AlertCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many Alerts.
+     */
+    data: AlertCreateManyInput | AlertCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * Alert update
+   */
+  export type AlertUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Alert
+     */
+    select?: AlertSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Alert
+     */
+    omit?: AlertOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AlertInclude<ExtArgs> | null
+    /**
+     * The data needed to update a Alert.
+     */
+    data: XOR<AlertUpdateInput, AlertUncheckedUpdateInput>
+    /**
+     * Choose, which Alert to update.
+     */
+    where: AlertWhereUniqueInput
+  }
+
+  /**
+   * Alert updateMany
+   */
+  export type AlertUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update Alerts.
+     */
+    data: XOR<AlertUpdateManyMutationInput, AlertUncheckedUpdateManyInput>
+    /**
+     * Filter which Alerts to update
+     */
+    where?: AlertWhereInput
+    /**
+     * Limit how many Alerts to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * Alert upsert
+   */
+  export type AlertUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Alert
+     */
+    select?: AlertSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Alert
+     */
+    omit?: AlertOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AlertInclude<ExtArgs> | null
+    /**
+     * The filter to search for the Alert to update in case it exists.
+     */
+    where: AlertWhereUniqueInput
+    /**
+     * In case the Alert found by the `where` argument doesn't exist, create a new Alert with this data.
+     */
+    create: XOR<AlertCreateInput, AlertUncheckedCreateInput>
+    /**
+     * In case the Alert was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<AlertUpdateInput, AlertUncheckedUpdateInput>
+  }
+
+  /**
+   * Alert delete
+   */
+  export type AlertDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Alert
+     */
+    select?: AlertSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Alert
+     */
+    omit?: AlertOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AlertInclude<ExtArgs> | null
+    /**
+     * Filter which Alert to delete.
+     */
+    where: AlertWhereUniqueInput
+  }
+
+  /**
+   * Alert deleteMany
+   */
+  export type AlertDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which Alerts to delete
+     */
+    where?: AlertWhereInput
+    /**
+     * Limit how many Alerts to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * Alert without action
+   */
+  export type AlertDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Alert
+     */
+    select?: AlertSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Alert
+     */
+    omit?: AlertOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AlertInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -12063,7 +13275,9 @@ export namespace Prisma {
     emailVerified: 'emailVerified',
     image: 'image',
     createdAt: 'createdAt',
-    updatedAt: 'updatedAt'
+    updatedAt: 'updatedAt',
+    telegramChatId: 'telegramChatId',
+    telegramConnectionToken: 'telegramConnectionToken'
   };
 
   export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
@@ -12210,6 +13424,23 @@ export namespace Prisma {
   export type EquitySnapshotScalarFieldEnum = (typeof EquitySnapshotScalarFieldEnum)[keyof typeof EquitySnapshotScalarFieldEnum]
 
 
+  export const AlertScalarFieldEnum: {
+    id: 'id',
+    userId: 'userId',
+    accountId: 'accountId',
+    type: 'type',
+    condition: 'condition',
+    value: 'value',
+    active: 'active',
+    triggered: 'triggered',
+    lastTriggeredAt: 'lastTriggeredAt',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type AlertScalarFieldEnum = (typeof AlertScalarFieldEnum)[keyof typeof AlertScalarFieldEnum]
+
+
   export const SortOrder: {
     asc: 'asc',
     desc: 'desc'
@@ -12230,7 +13461,9 @@ export namespace Prisma {
     id: 'id',
     email: 'email',
     name: 'name',
-    image: 'image'
+    image: 'image',
+    telegramChatId: 'telegramChatId',
+    telegramConnectionToken: 'telegramConnectionToken'
   };
 
   export type UserOrderByRelevanceFieldEnum = (typeof UserOrderByRelevanceFieldEnum)[keyof typeof UserOrderByRelevanceFieldEnum]
@@ -12333,6 +13566,17 @@ export namespace Prisma {
   export type EquitySnapshotOrderByRelevanceFieldEnum = (typeof EquitySnapshotOrderByRelevanceFieldEnum)[keyof typeof EquitySnapshotOrderByRelevanceFieldEnum]
 
 
+  export const AlertOrderByRelevanceFieldEnum: {
+    id: 'id',
+    userId: 'userId',
+    accountId: 'accountId',
+    type: 'type',
+    condition: 'condition'
+  };
+
+  export type AlertOrderByRelevanceFieldEnum = (typeof AlertOrderByRelevanceFieldEnum)[keyof typeof AlertOrderByRelevanceFieldEnum]
+
+
   /**
    * Field references
    */
@@ -12394,11 +13638,14 @@ export namespace Prisma {
     image?: StringNullableFilter<"User"> | string | null
     createdAt?: DateTimeFilter<"User"> | Date | string
     updatedAt?: DateTimeFilter<"User"> | Date | string
+    telegramChatId?: StringNullableFilter<"User"> | string | null
+    telegramConnectionToken?: StringNullableFilter<"User"> | string | null
     sessions?: SessionListRelationFilter
     accounts?: AccountListRelationFilter
     tradingAccounts?: TradingAccountListRelationFilter
     sections?: SectionListRelationFilter
     accountTypes?: AccountTypeListRelationFilter
+    alerts?: AlertListRelationFilter
   }
 
   export type UserOrderByWithRelationInput = {
@@ -12409,17 +13656,21 @@ export namespace Prisma {
     image?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+    telegramChatId?: SortOrderInput | SortOrder
+    telegramConnectionToken?: SortOrderInput | SortOrder
     sessions?: SessionOrderByRelationAggregateInput
     accounts?: AccountOrderByRelationAggregateInput
     tradingAccounts?: TradingAccountOrderByRelationAggregateInput
     sections?: SectionOrderByRelationAggregateInput
     accountTypes?: AccountTypeOrderByRelationAggregateInput
+    alerts?: AlertOrderByRelationAggregateInput
     _relevance?: UserOrderByRelevanceInput
   }
 
   export type UserWhereUniqueInput = Prisma.AtLeast<{
     id?: string
     email?: string
+    telegramConnectionToken?: string
     AND?: UserWhereInput | UserWhereInput[]
     OR?: UserWhereInput[]
     NOT?: UserWhereInput | UserWhereInput[]
@@ -12428,12 +13679,14 @@ export namespace Prisma {
     image?: StringNullableFilter<"User"> | string | null
     createdAt?: DateTimeFilter<"User"> | Date | string
     updatedAt?: DateTimeFilter<"User"> | Date | string
+    telegramChatId?: StringNullableFilter<"User"> | string | null
     sessions?: SessionListRelationFilter
     accounts?: AccountListRelationFilter
     tradingAccounts?: TradingAccountListRelationFilter
     sections?: SectionListRelationFilter
     accountTypes?: AccountTypeListRelationFilter
-  }, "id" | "email">
+    alerts?: AlertListRelationFilter
+  }, "id" | "email" | "telegramConnectionToken">
 
   export type UserOrderByWithAggregationInput = {
     id?: SortOrder
@@ -12443,6 +13696,8 @@ export namespace Prisma {
     image?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+    telegramChatId?: SortOrderInput | SortOrder
+    telegramConnectionToken?: SortOrderInput | SortOrder
     _count?: UserCountOrderByAggregateInput
     _max?: UserMaxOrderByAggregateInput
     _min?: UserMinOrderByAggregateInput
@@ -12459,6 +13714,8 @@ export namespace Prisma {
     image?: StringNullableWithAggregatesFilter<"User"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"User"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"User"> | Date | string
+    telegramChatId?: StringNullableWithAggregatesFilter<"User"> | string | null
+    telegramConnectionToken?: StringNullableWithAggregatesFilter<"User"> | string | null
   }
 
   export type SessionWhereInput = {
@@ -12832,6 +14089,7 @@ export namespace Prisma {
     trades?: TradeHistoryListRelationFilter
     snapshots?: EquitySnapshotListRelationFilter
     expertAdvisors?: ExpertAdvisorListRelationFilter
+    alerts?: AlertListRelationFilter
   }
 
   export type TradingAccountOrderByWithRelationInput = {
@@ -12858,6 +14116,7 @@ export namespace Prisma {
     trades?: TradeHistoryOrderByRelationAggregateInput
     snapshots?: EquitySnapshotOrderByRelationAggregateInput
     expertAdvisors?: ExpertAdvisorOrderByRelationAggregateInput
+    alerts?: AlertOrderByRelationAggregateInput
     _relevance?: TradingAccountOrderByRelevanceInput
   }
 
@@ -12888,6 +14147,7 @@ export namespace Prisma {
     trades?: TradeHistoryListRelationFilter
     snapshots?: EquitySnapshotListRelationFilter
     expertAdvisors?: ExpertAdvisorListRelationFilter
+    alerts?: AlertListRelationFilter
   }, "id" | "connectionToken">
 
   export type TradingAccountOrderByWithAggregationInput = {
@@ -13204,6 +14464,97 @@ export namespace Prisma {
     timestamp?: DateTimeWithAggregatesFilter<"EquitySnapshot"> | Date | string
   }
 
+  export type AlertWhereInput = {
+    AND?: AlertWhereInput | AlertWhereInput[]
+    OR?: AlertWhereInput[]
+    NOT?: AlertWhereInput | AlertWhereInput[]
+    id?: StringFilter<"Alert"> | string
+    userId?: StringFilter<"Alert"> | string
+    accountId?: StringFilter<"Alert"> | string
+    type?: StringFilter<"Alert"> | string
+    condition?: StringFilter<"Alert"> | string
+    value?: FloatFilter<"Alert"> | number
+    active?: BoolFilter<"Alert"> | boolean
+    triggered?: BoolFilter<"Alert"> | boolean
+    lastTriggeredAt?: DateTimeNullableFilter<"Alert"> | Date | string | null
+    createdAt?: DateTimeFilter<"Alert"> | Date | string
+    updatedAt?: DateTimeFilter<"Alert"> | Date | string
+    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+    account?: XOR<TradingAccountScalarRelationFilter, TradingAccountWhereInput>
+  }
+
+  export type AlertOrderByWithRelationInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    accountId?: SortOrder
+    type?: SortOrder
+    condition?: SortOrder
+    value?: SortOrder
+    active?: SortOrder
+    triggered?: SortOrder
+    lastTriggeredAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    user?: UserOrderByWithRelationInput
+    account?: TradingAccountOrderByWithRelationInput
+    _relevance?: AlertOrderByRelevanceInput
+  }
+
+  export type AlertWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: AlertWhereInput | AlertWhereInput[]
+    OR?: AlertWhereInput[]
+    NOT?: AlertWhereInput | AlertWhereInput[]
+    userId?: StringFilter<"Alert"> | string
+    accountId?: StringFilter<"Alert"> | string
+    type?: StringFilter<"Alert"> | string
+    condition?: StringFilter<"Alert"> | string
+    value?: FloatFilter<"Alert"> | number
+    active?: BoolFilter<"Alert"> | boolean
+    triggered?: BoolFilter<"Alert"> | boolean
+    lastTriggeredAt?: DateTimeNullableFilter<"Alert"> | Date | string | null
+    createdAt?: DateTimeFilter<"Alert"> | Date | string
+    updatedAt?: DateTimeFilter<"Alert"> | Date | string
+    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+    account?: XOR<TradingAccountScalarRelationFilter, TradingAccountWhereInput>
+  }, "id">
+
+  export type AlertOrderByWithAggregationInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    accountId?: SortOrder
+    type?: SortOrder
+    condition?: SortOrder
+    value?: SortOrder
+    active?: SortOrder
+    triggered?: SortOrder
+    lastTriggeredAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: AlertCountOrderByAggregateInput
+    _avg?: AlertAvgOrderByAggregateInput
+    _max?: AlertMaxOrderByAggregateInput
+    _min?: AlertMinOrderByAggregateInput
+    _sum?: AlertSumOrderByAggregateInput
+  }
+
+  export type AlertScalarWhereWithAggregatesInput = {
+    AND?: AlertScalarWhereWithAggregatesInput | AlertScalarWhereWithAggregatesInput[]
+    OR?: AlertScalarWhereWithAggregatesInput[]
+    NOT?: AlertScalarWhereWithAggregatesInput | AlertScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"Alert"> | string
+    userId?: StringWithAggregatesFilter<"Alert"> | string
+    accountId?: StringWithAggregatesFilter<"Alert"> | string
+    type?: StringWithAggregatesFilter<"Alert"> | string
+    condition?: StringWithAggregatesFilter<"Alert"> | string
+    value?: FloatWithAggregatesFilter<"Alert"> | number
+    active?: BoolWithAggregatesFilter<"Alert"> | boolean
+    triggered?: BoolWithAggregatesFilter<"Alert"> | boolean
+    lastTriggeredAt?: DateTimeNullableWithAggregatesFilter<"Alert"> | Date | string | null
+    createdAt?: DateTimeWithAggregatesFilter<"Alert"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"Alert"> | Date | string
+  }
+
   export type UserCreateInput = {
     id: string
     email: string
@@ -13212,11 +14563,14 @@ export namespace Prisma {
     image?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    telegramChatId?: string | null
+    telegramConnectionToken?: string | null
     sessions?: SessionCreateNestedManyWithoutUserInput
     accounts?: AccountCreateNestedManyWithoutUserInput
     tradingAccounts?: TradingAccountCreateNestedManyWithoutUserInput
     sections?: SectionCreateNestedManyWithoutUserInput
     accountTypes?: AccountTypeCreateNestedManyWithoutUserInput
+    alerts?: AlertCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateInput = {
@@ -13227,11 +14581,14 @@ export namespace Prisma {
     image?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    telegramChatId?: string | null
+    telegramConnectionToken?: string | null
     sessions?: SessionUncheckedCreateNestedManyWithoutUserInput
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
     tradingAccounts?: TradingAccountUncheckedCreateNestedManyWithoutUserInput
     sections?: SectionUncheckedCreateNestedManyWithoutUserInput
     accountTypes?: AccountTypeUncheckedCreateNestedManyWithoutUserInput
+    alerts?: AlertUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserUpdateInput = {
@@ -13242,11 +14599,14 @@ export namespace Prisma {
     image?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    telegramChatId?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramConnectionToken?: NullableStringFieldUpdateOperationsInput | string | null
     sessions?: SessionUpdateManyWithoutUserNestedInput
     accounts?: AccountUpdateManyWithoutUserNestedInput
     tradingAccounts?: TradingAccountUpdateManyWithoutUserNestedInput
     sections?: SectionUpdateManyWithoutUserNestedInput
     accountTypes?: AccountTypeUpdateManyWithoutUserNestedInput
+    alerts?: AlertUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateInput = {
@@ -13257,11 +14617,14 @@ export namespace Prisma {
     image?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    telegramChatId?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramConnectionToken?: NullableStringFieldUpdateOperationsInput | string | null
     sessions?: SessionUncheckedUpdateManyWithoutUserNestedInput
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
     tradingAccounts?: TradingAccountUncheckedUpdateManyWithoutUserNestedInput
     sections?: SectionUncheckedUpdateManyWithoutUserNestedInput
     accountTypes?: AccountTypeUncheckedUpdateManyWithoutUserNestedInput
+    alerts?: AlertUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateManyInput = {
@@ -13272,6 +14635,8 @@ export namespace Prisma {
     image?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    telegramChatId?: string | null
+    telegramConnectionToken?: string | null
   }
 
   export type UserUpdateManyMutationInput = {
@@ -13282,6 +14647,8 @@ export namespace Prisma {
     image?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    telegramChatId?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramConnectionToken?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type UserUncheckedUpdateManyInput = {
@@ -13292,6 +14659,8 @@ export namespace Prisma {
     image?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    telegramChatId?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramConnectionToken?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type SessionCreateInput = {
@@ -13683,6 +15052,7 @@ export namespace Prisma {
     trades?: TradeHistoryCreateNestedManyWithoutAccountInput
     snapshots?: EquitySnapshotCreateNestedManyWithoutAccountInput
     expertAdvisors?: ExpertAdvisorCreateNestedManyWithoutAccountInput
+    alerts?: AlertCreateNestedManyWithoutAccountInput
   }
 
   export type TradingAccountUncheckedCreateInput = {
@@ -13706,6 +15076,7 @@ export namespace Prisma {
     trades?: TradeHistoryUncheckedCreateNestedManyWithoutAccountInput
     snapshots?: EquitySnapshotUncheckedCreateNestedManyWithoutAccountInput
     expertAdvisors?: ExpertAdvisorUncheckedCreateNestedManyWithoutAccountInput
+    alerts?: AlertUncheckedCreateNestedManyWithoutAccountInput
   }
 
   export type TradingAccountUpdateInput = {
@@ -13729,6 +15100,7 @@ export namespace Prisma {
     trades?: TradeHistoryUpdateManyWithoutAccountNestedInput
     snapshots?: EquitySnapshotUpdateManyWithoutAccountNestedInput
     expertAdvisors?: ExpertAdvisorUpdateManyWithoutAccountNestedInput
+    alerts?: AlertUpdateManyWithoutAccountNestedInput
   }
 
   export type TradingAccountUncheckedUpdateInput = {
@@ -13752,6 +15124,7 @@ export namespace Prisma {
     trades?: TradeHistoryUncheckedUpdateManyWithoutAccountNestedInput
     snapshots?: EquitySnapshotUncheckedUpdateManyWithoutAccountNestedInput
     expertAdvisors?: ExpertAdvisorUncheckedUpdateManyWithoutAccountNestedInput
+    alerts?: AlertUncheckedUpdateManyWithoutAccountNestedInput
   }
 
   export type TradingAccountCreateManyInput = {
@@ -14102,6 +15475,102 @@ export namespace Prisma {
     timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type AlertCreateInput = {
+    id?: string
+    type: string
+    condition: string
+    value: number
+    active?: boolean
+    triggered?: boolean
+    lastTriggeredAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    user: UserCreateNestedOneWithoutAlertsInput
+    account: TradingAccountCreateNestedOneWithoutAlertsInput
+  }
+
+  export type AlertUncheckedCreateInput = {
+    id?: string
+    userId: string
+    accountId: string
+    type: string
+    condition: string
+    value: number
+    active?: boolean
+    triggered?: boolean
+    lastTriggeredAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type AlertUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    condition?: StringFieldUpdateOperationsInput | string
+    value?: FloatFieldUpdateOperationsInput | number
+    active?: BoolFieldUpdateOperationsInput | boolean
+    triggered?: BoolFieldUpdateOperationsInput | boolean
+    lastTriggeredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutAlertsNestedInput
+    account?: TradingAccountUpdateOneRequiredWithoutAlertsNestedInput
+  }
+
+  export type AlertUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    accountId?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    condition?: StringFieldUpdateOperationsInput | string
+    value?: FloatFieldUpdateOperationsInput | number
+    active?: BoolFieldUpdateOperationsInput | boolean
+    triggered?: BoolFieldUpdateOperationsInput | boolean
+    lastTriggeredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type AlertCreateManyInput = {
+    id?: string
+    userId: string
+    accountId: string
+    type: string
+    condition: string
+    value: number
+    active?: boolean
+    triggered?: boolean
+    lastTriggeredAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type AlertUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    condition?: StringFieldUpdateOperationsInput | string
+    value?: FloatFieldUpdateOperationsInput | number
+    active?: BoolFieldUpdateOperationsInput | boolean
+    triggered?: BoolFieldUpdateOperationsInput | boolean
+    lastTriggeredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type AlertUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    accountId?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    condition?: StringFieldUpdateOperationsInput | string
+    value?: FloatFieldUpdateOperationsInput | number
+    active?: BoolFieldUpdateOperationsInput | boolean
+    triggered?: BoolFieldUpdateOperationsInput | boolean
+    lastTriggeredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type StringFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel>
     in?: string[]
@@ -14178,6 +15647,12 @@ export namespace Prisma {
     none?: AccountTypeWhereInput
   }
 
+  export type AlertListRelationFilter = {
+    every?: AlertWhereInput
+    some?: AlertWhereInput
+    none?: AlertWhereInput
+  }
+
   export type SortOrderInput = {
     sort: SortOrder
     nulls?: NullsOrder
@@ -14203,6 +15678,10 @@ export namespace Prisma {
     _count?: SortOrder
   }
 
+  export type AlertOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
   export type UserOrderByRelevanceInput = {
     fields: UserOrderByRelevanceFieldEnum | UserOrderByRelevanceFieldEnum[]
     sort: SortOrder
@@ -14217,6 +15696,8 @@ export namespace Prisma {
     image?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+    telegramChatId?: SortOrder
+    telegramConnectionToken?: SortOrder
   }
 
   export type UserMaxOrderByAggregateInput = {
@@ -14227,6 +15708,8 @@ export namespace Prisma {
     image?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+    telegramChatId?: SortOrder
+    telegramConnectionToken?: SortOrder
   }
 
   export type UserMinOrderByAggregateInput = {
@@ -14237,6 +15720,8 @@ export namespace Prisma {
     image?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+    telegramChatId?: SortOrder
+    telegramConnectionToken?: SortOrder
   }
 
   export type StringWithAggregatesFilter<$PrismaModel = never> = {
@@ -14982,6 +16467,62 @@ export namespace Prisma {
     openPositions?: SortOrder
   }
 
+  export type AlertOrderByRelevanceInput = {
+    fields: AlertOrderByRelevanceFieldEnum | AlertOrderByRelevanceFieldEnum[]
+    sort: SortOrder
+    search: string
+  }
+
+  export type AlertCountOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    accountId?: SortOrder
+    type?: SortOrder
+    condition?: SortOrder
+    value?: SortOrder
+    active?: SortOrder
+    triggered?: SortOrder
+    lastTriggeredAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type AlertAvgOrderByAggregateInput = {
+    value?: SortOrder
+  }
+
+  export type AlertMaxOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    accountId?: SortOrder
+    type?: SortOrder
+    condition?: SortOrder
+    value?: SortOrder
+    active?: SortOrder
+    triggered?: SortOrder
+    lastTriggeredAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type AlertMinOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    accountId?: SortOrder
+    type?: SortOrder
+    condition?: SortOrder
+    value?: SortOrder
+    active?: SortOrder
+    triggered?: SortOrder
+    lastTriggeredAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type AlertSumOrderByAggregateInput = {
+    value?: SortOrder
+  }
+
   export type SessionCreateNestedManyWithoutUserInput = {
     create?: XOR<SessionCreateWithoutUserInput, SessionUncheckedCreateWithoutUserInput> | SessionCreateWithoutUserInput[] | SessionUncheckedCreateWithoutUserInput[]
     connectOrCreate?: SessionCreateOrConnectWithoutUserInput | SessionCreateOrConnectWithoutUserInput[]
@@ -15017,6 +16558,13 @@ export namespace Prisma {
     connect?: AccountTypeWhereUniqueInput | AccountTypeWhereUniqueInput[]
   }
 
+  export type AlertCreateNestedManyWithoutUserInput = {
+    create?: XOR<AlertCreateWithoutUserInput, AlertUncheckedCreateWithoutUserInput> | AlertCreateWithoutUserInput[] | AlertUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: AlertCreateOrConnectWithoutUserInput | AlertCreateOrConnectWithoutUserInput[]
+    createMany?: AlertCreateManyUserInputEnvelope
+    connect?: AlertWhereUniqueInput | AlertWhereUniqueInput[]
+  }
+
   export type SessionUncheckedCreateNestedManyWithoutUserInput = {
     create?: XOR<SessionCreateWithoutUserInput, SessionUncheckedCreateWithoutUserInput> | SessionCreateWithoutUserInput[] | SessionUncheckedCreateWithoutUserInput[]
     connectOrCreate?: SessionCreateOrConnectWithoutUserInput | SessionCreateOrConnectWithoutUserInput[]
@@ -15050,6 +16598,13 @@ export namespace Prisma {
     connectOrCreate?: AccountTypeCreateOrConnectWithoutUserInput | AccountTypeCreateOrConnectWithoutUserInput[]
     createMany?: AccountTypeCreateManyUserInputEnvelope
     connect?: AccountTypeWhereUniqueInput | AccountTypeWhereUniqueInput[]
+  }
+
+  export type AlertUncheckedCreateNestedManyWithoutUserInput = {
+    create?: XOR<AlertCreateWithoutUserInput, AlertUncheckedCreateWithoutUserInput> | AlertCreateWithoutUserInput[] | AlertUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: AlertCreateOrConnectWithoutUserInput | AlertCreateOrConnectWithoutUserInput[]
+    createMany?: AlertCreateManyUserInputEnvelope
+    connect?: AlertWhereUniqueInput | AlertWhereUniqueInput[]
   }
 
   export type StringFieldUpdateOperationsInput = {
@@ -15138,6 +16693,20 @@ export namespace Prisma {
     deleteMany?: AccountTypeScalarWhereInput | AccountTypeScalarWhereInput[]
   }
 
+  export type AlertUpdateManyWithoutUserNestedInput = {
+    create?: XOR<AlertCreateWithoutUserInput, AlertUncheckedCreateWithoutUserInput> | AlertCreateWithoutUserInput[] | AlertUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: AlertCreateOrConnectWithoutUserInput | AlertCreateOrConnectWithoutUserInput[]
+    upsert?: AlertUpsertWithWhereUniqueWithoutUserInput | AlertUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: AlertCreateManyUserInputEnvelope
+    set?: AlertWhereUniqueInput | AlertWhereUniqueInput[]
+    disconnect?: AlertWhereUniqueInput | AlertWhereUniqueInput[]
+    delete?: AlertWhereUniqueInput | AlertWhereUniqueInput[]
+    connect?: AlertWhereUniqueInput | AlertWhereUniqueInput[]
+    update?: AlertUpdateWithWhereUniqueWithoutUserInput | AlertUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: AlertUpdateManyWithWhereWithoutUserInput | AlertUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: AlertScalarWhereInput | AlertScalarWhereInput[]
+  }
+
   export type SessionUncheckedUpdateManyWithoutUserNestedInput = {
     create?: XOR<SessionCreateWithoutUserInput, SessionUncheckedCreateWithoutUserInput> | SessionCreateWithoutUserInput[] | SessionUncheckedCreateWithoutUserInput[]
     connectOrCreate?: SessionCreateOrConnectWithoutUserInput | SessionCreateOrConnectWithoutUserInput[]
@@ -15206,6 +16775,20 @@ export namespace Prisma {
     update?: AccountTypeUpdateWithWhereUniqueWithoutUserInput | AccountTypeUpdateWithWhereUniqueWithoutUserInput[]
     updateMany?: AccountTypeUpdateManyWithWhereWithoutUserInput | AccountTypeUpdateManyWithWhereWithoutUserInput[]
     deleteMany?: AccountTypeScalarWhereInput | AccountTypeScalarWhereInput[]
+  }
+
+  export type AlertUncheckedUpdateManyWithoutUserNestedInput = {
+    create?: XOR<AlertCreateWithoutUserInput, AlertUncheckedCreateWithoutUserInput> | AlertCreateWithoutUserInput[] | AlertUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: AlertCreateOrConnectWithoutUserInput | AlertCreateOrConnectWithoutUserInput[]
+    upsert?: AlertUpsertWithWhereUniqueWithoutUserInput | AlertUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: AlertCreateManyUserInputEnvelope
+    set?: AlertWhereUniqueInput | AlertWhereUniqueInput[]
+    disconnect?: AlertWhereUniqueInput | AlertWhereUniqueInput[]
+    delete?: AlertWhereUniqueInput | AlertWhereUniqueInput[]
+    connect?: AlertWhereUniqueInput | AlertWhereUniqueInput[]
+    update?: AlertUpdateWithWhereUniqueWithoutUserInput | AlertUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: AlertUpdateManyWithWhereWithoutUserInput | AlertUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: AlertScalarWhereInput | AlertScalarWhereInput[]
   }
 
   export type UserCreateNestedOneWithoutSessionsInput = {
@@ -15391,6 +16974,13 @@ export namespace Prisma {
     connect?: ExpertAdvisorWhereUniqueInput | ExpertAdvisorWhereUniqueInput[]
   }
 
+  export type AlertCreateNestedManyWithoutAccountInput = {
+    create?: XOR<AlertCreateWithoutAccountInput, AlertUncheckedCreateWithoutAccountInput> | AlertCreateWithoutAccountInput[] | AlertUncheckedCreateWithoutAccountInput[]
+    connectOrCreate?: AlertCreateOrConnectWithoutAccountInput | AlertCreateOrConnectWithoutAccountInput[]
+    createMany?: AlertCreateManyAccountInputEnvelope
+    connect?: AlertWhereUniqueInput | AlertWhereUniqueInput[]
+  }
+
   export type TradeHistoryUncheckedCreateNestedManyWithoutAccountInput = {
     create?: XOR<TradeHistoryCreateWithoutAccountInput, TradeHistoryUncheckedCreateWithoutAccountInput> | TradeHistoryCreateWithoutAccountInput[] | TradeHistoryUncheckedCreateWithoutAccountInput[]
     connectOrCreate?: TradeHistoryCreateOrConnectWithoutAccountInput | TradeHistoryCreateOrConnectWithoutAccountInput[]
@@ -15410,6 +17000,13 @@ export namespace Prisma {
     connectOrCreate?: ExpertAdvisorCreateOrConnectWithoutAccountInput | ExpertAdvisorCreateOrConnectWithoutAccountInput[]
     createMany?: ExpertAdvisorCreateManyAccountInputEnvelope
     connect?: ExpertAdvisorWhereUniqueInput | ExpertAdvisorWhereUniqueInput[]
+  }
+
+  export type AlertUncheckedCreateNestedManyWithoutAccountInput = {
+    create?: XOR<AlertCreateWithoutAccountInput, AlertUncheckedCreateWithoutAccountInput> | AlertCreateWithoutAccountInput[] | AlertUncheckedCreateWithoutAccountInput[]
+    connectOrCreate?: AlertCreateOrConnectWithoutAccountInput | AlertCreateOrConnectWithoutAccountInput[]
+    createMany?: AlertCreateManyAccountInputEnvelope
+    connect?: AlertWhereUniqueInput | AlertWhereUniqueInput[]
   }
 
   export type IntFieldUpdateOperationsInput = {
@@ -15498,6 +17095,20 @@ export namespace Prisma {
     deleteMany?: ExpertAdvisorScalarWhereInput | ExpertAdvisorScalarWhereInput[]
   }
 
+  export type AlertUpdateManyWithoutAccountNestedInput = {
+    create?: XOR<AlertCreateWithoutAccountInput, AlertUncheckedCreateWithoutAccountInput> | AlertCreateWithoutAccountInput[] | AlertUncheckedCreateWithoutAccountInput[]
+    connectOrCreate?: AlertCreateOrConnectWithoutAccountInput | AlertCreateOrConnectWithoutAccountInput[]
+    upsert?: AlertUpsertWithWhereUniqueWithoutAccountInput | AlertUpsertWithWhereUniqueWithoutAccountInput[]
+    createMany?: AlertCreateManyAccountInputEnvelope
+    set?: AlertWhereUniqueInput | AlertWhereUniqueInput[]
+    disconnect?: AlertWhereUniqueInput | AlertWhereUniqueInput[]
+    delete?: AlertWhereUniqueInput | AlertWhereUniqueInput[]
+    connect?: AlertWhereUniqueInput | AlertWhereUniqueInput[]
+    update?: AlertUpdateWithWhereUniqueWithoutAccountInput | AlertUpdateWithWhereUniqueWithoutAccountInput[]
+    updateMany?: AlertUpdateManyWithWhereWithoutAccountInput | AlertUpdateManyWithWhereWithoutAccountInput[]
+    deleteMany?: AlertScalarWhereInput | AlertScalarWhereInput[]
+  }
+
   export type TradeHistoryUncheckedUpdateManyWithoutAccountNestedInput = {
     create?: XOR<TradeHistoryCreateWithoutAccountInput, TradeHistoryUncheckedCreateWithoutAccountInput> | TradeHistoryCreateWithoutAccountInput[] | TradeHistoryUncheckedCreateWithoutAccountInput[]
     connectOrCreate?: TradeHistoryCreateOrConnectWithoutAccountInput | TradeHistoryCreateOrConnectWithoutAccountInput[]
@@ -15538,6 +17149,20 @@ export namespace Prisma {
     update?: ExpertAdvisorUpdateWithWhereUniqueWithoutAccountInput | ExpertAdvisorUpdateWithWhereUniqueWithoutAccountInput[]
     updateMany?: ExpertAdvisorUpdateManyWithWhereWithoutAccountInput | ExpertAdvisorUpdateManyWithWhereWithoutAccountInput[]
     deleteMany?: ExpertAdvisorScalarWhereInput | ExpertAdvisorScalarWhereInput[]
+  }
+
+  export type AlertUncheckedUpdateManyWithoutAccountNestedInput = {
+    create?: XOR<AlertCreateWithoutAccountInput, AlertUncheckedCreateWithoutAccountInput> | AlertCreateWithoutAccountInput[] | AlertUncheckedCreateWithoutAccountInput[]
+    connectOrCreate?: AlertCreateOrConnectWithoutAccountInput | AlertCreateOrConnectWithoutAccountInput[]
+    upsert?: AlertUpsertWithWhereUniqueWithoutAccountInput | AlertUpsertWithWhereUniqueWithoutAccountInput[]
+    createMany?: AlertCreateManyAccountInputEnvelope
+    set?: AlertWhereUniqueInput | AlertWhereUniqueInput[]
+    disconnect?: AlertWhereUniqueInput | AlertWhereUniqueInput[]
+    delete?: AlertWhereUniqueInput | AlertWhereUniqueInput[]
+    connect?: AlertWhereUniqueInput | AlertWhereUniqueInput[]
+    update?: AlertUpdateWithWhereUniqueWithoutAccountInput | AlertUpdateWithWhereUniqueWithoutAccountInput[]
+    updateMany?: AlertUpdateManyWithWhereWithoutAccountInput | AlertUpdateManyWithWhereWithoutAccountInput[]
+    deleteMany?: AlertScalarWhereInput | AlertScalarWhereInput[]
   }
 
   export type TradingAccountCreateNestedOneWithoutExpertAdvisorsInput = {
@@ -15604,6 +17229,34 @@ export namespace Prisma {
     upsert?: TradingAccountUpsertWithoutSnapshotsInput
     connect?: TradingAccountWhereUniqueInput
     update?: XOR<XOR<TradingAccountUpdateToOneWithWhereWithoutSnapshotsInput, TradingAccountUpdateWithoutSnapshotsInput>, TradingAccountUncheckedUpdateWithoutSnapshotsInput>
+  }
+
+  export type UserCreateNestedOneWithoutAlertsInput = {
+    create?: XOR<UserCreateWithoutAlertsInput, UserUncheckedCreateWithoutAlertsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutAlertsInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type TradingAccountCreateNestedOneWithoutAlertsInput = {
+    create?: XOR<TradingAccountCreateWithoutAlertsInput, TradingAccountUncheckedCreateWithoutAlertsInput>
+    connectOrCreate?: TradingAccountCreateOrConnectWithoutAlertsInput
+    connect?: TradingAccountWhereUniqueInput
+  }
+
+  export type UserUpdateOneRequiredWithoutAlertsNestedInput = {
+    create?: XOR<UserCreateWithoutAlertsInput, UserUncheckedCreateWithoutAlertsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutAlertsInput
+    upsert?: UserUpsertWithoutAlertsInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutAlertsInput, UserUpdateWithoutAlertsInput>, UserUncheckedUpdateWithoutAlertsInput>
+  }
+
+  export type TradingAccountUpdateOneRequiredWithoutAlertsNestedInput = {
+    create?: XOR<TradingAccountCreateWithoutAlertsInput, TradingAccountUncheckedCreateWithoutAlertsInput>
+    connectOrCreate?: TradingAccountCreateOrConnectWithoutAlertsInput
+    upsert?: TradingAccountUpsertWithoutAlertsInput
+    connect?: TradingAccountWhereUniqueInput
+    update?: XOR<XOR<TradingAccountUpdateToOneWithWhereWithoutAlertsInput, TradingAccountUpdateWithoutAlertsInput>, TradingAccountUncheckedUpdateWithoutAlertsInput>
   }
 
   export type NestedStringFilter<$PrismaModel = never> = {
@@ -15958,6 +17611,7 @@ export namespace Prisma {
     trades?: TradeHistoryCreateNestedManyWithoutAccountInput
     snapshots?: EquitySnapshotCreateNestedManyWithoutAccountInput
     expertAdvisors?: ExpertAdvisorCreateNestedManyWithoutAccountInput
+    alerts?: AlertCreateNestedManyWithoutAccountInput
   }
 
   export type TradingAccountUncheckedCreateWithoutUserInput = {
@@ -15980,6 +17634,7 @@ export namespace Prisma {
     trades?: TradeHistoryUncheckedCreateNestedManyWithoutAccountInput
     snapshots?: EquitySnapshotUncheckedCreateNestedManyWithoutAccountInput
     expertAdvisors?: ExpertAdvisorUncheckedCreateNestedManyWithoutAccountInput
+    alerts?: AlertUncheckedCreateNestedManyWithoutAccountInput
   }
 
   export type TradingAccountCreateOrConnectWithoutUserInput = {
@@ -16043,6 +17698,42 @@ export namespace Prisma {
 
   export type AccountTypeCreateManyUserInputEnvelope = {
     data: AccountTypeCreateManyUserInput | AccountTypeCreateManyUserInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type AlertCreateWithoutUserInput = {
+    id?: string
+    type: string
+    condition: string
+    value: number
+    active?: boolean
+    triggered?: boolean
+    lastTriggeredAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    account: TradingAccountCreateNestedOneWithoutAlertsInput
+  }
+
+  export type AlertUncheckedCreateWithoutUserInput = {
+    id?: string
+    accountId: string
+    type: string
+    condition: string
+    value: number
+    active?: boolean
+    triggered?: boolean
+    lastTriggeredAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type AlertCreateOrConnectWithoutUserInput = {
+    where: AlertWhereUniqueInput
+    create: XOR<AlertCreateWithoutUserInput, AlertUncheckedCreateWithoutUserInput>
+  }
+
+  export type AlertCreateManyUserInputEnvelope = {
+    data: AlertCreateManyUserInput | AlertCreateManyUserInput[]
     skipDuplicates?: boolean
   }
 
@@ -16204,6 +17895,39 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"AccountType"> | Date | string
   }
 
+  export type AlertUpsertWithWhereUniqueWithoutUserInput = {
+    where: AlertWhereUniqueInput
+    update: XOR<AlertUpdateWithoutUserInput, AlertUncheckedUpdateWithoutUserInput>
+    create: XOR<AlertCreateWithoutUserInput, AlertUncheckedCreateWithoutUserInput>
+  }
+
+  export type AlertUpdateWithWhereUniqueWithoutUserInput = {
+    where: AlertWhereUniqueInput
+    data: XOR<AlertUpdateWithoutUserInput, AlertUncheckedUpdateWithoutUserInput>
+  }
+
+  export type AlertUpdateManyWithWhereWithoutUserInput = {
+    where: AlertScalarWhereInput
+    data: XOR<AlertUpdateManyMutationInput, AlertUncheckedUpdateManyWithoutUserInput>
+  }
+
+  export type AlertScalarWhereInput = {
+    AND?: AlertScalarWhereInput | AlertScalarWhereInput[]
+    OR?: AlertScalarWhereInput[]
+    NOT?: AlertScalarWhereInput | AlertScalarWhereInput[]
+    id?: StringFilter<"Alert"> | string
+    userId?: StringFilter<"Alert"> | string
+    accountId?: StringFilter<"Alert"> | string
+    type?: StringFilter<"Alert"> | string
+    condition?: StringFilter<"Alert"> | string
+    value?: FloatFilter<"Alert"> | number
+    active?: BoolFilter<"Alert"> | boolean
+    triggered?: BoolFilter<"Alert"> | boolean
+    lastTriggeredAt?: DateTimeNullableFilter<"Alert"> | Date | string | null
+    createdAt?: DateTimeFilter<"Alert"> | Date | string
+    updatedAt?: DateTimeFilter<"Alert"> | Date | string
+  }
+
   export type UserCreateWithoutSessionsInput = {
     id: string
     email: string
@@ -16212,10 +17936,13 @@ export namespace Prisma {
     image?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    telegramChatId?: string | null
+    telegramConnectionToken?: string | null
     accounts?: AccountCreateNestedManyWithoutUserInput
     tradingAccounts?: TradingAccountCreateNestedManyWithoutUserInput
     sections?: SectionCreateNestedManyWithoutUserInput
     accountTypes?: AccountTypeCreateNestedManyWithoutUserInput
+    alerts?: AlertCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutSessionsInput = {
@@ -16226,10 +17953,13 @@ export namespace Prisma {
     image?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    telegramChatId?: string | null
+    telegramConnectionToken?: string | null
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
     tradingAccounts?: TradingAccountUncheckedCreateNestedManyWithoutUserInput
     sections?: SectionUncheckedCreateNestedManyWithoutUserInput
     accountTypes?: AccountTypeUncheckedCreateNestedManyWithoutUserInput
+    alerts?: AlertUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutSessionsInput = {
@@ -16256,10 +17986,13 @@ export namespace Prisma {
     image?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    telegramChatId?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramConnectionToken?: NullableStringFieldUpdateOperationsInput | string | null
     accounts?: AccountUpdateManyWithoutUserNestedInput
     tradingAccounts?: TradingAccountUpdateManyWithoutUserNestedInput
     sections?: SectionUpdateManyWithoutUserNestedInput
     accountTypes?: AccountTypeUpdateManyWithoutUserNestedInput
+    alerts?: AlertUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutSessionsInput = {
@@ -16270,10 +18003,13 @@ export namespace Prisma {
     image?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    telegramChatId?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramConnectionToken?: NullableStringFieldUpdateOperationsInput | string | null
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
     tradingAccounts?: TradingAccountUncheckedUpdateManyWithoutUserNestedInput
     sections?: SectionUncheckedUpdateManyWithoutUserNestedInput
     accountTypes?: AccountTypeUncheckedUpdateManyWithoutUserNestedInput
+    alerts?: AlertUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutAccountsInput = {
@@ -16284,10 +18020,13 @@ export namespace Prisma {
     image?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    telegramChatId?: string | null
+    telegramConnectionToken?: string | null
     sessions?: SessionCreateNestedManyWithoutUserInput
     tradingAccounts?: TradingAccountCreateNestedManyWithoutUserInput
     sections?: SectionCreateNestedManyWithoutUserInput
     accountTypes?: AccountTypeCreateNestedManyWithoutUserInput
+    alerts?: AlertCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutAccountsInput = {
@@ -16298,10 +18037,13 @@ export namespace Prisma {
     image?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    telegramChatId?: string | null
+    telegramConnectionToken?: string | null
     sessions?: SessionUncheckedCreateNestedManyWithoutUserInput
     tradingAccounts?: TradingAccountUncheckedCreateNestedManyWithoutUserInput
     sections?: SectionUncheckedCreateNestedManyWithoutUserInput
     accountTypes?: AccountTypeUncheckedCreateNestedManyWithoutUserInput
+    alerts?: AlertUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutAccountsInput = {
@@ -16328,10 +18070,13 @@ export namespace Prisma {
     image?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    telegramChatId?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramConnectionToken?: NullableStringFieldUpdateOperationsInput | string | null
     sessions?: SessionUpdateManyWithoutUserNestedInput
     tradingAccounts?: TradingAccountUpdateManyWithoutUserNestedInput
     sections?: SectionUpdateManyWithoutUserNestedInput
     accountTypes?: AccountTypeUpdateManyWithoutUserNestedInput
+    alerts?: AlertUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutAccountsInput = {
@@ -16342,10 +18087,13 @@ export namespace Prisma {
     image?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    telegramChatId?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramConnectionToken?: NullableStringFieldUpdateOperationsInput | string | null
     sessions?: SessionUncheckedUpdateManyWithoutUserNestedInput
     tradingAccounts?: TradingAccountUncheckedUpdateManyWithoutUserNestedInput
     sections?: SectionUncheckedUpdateManyWithoutUserNestedInput
     accountTypes?: AccountTypeUncheckedUpdateManyWithoutUserNestedInput
+    alerts?: AlertUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutSectionsInput = {
@@ -16356,10 +18104,13 @@ export namespace Prisma {
     image?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    telegramChatId?: string | null
+    telegramConnectionToken?: string | null
     sessions?: SessionCreateNestedManyWithoutUserInput
     accounts?: AccountCreateNestedManyWithoutUserInput
     tradingAccounts?: TradingAccountCreateNestedManyWithoutUserInput
     accountTypes?: AccountTypeCreateNestedManyWithoutUserInput
+    alerts?: AlertCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutSectionsInput = {
@@ -16370,10 +18121,13 @@ export namespace Prisma {
     image?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    telegramChatId?: string | null
+    telegramConnectionToken?: string | null
     sessions?: SessionUncheckedCreateNestedManyWithoutUserInput
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
     tradingAccounts?: TradingAccountUncheckedCreateNestedManyWithoutUserInput
     accountTypes?: AccountTypeUncheckedCreateNestedManyWithoutUserInput
+    alerts?: AlertUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutSectionsInput = {
@@ -16401,6 +18155,7 @@ export namespace Prisma {
     trades?: TradeHistoryCreateNestedManyWithoutAccountInput
     snapshots?: EquitySnapshotCreateNestedManyWithoutAccountInput
     expertAdvisors?: ExpertAdvisorCreateNestedManyWithoutAccountInput
+    alerts?: AlertCreateNestedManyWithoutAccountInput
   }
 
   export type TradingAccountUncheckedCreateWithoutSectionInput = {
@@ -16423,6 +18178,7 @@ export namespace Prisma {
     trades?: TradeHistoryUncheckedCreateNestedManyWithoutAccountInput
     snapshots?: EquitySnapshotUncheckedCreateNestedManyWithoutAccountInput
     expertAdvisors?: ExpertAdvisorUncheckedCreateNestedManyWithoutAccountInput
+    alerts?: AlertUncheckedCreateNestedManyWithoutAccountInput
   }
 
   export type TradingAccountCreateOrConnectWithoutSectionInput = {
@@ -16454,10 +18210,13 @@ export namespace Prisma {
     image?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    telegramChatId?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramConnectionToken?: NullableStringFieldUpdateOperationsInput | string | null
     sessions?: SessionUpdateManyWithoutUserNestedInput
     accounts?: AccountUpdateManyWithoutUserNestedInput
     tradingAccounts?: TradingAccountUpdateManyWithoutUserNestedInput
     accountTypes?: AccountTypeUpdateManyWithoutUserNestedInput
+    alerts?: AlertUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutSectionsInput = {
@@ -16468,10 +18227,13 @@ export namespace Prisma {
     image?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    telegramChatId?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramConnectionToken?: NullableStringFieldUpdateOperationsInput | string | null
     sessions?: SessionUncheckedUpdateManyWithoutUserNestedInput
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
     tradingAccounts?: TradingAccountUncheckedUpdateManyWithoutUserNestedInput
     accountTypes?: AccountTypeUncheckedUpdateManyWithoutUserNestedInput
+    alerts?: AlertUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type TradingAccountUpsertWithWhereUniqueWithoutSectionInput = {
@@ -16498,10 +18260,13 @@ export namespace Prisma {
     image?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    telegramChatId?: string | null
+    telegramConnectionToken?: string | null
     sessions?: SessionCreateNestedManyWithoutUserInput
     accounts?: AccountCreateNestedManyWithoutUserInput
     tradingAccounts?: TradingAccountCreateNestedManyWithoutUserInput
     sections?: SectionCreateNestedManyWithoutUserInput
+    alerts?: AlertCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutAccountTypesInput = {
@@ -16512,10 +18277,13 @@ export namespace Prisma {
     image?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    telegramChatId?: string | null
+    telegramConnectionToken?: string | null
     sessions?: SessionUncheckedCreateNestedManyWithoutUserInput
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
     tradingAccounts?: TradingAccountUncheckedCreateNestedManyWithoutUserInput
     sections?: SectionUncheckedCreateNestedManyWithoutUserInput
+    alerts?: AlertUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutAccountTypesInput = {
@@ -16543,6 +18311,7 @@ export namespace Prisma {
     trades?: TradeHistoryCreateNestedManyWithoutAccountInput
     snapshots?: EquitySnapshotCreateNestedManyWithoutAccountInput
     expertAdvisors?: ExpertAdvisorCreateNestedManyWithoutAccountInput
+    alerts?: AlertCreateNestedManyWithoutAccountInput
   }
 
   export type TradingAccountUncheckedCreateWithoutAccountTypeInput = {
@@ -16565,6 +18334,7 @@ export namespace Prisma {
     trades?: TradeHistoryUncheckedCreateNestedManyWithoutAccountInput
     snapshots?: EquitySnapshotUncheckedCreateNestedManyWithoutAccountInput
     expertAdvisors?: ExpertAdvisorUncheckedCreateNestedManyWithoutAccountInput
+    alerts?: AlertUncheckedCreateNestedManyWithoutAccountInput
   }
 
   export type TradingAccountCreateOrConnectWithoutAccountTypeInput = {
@@ -16596,10 +18366,13 @@ export namespace Prisma {
     image?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    telegramChatId?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramConnectionToken?: NullableStringFieldUpdateOperationsInput | string | null
     sessions?: SessionUpdateManyWithoutUserNestedInput
     accounts?: AccountUpdateManyWithoutUserNestedInput
     tradingAccounts?: TradingAccountUpdateManyWithoutUserNestedInput
     sections?: SectionUpdateManyWithoutUserNestedInput
+    alerts?: AlertUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutAccountTypesInput = {
@@ -16610,10 +18383,13 @@ export namespace Prisma {
     image?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    telegramChatId?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramConnectionToken?: NullableStringFieldUpdateOperationsInput | string | null
     sessions?: SessionUncheckedUpdateManyWithoutUserNestedInput
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
     tradingAccounts?: TradingAccountUncheckedUpdateManyWithoutUserNestedInput
     sections?: SectionUncheckedUpdateManyWithoutUserNestedInput
+    alerts?: AlertUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type TradingAccountUpsertWithWhereUniqueWithoutAccountTypeInput = {
@@ -16640,10 +18416,13 @@ export namespace Prisma {
     image?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    telegramChatId?: string | null
+    telegramConnectionToken?: string | null
     sessions?: SessionCreateNestedManyWithoutUserInput
     accounts?: AccountCreateNestedManyWithoutUserInput
     sections?: SectionCreateNestedManyWithoutUserInput
     accountTypes?: AccountTypeCreateNestedManyWithoutUserInput
+    alerts?: AlertCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutTradingAccountsInput = {
@@ -16654,10 +18433,13 @@ export namespace Prisma {
     image?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    telegramChatId?: string | null
+    telegramConnectionToken?: string | null
     sessions?: SessionUncheckedCreateNestedManyWithoutUserInput
     accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
     sections?: SectionUncheckedCreateNestedManyWithoutUserInput
     accountTypes?: AccountTypeUncheckedCreateNestedManyWithoutUserInput
+    alerts?: AlertUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutTradingAccountsInput = {
@@ -16817,6 +18599,42 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type AlertCreateWithoutAccountInput = {
+    id?: string
+    type: string
+    condition: string
+    value: number
+    active?: boolean
+    triggered?: boolean
+    lastTriggeredAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    user: UserCreateNestedOneWithoutAlertsInput
+  }
+
+  export type AlertUncheckedCreateWithoutAccountInput = {
+    id?: string
+    userId: string
+    type: string
+    condition: string
+    value: number
+    active?: boolean
+    triggered?: boolean
+    lastTriggeredAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type AlertCreateOrConnectWithoutAccountInput = {
+    where: AlertWhereUniqueInput
+    create: XOR<AlertCreateWithoutAccountInput, AlertUncheckedCreateWithoutAccountInput>
+  }
+
+  export type AlertCreateManyAccountInputEnvelope = {
+    data: AlertCreateManyAccountInput | AlertCreateManyAccountInput[]
+    skipDuplicates?: boolean
+  }
+
   export type UserUpsertWithoutTradingAccountsInput = {
     update: XOR<UserUpdateWithoutTradingAccountsInput, UserUncheckedUpdateWithoutTradingAccountsInput>
     create: XOR<UserCreateWithoutTradingAccountsInput, UserUncheckedCreateWithoutTradingAccountsInput>
@@ -16836,10 +18654,13 @@ export namespace Prisma {
     image?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    telegramChatId?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramConnectionToken?: NullableStringFieldUpdateOperationsInput | string | null
     sessions?: SessionUpdateManyWithoutUserNestedInput
     accounts?: AccountUpdateManyWithoutUserNestedInput
     sections?: SectionUpdateManyWithoutUserNestedInput
     accountTypes?: AccountTypeUpdateManyWithoutUserNestedInput
+    alerts?: AlertUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutTradingAccountsInput = {
@@ -16850,10 +18671,13 @@ export namespace Prisma {
     image?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    telegramChatId?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramConnectionToken?: NullableStringFieldUpdateOperationsInput | string | null
     sessions?: SessionUncheckedUpdateManyWithoutUserNestedInput
     accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
     sections?: SectionUncheckedUpdateManyWithoutUserNestedInput
     accountTypes?: AccountTypeUncheckedUpdateManyWithoutUserNestedInput
+    alerts?: AlertUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type SectionUpsertWithoutAccountsInput = {
@@ -17011,6 +18835,22 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"ExpertAdvisor"> | Date | string
   }
 
+  export type AlertUpsertWithWhereUniqueWithoutAccountInput = {
+    where: AlertWhereUniqueInput
+    update: XOR<AlertUpdateWithoutAccountInput, AlertUncheckedUpdateWithoutAccountInput>
+    create: XOR<AlertCreateWithoutAccountInput, AlertUncheckedCreateWithoutAccountInput>
+  }
+
+  export type AlertUpdateWithWhereUniqueWithoutAccountInput = {
+    where: AlertWhereUniqueInput
+    data: XOR<AlertUpdateWithoutAccountInput, AlertUncheckedUpdateWithoutAccountInput>
+  }
+
+  export type AlertUpdateManyWithWhereWithoutAccountInput = {
+    where: AlertScalarWhereInput
+    data: XOR<AlertUpdateManyMutationInput, AlertUncheckedUpdateManyWithoutAccountInput>
+  }
+
   export type TradingAccountCreateWithoutExpertAdvisorsInput = {
     id?: string
     connectionToken?: string
@@ -17031,6 +18871,7 @@ export namespace Prisma {
     accountType?: AccountTypeCreateNestedOneWithoutAccountsInput
     trades?: TradeHistoryCreateNestedManyWithoutAccountInput
     snapshots?: EquitySnapshotCreateNestedManyWithoutAccountInput
+    alerts?: AlertCreateNestedManyWithoutAccountInput
   }
 
   export type TradingAccountUncheckedCreateWithoutExpertAdvisorsInput = {
@@ -17053,6 +18894,7 @@ export namespace Prisma {
     snapshotted?: boolean
     trades?: TradeHistoryUncheckedCreateNestedManyWithoutAccountInput
     snapshots?: EquitySnapshotUncheckedCreateNestedManyWithoutAccountInput
+    alerts?: AlertUncheckedCreateNestedManyWithoutAccountInput
   }
 
   export type TradingAccountCreateOrConnectWithoutExpertAdvisorsInput = {
@@ -17091,6 +18933,7 @@ export namespace Prisma {
     accountType?: AccountTypeUpdateOneWithoutAccountsNestedInput
     trades?: TradeHistoryUpdateManyWithoutAccountNestedInput
     snapshots?: EquitySnapshotUpdateManyWithoutAccountNestedInput
+    alerts?: AlertUpdateManyWithoutAccountNestedInput
   }
 
   export type TradingAccountUncheckedUpdateWithoutExpertAdvisorsInput = {
@@ -17113,6 +18956,7 @@ export namespace Prisma {
     snapshotted?: BoolFieldUpdateOperationsInput | boolean
     trades?: TradeHistoryUncheckedUpdateManyWithoutAccountNestedInput
     snapshots?: EquitySnapshotUncheckedUpdateManyWithoutAccountNestedInput
+    alerts?: AlertUncheckedUpdateManyWithoutAccountNestedInput
   }
 
   export type TradingAccountCreateWithoutTradesInput = {
@@ -17135,6 +18979,7 @@ export namespace Prisma {
     accountType?: AccountTypeCreateNestedOneWithoutAccountsInput
     snapshots?: EquitySnapshotCreateNestedManyWithoutAccountInput
     expertAdvisors?: ExpertAdvisorCreateNestedManyWithoutAccountInput
+    alerts?: AlertCreateNestedManyWithoutAccountInput
   }
 
   export type TradingAccountUncheckedCreateWithoutTradesInput = {
@@ -17157,6 +19002,7 @@ export namespace Prisma {
     snapshotted?: boolean
     snapshots?: EquitySnapshotUncheckedCreateNestedManyWithoutAccountInput
     expertAdvisors?: ExpertAdvisorUncheckedCreateNestedManyWithoutAccountInput
+    alerts?: AlertUncheckedCreateNestedManyWithoutAccountInput
   }
 
   export type TradingAccountCreateOrConnectWithoutTradesInput = {
@@ -17195,6 +19041,7 @@ export namespace Prisma {
     accountType?: AccountTypeUpdateOneWithoutAccountsNestedInput
     snapshots?: EquitySnapshotUpdateManyWithoutAccountNestedInput
     expertAdvisors?: ExpertAdvisorUpdateManyWithoutAccountNestedInput
+    alerts?: AlertUpdateManyWithoutAccountNestedInput
   }
 
   export type TradingAccountUncheckedUpdateWithoutTradesInput = {
@@ -17217,6 +19064,7 @@ export namespace Prisma {
     snapshotted?: BoolFieldUpdateOperationsInput | boolean
     snapshots?: EquitySnapshotUncheckedUpdateManyWithoutAccountNestedInput
     expertAdvisors?: ExpertAdvisorUncheckedUpdateManyWithoutAccountNestedInput
+    alerts?: AlertUncheckedUpdateManyWithoutAccountNestedInput
   }
 
   export type TradingAccountCreateWithoutSnapshotsInput = {
@@ -17239,6 +19087,7 @@ export namespace Prisma {
     accountType?: AccountTypeCreateNestedOneWithoutAccountsInput
     trades?: TradeHistoryCreateNestedManyWithoutAccountInput
     expertAdvisors?: ExpertAdvisorCreateNestedManyWithoutAccountInput
+    alerts?: AlertCreateNestedManyWithoutAccountInput
   }
 
   export type TradingAccountUncheckedCreateWithoutSnapshotsInput = {
@@ -17261,6 +19110,7 @@ export namespace Prisma {
     snapshotted?: boolean
     trades?: TradeHistoryUncheckedCreateNestedManyWithoutAccountInput
     expertAdvisors?: ExpertAdvisorUncheckedCreateNestedManyWithoutAccountInput
+    alerts?: AlertUncheckedCreateNestedManyWithoutAccountInput
   }
 
   export type TradingAccountCreateOrConnectWithoutSnapshotsInput = {
@@ -17299,6 +19149,7 @@ export namespace Prisma {
     accountType?: AccountTypeUpdateOneWithoutAccountsNestedInput
     trades?: TradeHistoryUpdateManyWithoutAccountNestedInput
     expertAdvisors?: ExpertAdvisorUpdateManyWithoutAccountNestedInput
+    alerts?: AlertUpdateManyWithoutAccountNestedInput
   }
 
   export type TradingAccountUncheckedUpdateWithoutSnapshotsInput = {
@@ -17320,6 +19171,199 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     snapshotted?: BoolFieldUpdateOperationsInput | boolean
     trades?: TradeHistoryUncheckedUpdateManyWithoutAccountNestedInput
+    expertAdvisors?: ExpertAdvisorUncheckedUpdateManyWithoutAccountNestedInput
+    alerts?: AlertUncheckedUpdateManyWithoutAccountNestedInput
+  }
+
+  export type UserCreateWithoutAlertsInput = {
+    id: string
+    email: string
+    name?: string | null
+    emailVerified?: boolean
+    image?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    telegramChatId?: string | null
+    telegramConnectionToken?: string | null
+    sessions?: SessionCreateNestedManyWithoutUserInput
+    accounts?: AccountCreateNestedManyWithoutUserInput
+    tradingAccounts?: TradingAccountCreateNestedManyWithoutUserInput
+    sections?: SectionCreateNestedManyWithoutUserInput
+    accountTypes?: AccountTypeCreateNestedManyWithoutUserInput
+  }
+
+  export type UserUncheckedCreateWithoutAlertsInput = {
+    id: string
+    email: string
+    name?: string | null
+    emailVerified?: boolean
+    image?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    telegramChatId?: string | null
+    telegramConnectionToken?: string | null
+    sessions?: SessionUncheckedCreateNestedManyWithoutUserInput
+    accounts?: AccountUncheckedCreateNestedManyWithoutUserInput
+    tradingAccounts?: TradingAccountUncheckedCreateNestedManyWithoutUserInput
+    sections?: SectionUncheckedCreateNestedManyWithoutUserInput
+    accountTypes?: AccountTypeUncheckedCreateNestedManyWithoutUserInput
+  }
+
+  export type UserCreateOrConnectWithoutAlertsInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutAlertsInput, UserUncheckedCreateWithoutAlertsInput>
+  }
+
+  export type TradingAccountCreateWithoutAlertsInput = {
+    id?: string
+    connectionToken?: string
+    accountNumber: number
+    broker: string
+    server: string
+    platform?: string
+    nickname?: string | null
+    isConnected?: boolean
+    lastSeen?: Date | string | null
+    balance?: number
+    equity?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    snapshotted?: boolean
+    user: UserCreateNestedOneWithoutTradingAccountsInput
+    section?: SectionCreateNestedOneWithoutAccountsInput
+    accountType?: AccountTypeCreateNestedOneWithoutAccountsInput
+    trades?: TradeHistoryCreateNestedManyWithoutAccountInput
+    snapshots?: EquitySnapshotCreateNestedManyWithoutAccountInput
+    expertAdvisors?: ExpertAdvisorCreateNestedManyWithoutAccountInput
+  }
+
+  export type TradingAccountUncheckedCreateWithoutAlertsInput = {
+    id?: string
+    userId: string
+    sectionId?: string | null
+    accountTypeId?: string | null
+    connectionToken?: string
+    accountNumber: number
+    broker: string
+    server: string
+    platform?: string
+    nickname?: string | null
+    isConnected?: boolean
+    lastSeen?: Date | string | null
+    balance?: number
+    equity?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    snapshotted?: boolean
+    trades?: TradeHistoryUncheckedCreateNestedManyWithoutAccountInput
+    snapshots?: EquitySnapshotUncheckedCreateNestedManyWithoutAccountInput
+    expertAdvisors?: ExpertAdvisorUncheckedCreateNestedManyWithoutAccountInput
+  }
+
+  export type TradingAccountCreateOrConnectWithoutAlertsInput = {
+    where: TradingAccountWhereUniqueInput
+    create: XOR<TradingAccountCreateWithoutAlertsInput, TradingAccountUncheckedCreateWithoutAlertsInput>
+  }
+
+  export type UserUpsertWithoutAlertsInput = {
+    update: XOR<UserUpdateWithoutAlertsInput, UserUncheckedUpdateWithoutAlertsInput>
+    create: XOR<UserCreateWithoutAlertsInput, UserUncheckedCreateWithoutAlertsInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutAlertsInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutAlertsInput, UserUncheckedUpdateWithoutAlertsInput>
+  }
+
+  export type UserUpdateWithoutAlertsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    name?: NullableStringFieldUpdateOperationsInput | string | null
+    emailVerified?: BoolFieldUpdateOperationsInput | boolean
+    image?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    telegramChatId?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramConnectionToken?: NullableStringFieldUpdateOperationsInput | string | null
+    sessions?: SessionUpdateManyWithoutUserNestedInput
+    accounts?: AccountUpdateManyWithoutUserNestedInput
+    tradingAccounts?: TradingAccountUpdateManyWithoutUserNestedInput
+    sections?: SectionUpdateManyWithoutUserNestedInput
+    accountTypes?: AccountTypeUpdateManyWithoutUserNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutAlertsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    name?: NullableStringFieldUpdateOperationsInput | string | null
+    emailVerified?: BoolFieldUpdateOperationsInput | boolean
+    image?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    telegramChatId?: NullableStringFieldUpdateOperationsInput | string | null
+    telegramConnectionToken?: NullableStringFieldUpdateOperationsInput | string | null
+    sessions?: SessionUncheckedUpdateManyWithoutUserNestedInput
+    accounts?: AccountUncheckedUpdateManyWithoutUserNestedInput
+    tradingAccounts?: TradingAccountUncheckedUpdateManyWithoutUserNestedInput
+    sections?: SectionUncheckedUpdateManyWithoutUserNestedInput
+    accountTypes?: AccountTypeUncheckedUpdateManyWithoutUserNestedInput
+  }
+
+  export type TradingAccountUpsertWithoutAlertsInput = {
+    update: XOR<TradingAccountUpdateWithoutAlertsInput, TradingAccountUncheckedUpdateWithoutAlertsInput>
+    create: XOR<TradingAccountCreateWithoutAlertsInput, TradingAccountUncheckedCreateWithoutAlertsInput>
+    where?: TradingAccountWhereInput
+  }
+
+  export type TradingAccountUpdateToOneWithWhereWithoutAlertsInput = {
+    where?: TradingAccountWhereInput
+    data: XOR<TradingAccountUpdateWithoutAlertsInput, TradingAccountUncheckedUpdateWithoutAlertsInput>
+  }
+
+  export type TradingAccountUpdateWithoutAlertsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    connectionToken?: StringFieldUpdateOperationsInput | string
+    accountNumber?: IntFieldUpdateOperationsInput | number
+    broker?: StringFieldUpdateOperationsInput | string
+    server?: StringFieldUpdateOperationsInput | string
+    platform?: StringFieldUpdateOperationsInput | string
+    nickname?: NullableStringFieldUpdateOperationsInput | string | null
+    isConnected?: BoolFieldUpdateOperationsInput | boolean
+    lastSeen?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    balance?: FloatFieldUpdateOperationsInput | number
+    equity?: FloatFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    snapshotted?: BoolFieldUpdateOperationsInput | boolean
+    user?: UserUpdateOneRequiredWithoutTradingAccountsNestedInput
+    section?: SectionUpdateOneWithoutAccountsNestedInput
+    accountType?: AccountTypeUpdateOneWithoutAccountsNestedInput
+    trades?: TradeHistoryUpdateManyWithoutAccountNestedInput
+    snapshots?: EquitySnapshotUpdateManyWithoutAccountNestedInput
+    expertAdvisors?: ExpertAdvisorUpdateManyWithoutAccountNestedInput
+  }
+
+  export type TradingAccountUncheckedUpdateWithoutAlertsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    sectionId?: NullableStringFieldUpdateOperationsInput | string | null
+    accountTypeId?: NullableStringFieldUpdateOperationsInput | string | null
+    connectionToken?: StringFieldUpdateOperationsInput | string
+    accountNumber?: IntFieldUpdateOperationsInput | number
+    broker?: StringFieldUpdateOperationsInput | string
+    server?: StringFieldUpdateOperationsInput | string
+    platform?: StringFieldUpdateOperationsInput | string
+    nickname?: NullableStringFieldUpdateOperationsInput | string | null
+    isConnected?: BoolFieldUpdateOperationsInput | boolean
+    lastSeen?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    balance?: FloatFieldUpdateOperationsInput | number
+    equity?: FloatFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    snapshotted?: BoolFieldUpdateOperationsInput | boolean
+    trades?: TradeHistoryUncheckedUpdateManyWithoutAccountNestedInput
+    snapshots?: EquitySnapshotUncheckedUpdateManyWithoutAccountNestedInput
     expertAdvisors?: ExpertAdvisorUncheckedUpdateManyWithoutAccountNestedInput
   }
 
@@ -17379,6 +19423,19 @@ export namespace Prisma {
     name: string
     color?: string
     createdAt?: Date | string
+  }
+
+  export type AlertCreateManyUserInput = {
+    id?: string
+    accountId: string
+    type: string
+    condition: string
+    value: number
+    active?: boolean
+    triggered?: boolean
+    lastTriggeredAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
   }
 
   export type SessionUpdateWithoutUserInput = {
@@ -17473,6 +19530,7 @@ export namespace Prisma {
     trades?: TradeHistoryUpdateManyWithoutAccountNestedInput
     snapshots?: EquitySnapshotUpdateManyWithoutAccountNestedInput
     expertAdvisors?: ExpertAdvisorUpdateManyWithoutAccountNestedInput
+    alerts?: AlertUpdateManyWithoutAccountNestedInput
   }
 
   export type TradingAccountUncheckedUpdateWithoutUserInput = {
@@ -17495,6 +19553,7 @@ export namespace Prisma {
     trades?: TradeHistoryUncheckedUpdateManyWithoutAccountNestedInput
     snapshots?: EquitySnapshotUncheckedUpdateManyWithoutAccountNestedInput
     expertAdvisors?: ExpertAdvisorUncheckedUpdateManyWithoutAccountNestedInput
+    alerts?: AlertUncheckedUpdateManyWithoutAccountNestedInput
   }
 
   export type TradingAccountUncheckedUpdateManyWithoutUserInput = {
@@ -17565,6 +19624,45 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type AlertUpdateWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    condition?: StringFieldUpdateOperationsInput | string
+    value?: FloatFieldUpdateOperationsInput | number
+    active?: BoolFieldUpdateOperationsInput | boolean
+    triggered?: BoolFieldUpdateOperationsInput | boolean
+    lastTriggeredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    account?: TradingAccountUpdateOneRequiredWithoutAlertsNestedInput
+  }
+
+  export type AlertUncheckedUpdateWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    accountId?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    condition?: StringFieldUpdateOperationsInput | string
+    value?: FloatFieldUpdateOperationsInput | number
+    active?: BoolFieldUpdateOperationsInput | boolean
+    triggered?: BoolFieldUpdateOperationsInput | boolean
+    lastTriggeredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type AlertUncheckedUpdateManyWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    accountId?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    condition?: StringFieldUpdateOperationsInput | string
+    value?: FloatFieldUpdateOperationsInput | number
+    active?: BoolFieldUpdateOperationsInput | boolean
+    triggered?: BoolFieldUpdateOperationsInput | boolean
+    lastTriggeredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type TradingAccountCreateManySectionInput = {
     id?: string
     userId: string
@@ -17604,6 +19702,7 @@ export namespace Prisma {
     trades?: TradeHistoryUpdateManyWithoutAccountNestedInput
     snapshots?: EquitySnapshotUpdateManyWithoutAccountNestedInput
     expertAdvisors?: ExpertAdvisorUpdateManyWithoutAccountNestedInput
+    alerts?: AlertUpdateManyWithoutAccountNestedInput
   }
 
   export type TradingAccountUncheckedUpdateWithoutSectionInput = {
@@ -17626,6 +19725,7 @@ export namespace Prisma {
     trades?: TradeHistoryUncheckedUpdateManyWithoutAccountNestedInput
     snapshots?: EquitySnapshotUncheckedUpdateManyWithoutAccountNestedInput
     expertAdvisors?: ExpertAdvisorUncheckedUpdateManyWithoutAccountNestedInput
+    alerts?: AlertUncheckedUpdateManyWithoutAccountNestedInput
   }
 
   export type TradingAccountUncheckedUpdateManyWithoutSectionInput = {
@@ -17686,6 +19786,7 @@ export namespace Prisma {
     trades?: TradeHistoryUpdateManyWithoutAccountNestedInput
     snapshots?: EquitySnapshotUpdateManyWithoutAccountNestedInput
     expertAdvisors?: ExpertAdvisorUpdateManyWithoutAccountNestedInput
+    alerts?: AlertUpdateManyWithoutAccountNestedInput
   }
 
   export type TradingAccountUncheckedUpdateWithoutAccountTypeInput = {
@@ -17708,6 +19809,7 @@ export namespace Prisma {
     trades?: TradeHistoryUncheckedUpdateManyWithoutAccountNestedInput
     snapshots?: EquitySnapshotUncheckedUpdateManyWithoutAccountNestedInput
     expertAdvisors?: ExpertAdvisorUncheckedUpdateManyWithoutAccountNestedInput
+    alerts?: AlertUncheckedUpdateManyWithoutAccountNestedInput
   }
 
   export type TradingAccountUncheckedUpdateManyWithoutAccountTypeInput = {
@@ -17764,6 +19866,19 @@ export namespace Prisma {
     id?: string
     name: string
     magicNumber: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type AlertCreateManyAccountInput = {
+    id?: string
+    userId: string
+    type: string
+    condition: string
+    value: number
+    active?: boolean
+    triggered?: boolean
+    lastTriggeredAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -17881,6 +19996,45 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     magicNumber?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type AlertUpdateWithoutAccountInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    condition?: StringFieldUpdateOperationsInput | string
+    value?: FloatFieldUpdateOperationsInput | number
+    active?: BoolFieldUpdateOperationsInput | boolean
+    triggered?: BoolFieldUpdateOperationsInput | boolean
+    lastTriggeredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutAlertsNestedInput
+  }
+
+  export type AlertUncheckedUpdateWithoutAccountInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    condition?: StringFieldUpdateOperationsInput | string
+    value?: FloatFieldUpdateOperationsInput | number
+    active?: BoolFieldUpdateOperationsInput | boolean
+    triggered?: BoolFieldUpdateOperationsInput | boolean
+    lastTriggeredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type AlertUncheckedUpdateManyWithoutAccountInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    condition?: StringFieldUpdateOperationsInput | string
+    value?: FloatFieldUpdateOperationsInput | number
+    active?: BoolFieldUpdateOperationsInput | boolean
+    triggered?: BoolFieldUpdateOperationsInput | boolean
+    lastTriggeredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }

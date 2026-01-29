@@ -98,10 +98,15 @@ import {
 } from "recharts";
 import { cn } from "@/lib/utils";
 
+import { CalendarPnL } from "@/components/CalendarPnL";
+import { CreateEADialog } from "@/components/CreateEADialog";
+import { EAStatsCard } from "@/components/EAStatsCard";
 import { AccountHeader } from "@/components/AccountHeader";
 import { AccountStatsGrid } from "@/components/AccountStatsGrid";
-import { AccountOverviewTab } from "@/components/AccountOverviewTab";
-import { AccountEAsTab } from "@/components/AccountEAsTab";
+import { AccountHistoryTab } from "@/components/AccountHistoryTab";
+import { AlertsDialog } from "@/components/AlertsDialog";
+import { AccountPageSkeleton } from "@/components/skeletons/AccountPageSkeleton";
+
 
 interface Position {
   ticket: number;
@@ -133,6 +138,7 @@ interface Trade {
   openTime: string;
   closeTime: string;
   comment?: string | null;
+  magicNumber: number;
 }
 
 interface AccountInfo {
@@ -189,35 +195,28 @@ export default function AccountPage() {
   const [loading, setLoading] = useState(true);
   const [copiedToken, setCopiedToken] = useState(false);
   const [eas, setEas] = useState<ExpertAdvisor[]>([]);
+  const [alerts, setAlerts] = useState<any[]>([]); // TODO: Type this properly
   // Removed local state for Create EA dialog to optimize re-renders
   
   const [activeTab, setActiveTab] = useState("overview");
   const [positionsPage, setPositionsPage] = useState(1);
-  const [historyPage, setHistoryPage] = useState(1);
   const [syncing, setSyncing] = useState(false);
   const [closingTickets, setClosingTickets] = useState<Set<number>>(new Set());
   const [closingAll, setClosingAll] = useState(false);
-  
-  const [historyPerPage, setHistoryPerPage] = useState(0);
   const [positionsPerPage, setPositionsPerPage] = useState(0);
-  
-  const [periodFilter, setPeriodFilter] = useState<"all" | "today" | "week" | "month" | "custom">("all");
-  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
-  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
-  const [symbolFilter, setSymbolFilter] = useState("");
-  const [typeFilter, setTypeFilter] = useState<"all" | "buy" | "sell">("all");
-  const [historyResultFilter, setHistoryResultFilter] = useState<"all" | "win" | "loss">("all");
   const [chartRange, setChartRange] = useState<"1W" | "1M" | "3M" | "YTD" | "ALL">("1M");
 
   useEffect(() => {
     if (session?.user?.id) {
       fetchAccount();
       fetchTrades();
+      fetchTrades();
       fetchEAs();
+      fetchAlerts();
     }
   }, [session?.user?.id, accountId]);
 
-  useEffect(() => { setHistoryPage(1); }, [periodFilter, dateFrom, dateTo, symbolFilter, typeFilter, historyPerPage, historyResultFilter]);
+
 
   useEffect(() => {
     if (!accountId) return;
@@ -331,6 +330,18 @@ export default function AccountPage() {
     }
   };
 
+  const fetchAlerts = async () => {
+      try {
+          const res = await fetch(`/api/accounts/${accountId}/alerts`)
+          if (res.ok) {
+              const data = await res.json()
+              setAlerts(data)
+          }
+      } catch (error) {
+          console.error("Error fetching alerts:", error)
+      }
+  }
+
   const handleEAAdded = useCallback((newEA: ExpertAdvisor) => {
     setEas(prev => [newEA, ...prev]);
   }, []);
@@ -358,8 +369,8 @@ export default function AccountPage() {
          // En la interfaz Trade definimos magicNumber como optional? No lo veo en la interfaz Trade arriba
          // Voy a asumir que debemos extender la interfaz Trade o castearlo.
          // Revisando fetchTrades: devuelve TradeHistory, schema dice magicNumber Int?
-         const tMagic = (t as any).magicNumber; 
-         return tMagic == ea.magicNumber;
+          
+         return t.magicNumber === ea.magicNumber;
       });
 
       const totalTrades = eaTrades.length;
@@ -551,52 +562,7 @@ export default function AccountPage() {
   
   const floatingPL = liveData ? liveData.account.equity - liveData.account.balance : (currentEquity - currentBalance);
 
-  // Filtrar trades (Memoizado)
-  const filteredTrades = useMemo(() => {
-    return allTrades.filter((trade: Trade) => {
-      const pl = trade.profit + trade.swap + trade.commission;
-      if (historyResultFilter === "win" && pl <= 0) return false;
-      if (historyResultFilter === "loss" && pl >= 0) return false;
-      if (typeFilter !== "all" && trade.type !== typeFilter) return false;
-      if (symbolFilter && !trade.symbol.toLowerCase().includes(symbolFilter.toLowerCase())) return false;
-      
-      const tradeDate = new Date(trade.closeTime);
-      const now = new Date();
-      
-      if (periodFilter === "today") {
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        if (tradeDate < today) return false;
-      } else if (periodFilter === "week") {
-        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        if (tradeDate < weekAgo) return false;
-      } else if (periodFilter === "month") {
-        const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        if (tradeDate < monthAgo) return false;
-      } else if (periodFilter === "custom") {
-        if (dateFrom && tradeDate < dateFrom) return false;
-        if (dateTo) {
-          const endOfDay = new Date(dateTo);
-          endOfDay.setHours(23, 59, 59, 999);
-          if (tradeDate > endOfDay) return false;
-        }
-      }
-      return true;
-    });
-  }, [allTrades, historyResultFilter, typeFilter, symbolFilter, periodFilter, dateFrom, dateTo]);
 
-  const filteredTotalProfit = useMemo(() => filteredTrades.reduce((sum: number, t: Trade) => sum + t.profit + t.swap + t.commission, 0), [filteredTrades]);
-  const filteredWinning = useMemo(() => filteredTrades.filter((t: Trade) => t.profit + t.swap + t.commission > 0).length, [filteredTrades]);
-  const filteredLosing = useMemo(() => filteredTrades.filter((t: Trade) => t.profit + t.swap + t.commission < 0).length, [filteredTrades]);
-  
-  const uniqueSymbols = useMemo(() => [...new Set(allTrades.map((t: Trade) => t.symbol))].sort(), [allTrades]);
-
-  // Paginación
-  const effectiveHistoryPerPage = historyPerPage === 0 ? filteredTrades.length : historyPerPage;
-  const totalHistoryPages = effectiveHistoryPerPage > 0 ? Math.ceil(filteredTrades.length / effectiveHistoryPerPage) : 1;
-  const paginatedTrades = useMemo(() => 
-    historyPerPage === 0 ? filteredTrades : filteredTrades.slice((historyPage - 1) * historyPerPage, historyPage * historyPerPage),
-    [filteredTrades, historyPage, historyPerPage]
-  );
 
   const effectivePositionsPerPage = positionsPerPage === 0 ? positions.length : positionsPerPage;
   const totalPositionPages = effectivePositionsPerPage > 0 ? Math.ceil(positions.length / effectivePositionsPerPage) : 1;
@@ -622,14 +588,143 @@ export default function AccountPage() {
   }, [allTrades]);
 
 
+  // Datos para gráfico de Balance Diario (Calculado hacia atrás desde el balance actual)
+  const dailyBalanceHistory = useMemo(() => {
+    if (!allTrades || allTrades.length === 0) return [];
 
+    // 1. Agrupar trades por día y sumar PnL (profit + swap + commission)
+    const pnlByDay: Record<string, number> = {};
+    // Usamos un mapa para ordenar fechas correctamente
+    allTrades.forEach(t => {
+      const dateStr = new Date(t.closeTime).toISOString().split('T')[0]; // YYYY-MM-DD
+      const pnl = t.profit + t.swap + t.commission;
+      pnlByDay[dateStr] = (pnlByDay[dateStr] || 0) + pnl;
+    });
+
+    // 2. Obtener fechas ordenadas descendente (más reciente primero) para restar del balance actual
+    const sortedDatesDesc = Object.keys(pnlByDay).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+    
+    // 3. Crear puntos de historia { date, balance }
+    // Empezamos con el balance actual como el punto final (hoy/ahora)
+    const historyPoints = [];
+    let runningBalance = currentBalance;
+
+    // El último punto es hoy con el balance actual
+    // (Opcional: Si queremos que el gráfico termine EXACTAMENTE en el último trade, 
+    // pero usualmente 'currentBalance' es lo más preciso "ahora mismo")
+    // historyPoints.push({ date: new Date().toISOString().split('T')[0], balance: runningBalance });
+
+    // Iteramos hacia atrás: El balance del día anterior = Balance Final del día actual - PnL del día actual
+    for (const dateStr of sortedDatesDesc) {
+      // Guardamos el punto final de este día
+      historyPoints.push({ 
+        date: dateStr, 
+        balance: runningBalance,
+        displayDate: new Date(dateStr).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
+      });
+
+      // Restamos el PnL de este día para obtener el balance al inicio del día (o final del anterior)
+      runningBalance -= pnlByDay[dateStr];
+    }
+
+    // 4. Agregar el punto de "Capital Inicial" (Día antes del primer trade)
+    if (sortedDatesDesc.length > 0) {
+        const oldestDate = new Date(sortedDatesDesc[sortedDatesDesc.length - 1]);
+        oldestDate.setDate(oldestDate.getDate() - 1);
+        const initialDateStr = oldestDate.toISOString().split('T')[0];
+        
+        historyPoints.push({
+            date: initialDateStr,
+            balance: runningBalance,
+            displayDate: oldestDate.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
+        });
+    }
+
+    // 5. Invertimos para tener orden ascendente
+    const fullHistory = historyPoints.reverse();
+
+    // 6. Filtrar según chartRange y asegurar punto de inicio correcto
+    const now = new Date();
+    let startDate = new Date(0); // Default ALL
+
+    if (chartRange === "1W") {
+      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    } else if (chartRange === "1M") {
+      startDate = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+    } else if (chartRange === "3M") {
+      startDate = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+    } else if (chartRange === "YTD") {
+      startDate = new Date(now.getFullYear(), 0, 1);
+    }
+
+    // Encontrar el primer punto dentro del rango
+    const startIndex = fullHistory.findIndex(p => new Date(p.date) >= startDate);
+    
+    if (startIndex === -1) return []; // No hay datos en el rango
+    
+    // Si el rango empieza después del histórico completo (startIndex > 0),
+    // necesitamos añadir un punto artificial al inicio del rango con el balance que tenía
+    // en ese momento (que es el balance del punto anterior en el histórico completo).
+    if (startIndex > 0) {
+        const startBalance = fullHistory[startIndex - 1].balance;
+        const syntheticStart = {
+            date: startDate.toISOString().split('T')[0],
+            displayDate: startDate.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }),
+            balance: startBalance
+        };
+        return [syntheticStart, ...fullHistory.slice(startIndex)];
+    }
+
+    return fullHistory;
+  }, [allTrades, currentBalance, chartRange]);
+
+
+
+  const longTrades = useMemo(() => allTrades.filter((t: Trade) => t.type === "buy"), [allTrades]);
+  const shortTrades = useMemo(() => allTrades.filter((t: Trade) => t.type === "sell"), [allTrades]);
+  
+  const longWinRate = useMemo(() => {
+    const wins = longTrades.filter(t => t.profit + t.swap + t.commission > 0).length;
+    return longTrades.length > 0 ? (wins / longTrades.length) * 100 : 0;
+  }, [longTrades]);
+
+  const shortWinRate = useMemo(() => {
+    const wins = shortTrades.filter(t => t.profit + t.swap + t.commission > 0).length;
+    return shortTrades.length > 0 ? (wins / shortTrades.length) * 100 : 0;
+  }, [shortTrades]);
+
+  // Rachas
+  const streaks = useMemo(() => {
+    let maxWins = 0, maxLosses = 0, currentWins = 0, currentLosses = 0;
+    [...allTrades].reverse().forEach(t => {
+      const pl = t.profit + t.swap + t.commission;
+      if (pl > 0) {
+        currentWins++;
+        currentLosses = 0;
+        maxWins = Math.max(maxWins, currentWins);
+      } else if (pl < 0) {
+        currentLosses++;
+        currentWins = 0;
+        maxLosses = Math.max(maxLosses, currentLosses);
+      }
+    });
+    return { maxWins, maxLosses };
+  }, [allTrades]);
+
+  const { maxWins, maxLosses } = streaks;
+
+  // Radar data para perfil de trading
+  const radarData = useMemo(() => [
+    { metric: "Win Rate", value: Math.min(winRate, 100), fullMark: 100 },
+    { metric: "Profit Factor", value: Math.min(profitFactor * 25, 100), fullMark: 100 },
+    { metric: "Risk/Reward", value: avgLoss > 0 ? Math.min((avgWin / avgLoss) * 30, 100) : 50, fullMark: 100 },
+    { metric: "Consistencia", value: totalTrades > 5 ? Math.min(60 + (profitFactor * 10), 100) : 0, fullMark: 100 },
+    { metric: "Disciplina", value: totalTrades > 0 ? Math.min(70 + winRate * 0.3, 100) : 0, fullMark: 100 },
+    { metric: "Drawdown", value: 80, fullMark: 100 },
+  ], [winRate, profitFactor, avgWin, avgLoss, totalTrades]);
 
   if (loading) {
-    return (
-      <div className="flex min-h-100vh items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-accent" />
-      </div>
-    );
+    return <AccountPageSkeleton />;
   }
 
   if (!account) {
@@ -647,13 +742,14 @@ export default function AccountPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <AccountHeader 
-        account={account} 
-        isLive={isLive} 
-        syncing={syncing} 
-        copiedToken={copiedToken} 
-        onCopyToken={copyToken} 
-        onSync={() => syncHistory()} 
+      <AccountHeader
+        account={account}
+        isLive={isLive}
+        syncing={syncing}
+        copiedToken={copiedToken}
+        onCopyToken={copyToken}
+        onSync={() => syncHistory()}
+        actions={<AlertsDialog accountId={accountId} alerts={alerts} />}
       />
 
       {/* Quick Stats Cards (Redesigned) */}
@@ -696,15 +792,156 @@ export default function AccountPage() {
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6">
-          <AccountOverviewTab 
-            allTrades={allTrades}
-            currentBalance={currentBalance}
-            profitFactor={profitFactor}
-            expectancy={expectancy}
-            avgWin={avgWin}
-            avgLoss={avgLoss}
-            totalTrades={totalTrades}
-          />
+          {/* Equity Curve + Radar Chart */}
+          <div className="grid gap-6 lg:grid-cols-3">
+            {/* Equity Curve (2 columns) */}
+            <Card className="border-border bg-card lg:col-span-3">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-foreground">Curva de Balance</CardTitle>
+                    <CardDescription>Crecimiento de la cuenta</CardDescription>
+                  </div>
+                  <div className="flex items-center gap-1 bg-secondary/30 p-1 rounded-lg">
+                    {(["1W", "1M", "3M", "YTD", "ALL"] as const).map((range) => (
+                      <button
+                        key={range}
+                        onClick={() => setChartRange(range)}
+                        className={cn(
+                          "px-3 py-1 text-xs font-medium rounded-md transition-all",
+                          chartRange === range
+                            ? "bg-background text-foreground shadow-sm"
+                            : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                        )}
+                      >
+                        {range}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={dailyBalanceHistory}>
+                      <defs>
+                        <linearGradient id="balanceGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="var(--chart-1)" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                      <XAxis 
+                        dataKey="displayDate" 
+                        axisLine={false} 
+                        tickLine={false} 
+                        tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
+                        minTickGap={30}
+                      />
+                      <YAxis 
+                        axisLine={false} 
+                        tickLine={false} 
+                        tick={{ fill: "var(--muted-foreground)", fontSize: 12 }} 
+                        tickFormatter={(v) => `$${(v / 1000).toFixed(1)}k`} 
+                        domain={['auto', 'auto']} 
+                      />
+                      <Tooltip 
+                        contentStyle={{ backgroundColor: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px" }}
+                        formatter={(value: number | undefined) => [`$${(value || 0).toLocaleString("en-US", {minimumFractionDigits: 2})}`, "Balance"]}
+                        labelFormatter={(label) => `Fecha: ${label}`}
+                      />
+                      <Area 
+                        type="monotone" 
+                        dataKey="balance" 
+                        stroke="var(--chart-1)" 
+                        strokeWidth={2} 
+                        fill="url(#balanceGradient)" 
+                        name="Balance" 
+                        animationDuration={500}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+
+            
+          </div>
+
+          {/* Stats Grid (4 cards) */}
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <Card className="border-border bg-card">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Profit Factor</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-bold font-mono text-foreground">{profitFactor === 0 ? "—" : profitFactor.toFixed(2)}</span>
+                  <span className={cn("text-xs", profitFactor >= 1.5 ? "text-profit" : profitFactor >= 1 ? "text-warning" : "text-loss")}>
+                    {profitFactor >= 1.5 ? "Excelente" : profitFactor >= 1 ? "Bueno" : "Mejorar"}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Avg Win: ${avgWin.toFixed(0)} | Avg Loss: ${avgLoss.toFixed(0)}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-border bg-card">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Expectancy</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-baseline gap-2">
+                  <span className={cn("text-3xl font-bold font-mono", expectancy >= 0 ? "text-profit" : "text-loss")}>${expectancy.toFixed(2)}</span>
+                  <span className="text-xs text-muted-foreground">por trade</span>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Basado en {totalTrades} trades
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-border bg-card">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Rachas</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-4">
+                  <div>
+                    <span className="text-2xl font-bold font-mono text-profit">{maxWins}</span>
+                    <p className="text-xs text-muted-foreground">Wins seguidos</p>
+                  </div>
+                  <div>
+                    <span className="text-2xl font-bold font-mono text-loss">{maxLosses}</span>
+                    <p className="text-xs text-muted-foreground">Losses seguidos</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-border bg-card">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Long vs Short</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">Winrate</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Long ({longTrades.length})</span>
+                    <span className="font-mono text-profit">{longWinRate.toFixed(0)}%</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Short ({shortTrades.length})</span>
+                    <span className="font-mono text-chart-3">{shortWinRate.toFixed(0)}%</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Calendar View */}
+          <CalendarPnL trades={allTrades} />
         </TabsContent>
 
         {/* Positions Tab */}
@@ -852,213 +1089,49 @@ export default function AccountPage() {
 
         {/* History Tab */}
         <TabsContent value="history" className="space-y-6">
-          <Card className="border-border bg-card">
-            <CardHeader>
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <CardTitle className="text-foreground">Historial de Operaciones</CardTitle>
-                  <CardDescription>{filteredTrades.length} operaciones</CardDescription>
-                  <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={async () => {
-                        const confirm = window.confirm("¿Solicitar historial completo al EA? Esto forzará una descarga de todos los trades antiguos.");
-                        if (!confirm) return;
-                        try {
-                           const res = await fetch(`/api/accounts/${accountId}/sync-all-history`, { method: "POST" });
-                           const json = await res.json();
-                           if (json.success) alert("Comando enviado. El historial completo se sincronizará en breve.");
-                           else alert("Error: " + json.error);
-                        } catch (e) {
-                           alert("Error enviando comando");
-                        }
-                      }}
-                      className="mt-2 gap-2 text-xs h-7 border-dashed border-primary/50 text-primary hover:bg-primary/10"
-                    >
-                      <Download className="h-3 w-3" />
-                      Sincronizar Todo
-                    </Button>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Select 
-                    value={historyPerPage.toString()} 
-                    onValueChange={(v) => { setHistoryPerPage(Number(v)); setHistoryPage(1); }}
-                  >
-                    <SelectTrigger className="w-[130px] bg-secondary border-border">
-                      <SelectValue placeholder="Tratos por pág." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="10">10 por pág.</SelectItem>
-                      <SelectItem value="20">20 por pág.</SelectItem>
-                      <SelectItem value="50">50 por pág.</SelectItem>
-                      <SelectItem value="100">100 por pág.</SelectItem>
-                      <SelectItem value="0">Ver Todos</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={historyResultFilter} onValueChange={(v) => setHistoryResultFilter(v as typeof historyResultFilter)}>
-                    <SelectTrigger className="w-[130px] bg-secondary border-border">
-                      <SelectValue placeholder="Filtrar" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas</SelectItem>
-                      <SelectItem value="win">Ganadoras</SelectItem>
-                      <SelectItem value="loss">Perdedoras</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={periodFilter} onValueChange={(v) => setPeriodFilter(v as typeof periodFilter)}>
-                    <SelectTrigger className="w-[130px] bg-secondary border-border">
-                      <SelectValue placeholder="Período" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todo</SelectItem>
-                      <SelectItem value="today">Hoy</SelectItem>
-                      <SelectItem value="week">7 días</SelectItem>
-                      <SelectItem value="month">30 días</SelectItem>
-                      <SelectItem value="custom">Personalizado</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              {periodFilter === "custom" && (
-                <div className="flex gap-2 mt-2">
-                  <DatePicker date={dateFrom} onDateChange={setDateFrom} placeholder="Desde" />
-                  <DatePicker date={dateTo} onDateChange={setDateTo} placeholder="Hasta" />
-                </div>
-              )}
-              <div className="flex flex-wrap items-center gap-4 text-sm mt-2">
-                <span className="text-muted-foreground">
-                  Ganadas: <span className="text-profit font-medium">{filteredWinning}</span>
-                </span>
-                <span className="text-muted-foreground">
-                  Perdidas: <span className="text-loss font-medium">{filteredLosing}</span>
-                </span>
-                <span className={cn("font-bold", filteredTotalProfit >= 0 ? "text-profit" : "text-loss")}>
-                  Total: {filteredTotalProfit >= 0 ? "+" : ""}${filteredTotalProfit.toFixed(2)}
-                </span>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {filteredTrades.length === 0 ? (
-                <p className="py-16 text-center text-muted-foreground">No hay trades con los filtros seleccionados</p>
-              ) : (
-                <>
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="border-border hover:bg-transparent">
-                          <TableHead className="text-muted-foreground">Ticket</TableHead>
-                          <TableHead className="text-muted-foreground">Símbolo</TableHead>
-                          <TableHead className="text-muted-foreground">Tipo</TableHead>
-                          <TableHead className="text-muted-foreground">Vol.</TableHead>
-                          <TableHead className="text-muted-foreground">Apertura</TableHead>
-                          <TableHead className="text-muted-foreground">Cierre</TableHead>
-                          <TableHead className="text-muted-foreground">Fecha Apertura</TableHead>
-                          <TableHead className="text-muted-foreground">Fecha Cierre</TableHead>
-                          <TableHead className="text-muted-foreground">P&L</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {paginatedTrades.map((t) => {
-                          const pl = t.profit + t.swap + t.commission;
-                          return (
-                            <TableRow key={t.id} className="border-border hover:bg-secondary/50">
-                              <TableCell className="font-mono text-sm text-muted-foreground">#{t.ticket}</TableCell>
-                              <TableCell className="font-medium text-foreground">{t.symbol}</TableCell>
-                              <TableCell>
-                                <Badge variant="outline" className={cn("font-medium uppercase", t.type === "buy" ? "bg-profit/20 text-profit border-profit/30" : "bg-loss/20 text-loss border-loss/30")}>
-                                  {t.type}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="font-mono">{t.volume}</TableCell>
-                              <TableCell className="font-mono">{t.openPrice.toFixed(5)}</TableCell>
-                              <TableCell className="font-mono">{t.closePrice.toFixed(5)}</TableCell>
-                              <TableCell className="text-xs text-muted-foreground font-mono">
-                                {new Date(t.openTime).toLocaleString("es-ES", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })}
-                              </TableCell>
-                              <TableCell className="text-xs text-muted-foreground font-mono">
-                                {new Date(t.closeTime).toLocaleString("es-ES", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })}
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-2">
-                                  {pl >= 0 ? <Check className="h-4 w-4 text-profit" /> : <X className="h-4 w-4 text-loss" />}
-                                  <span className={cn("font-mono font-medium", pl >= 0 ? "text-profit" : "text-loss")}>
-                                    {pl >= 0 ? "+" : ""}${pl.toFixed(2)}
-                                  </span>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </div>
-                  {/* Pagination Controls */}
-                  <div className="flex items-center justify-between border-t border-border pt-4 mt-4">
-                    <p className="text-sm text-muted-foreground">
-                      Mostrando {Math.min(filteredTrades.length, (historyPage - 1) * effectiveHistoryPerPage + 1)} - {Math.min(filteredTrades.length, historyPage * effectiveHistoryPerPage)} de {filteredTrades.length} trades
-                    </p>
-
-                    {effectiveHistoryPerPage > 0 && totalHistoryPages > 1 && (
-                      <div className="flex items-center gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => setHistoryPage(1)} 
-                          disabled={historyPage === 1}
-                          className="hidden sm:flex"
-                        >
-                          Primera
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => setHistoryPage(p => Math.max(1, p - 1))} 
-                          disabled={historyPage === 1}
-                        >
-                          <ChevronLeft className="h-4 w-4" /> Anteriores
-                        </Button>
-                        
-                        <div className="flex items-center gap-1 mx-2">
-                          <span className="text-sm font-medium">Página {historyPage}</span>
-                          <span className="text-sm text-muted-foreground">de {totalHistoryPages}</span>
-                        </div>
-                        
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => setHistoryPage(p => Math.min(totalHistoryPages, p + 1))} 
-                          disabled={historyPage === totalHistoryPages}
-                        >
-                          Siguientes <ChevronRight className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => setHistoryPage(totalHistoryPages)} 
-                          disabled={historyPage === totalHistoryPages}
-                          className="hidden sm:flex"
-                        >
-                          Última
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
+            <AccountHistoryTab trades={allTrades} />
         </TabsContent>
 
         {/* EAs Content */}
         <TabsContent value="eas" className="space-y-4">
-            <AccountEAsTab 
-              accountId={accountId as string}
-              eas={eas}
-              liveData={liveData}
-              statsByEA={statsByEA}
-              onEAAdded={handleEAAdded}
-              onDeleteEA={deleteEA}
-            />
+            <div className="flex justify-between items-center bg-card p-4 rounded-lg border border-border">
+                <div>
+                   <h3 className="text-lg font-semibold flex items-center gap-2">
+                       <Bot className="h-5 w-5 text-primary" />
+                       Expert Advisors
+                   </h3>
+                   <p className="text-sm text-muted-foreground">Gestiona tus EAs y monitorea su rendimiento individual por Magic Number.</p>
+                </div>
+                
+                <CreateEADialog accountId={accountId} onSuccess={handleEAAdded} />
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {eas.map(ea => {
+                    const stats = statsByEA[ea.id] || { totalTrades: 0, profit: 0, winRate: 0 };
+                    
+                    const eaPositions = liveData?.positions?.filter((p: any) => p.magic_number == ea.magicNumber) || [];
+                    
+                    return (
+                        <EAStatsCard 
+                            key={ea.id} 
+                            ea={ea} 
+                            accountId={accountId} 
+                            stats={stats} 
+                            eaPositions={eaPositions} 
+                            onDelete={deleteEA} 
+                        />
+                    );
+                })}
+                
+                {eas.length === 0 && (
+                    <div className="col-span-full flex flex-col items-center justify-center p-8 border border-dashed border-border rounded-lg text-muted-foreground">
+                        <Bot className="h-10 w-10 mb-2 opacity-50" />
+                        <p>No tienes EAs registrados.</p>
+                        <p className="text-sm">Añade uno para ver sus estadísticas por separado.</p>
+                    </div>
+                )}
+            </div>
         </TabsContent>
 
         

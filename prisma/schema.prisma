@@ -38,6 +38,11 @@ model User {
   tradingAccounts TradingAccount[]
   sections        Section[]
   accountTypes    AccountType[]
+  alerts          Alert[]
+
+  // Telegram
+  telegramChatId        String?
+  telegramConnectionToken String? @unique
 
   @@map("user")
 }
@@ -161,6 +166,7 @@ model TradingAccount {
   trades          TradeHistory[]
   snapshots       EquitySnapshot[]
   expertAdvisors  ExpertAdvisor[]
+  alerts          Alert[]
 
   @@index([userId])
   @@index([sectionId])
@@ -258,4 +264,30 @@ model EquitySnapshot {
   @@index([accountId])
   @@index([timestamp])
   @@map("equity_snapshots")
+}
+
+// ============================================
+// Alertas
+// ============================================
+model Alert {
+  id        String   @id @default(cuid())
+  userId    String
+  accountId String
+  type      String   // "BALANCE", "EQUITY"
+  condition String   // "GT", "LT"
+  value     Float
+  
+  active    Boolean  @default(true)
+  triggered Boolean  @default(false) // Si es de un solo uso o para evitar spam
+  
+  lastTriggeredAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account   TradingAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([accountId])
+  @@map("alerts")
 }

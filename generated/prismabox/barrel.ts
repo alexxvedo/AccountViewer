@@ -8,5 +8,6 @@ export * from "./TradingAccount";
 export * from "./ExpertAdvisor";
 export * from "./TradeHistory";
 export * from "./EquitySnapshot";
+export * from "./Alert";
 export * from "./__nullable__";
 export * from "./__transformDate__";

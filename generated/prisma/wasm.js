@@ -127,7 +127,9 @@ exports.Prisma.UserScalarFieldEnum = {
   emailVerified: 'emailVerified',
   image: 'image',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  telegramChatId: 'telegramChatId',
+  telegramConnectionToken: 'telegramConnectionToken'
 };
 
 exports.Prisma.SessionScalarFieldEnum = {
@@ -244,6 +246,20 @@ exports.Prisma.EquitySnapshotScalarFieldEnum = {
   timestamp: 'timestamp'
 };
 
+exports.Prisma.AlertScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  accountId: 'accountId',
+  type: 'type',
+  condition: 'condition',
+  value: 'value',
+  active: 'active',
+  triggered: 'triggered',
+  lastTriggeredAt: 'lastTriggeredAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -258,7 +274,9 @@ exports.Prisma.UserOrderByRelevanceFieldEnum = {
   id: 'id',
   email: 'email',
   name: 'name',
-  image: 'image'
+  image: 'image',
+  telegramChatId: 'telegramChatId',
+  telegramConnectionToken: 'telegramConnectionToken'
 };
 
 exports.Prisma.SessionOrderByRelevanceFieldEnum = {
@@ -331,6 +349,14 @@ exports.Prisma.EquitySnapshotOrderByRelevanceFieldEnum = {
   accountId: 'accountId'
 };
 
+exports.Prisma.AlertOrderByRelevanceFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  accountId: 'accountId',
+  type: 'type',
+  condition: 'condition'
+};
+
 
 exports.Prisma.ModelName = {
   User: 'User',
@@ -342,7 +368,8 @@ exports.Prisma.ModelName = {
   TradingAccount: 'TradingAccount',
   ExpertAdvisor: 'ExpertAdvisor',
   TradeHistory: 'TradeHistory',
-  EquitySnapshot: 'EquitySnapshot'
+  EquitySnapshot: 'EquitySnapshot',
+  Alert: 'Alert'
 };
 
 /**

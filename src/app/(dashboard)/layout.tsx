@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   LayoutDashboard,
-  Wallet,
+
   Settings,
   ChevronLeft,
   TrendingUp,
@@ -15,6 +15,8 @@ import {
   LogOut,
   Loader2,
   Menu,
+  ChevronDown,
+  Bot,
 } from "lucide-react";
 
 interface NavItem {
@@ -34,6 +36,37 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  
+  const [accounts, setAccounts] = useState<any[]>([]);
+  const [eas, setEas] = useState<any[]>([]);
+  const [expandedSections, setExpandedSections] = useState({
+      overview: true,
+      eas: true
+  });
+
+  const toggleSection = (section: 'overview' | 'eas') => {
+      setExpandedSections(prev => ({
+          ...prev,
+          [section]: !prev[section]
+      }));
+  };
+
+  useEffect(() => {
+      if (!session?.user?.id) return;
+      
+      const fetchSidebarData = async () => {
+          try {
+              const [accRes, easRes] = await Promise.all([
+                   fetch(`/api/users/${session.user.id}/accounts`),
+                   fetch(`/api/users/${session.user.id}/eas`)
+              ]);
+              if (accRes.ok) setAccounts(await accRes.json());
+              if (easRes.ok) setEas(await easRes.json());
+          } catch(e) { console.error(e); }
+      };
+      
+      fetchSidebarData();
+  }, [session?.user?.id]);
 
   useEffect(() => {
     if (!isPending && !session) {
@@ -57,11 +90,6 @@ export default function DashboardLayout({
     await signOut();
     router.push("/login");
   };
-
-  const mainNav: NavItem[] = [
-    { icon: LayoutDashboard, label: "Overview", href: "/dashboard" },
-    { icon: Wallet, label: "Cuentas", href: "/dashboard/accounts" },
-  ];
 
   const secondaryNav: NavItem[] = [
     { icon: Settings, label: "Ajustes", href: "/dashboard/settings" },
@@ -127,44 +155,96 @@ export default function DashboardLayout({
         </div>
 
         {/* Main Navigation */}
-        <nav className="flex-1 space-y-1 p-3">
-          <div
-            className={cn(
-              "mb-2 px-3 text-xs font-medium uppercase tracking-wider text-muted-foreground",
-              collapsed && "hidden"
-            )}
-          >
-            Principal
-          </div>
-          {mainNav.map((item) => {
-            const active = isActive(item.href);
-            return (
-              <Link
-                key={item.label}
-                href={item.href}
-                onClick={() => setMobileOpen(false)}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
-                  active
-                    ? "bg-sidebar-accent text-foreground"
-                    : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-foreground",
-                  collapsed && "justify-center px-2"
-                )}
-              >
-                <item.icon className="h-5 w-5 shrink-0" />
-                {!collapsed && (
-                  <>
-                    <span className="flex-1">{item.label}</span>
-                    {item.badge && (
-                      <span className="rounded-full bg-accent/20 px-2 py-0.5 text-xs font-medium text-accent">
-                        {item.badge}
-                      </span>
-                    )}
-                  </>
-                )}
-              </Link>
-            );
-          })}
+        <nav className="flex-1 space-y-1 p-3 overflow-y-auto">
+           {/* Section: Overview (Expandable) */}
+           <div>
+               <button 
+                  onClick={() => toggleSection("overview")}
+                  className={cn(
+                      "flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-all hover:bg-sidebar-accent/50 hover:text-foreground",
+                      isActive("/dashboard") && !pathname.includes("/dashboard/settings") && !pathname.includes("/dashboard/help") ? "text-foreground" : "text-muted-foreground",
+                      collapsed && "justify-center px-2"
+                  )}
+               >
+                   <div className="flex items-center gap-3">
+                       <LayoutDashboard className="h-5 w-5 shrink-0" />
+                       {!collapsed && <span>Overview</span>}
+                   </div>
+                   {!collapsed && (
+                       <ChevronDown className={cn("h-4 w-4 transition-transform", !expandedSections.overview && "-rotate-90")} />
+                   )}
+               </button>
+
+               {!collapsed && expandedSections.overview && (
+                   <div className="ml-4 mt-1 space-y-1 border-l border-border pl-2">
+                       <Link
+                            href="/dashboard"
+                            onClick={() => setMobileOpen(false)}
+                            className={cn(
+                                "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
+                                pathname === "/dashboard" ? "bg-sidebar-accent text-foreground font-medium" : "text-muted-foreground hover:text-foreground"
+                            )}
+                        >
+                            <span>General</span>
+                        </Link>
+                        {accounts.map(acc => (
+                            <Link
+                                key={acc.id}
+                                href={`/accounts/${acc.id}`}
+                                onClick={() => setMobileOpen(false)}
+                                className={cn(
+                                    "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
+                                    pathname === `/accounts/${acc.id}` ? "bg-sidebar-accent text-foreground font-medium" : "text-muted-foreground hover:text-foreground"
+                                )}
+                            >
+                                <span className="truncate">{acc.nickname || `Account ${acc.accountNumber}`}</span>
+                            </Link>
+                        ))}
+                   </div>
+               )}
+           </div>
+
+           {/* Section: Expert Advisors (Expandable) */}
+           <div>
+               <button 
+                  onClick={() => toggleSection("eas")}
+                  className={cn(
+                      "flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-all hover:bg-sidebar-accent/50 hover:text-foreground",
+                      pathname.includes("/ea/") ? "text-foreground" : "text-muted-foreground",
+                      collapsed && "justify-center px-2"
+                  )}
+               >
+                   <div className="flex items-center gap-3">
+                       <Bot className="h-5 w-5 shrink-0" />
+                       {!collapsed && <span>Expert Advisors</span>}
+                   </div>
+                   {!collapsed && (
+                       <ChevronDown className={cn("h-4 w-4 transition-transform", !expandedSections.eas && "-rotate-90")} />
+                   )}
+               </button>
+
+               {!collapsed && expandedSections.eas && (
+                   <div className="ml-4 mt-1 space-y-1 border-l border-border pl-2">
+                       {eas.map(ea => (
+                           <Link
+                                key={ea.id}
+                                href={`/accounts/${ea.accountId}/ea/${ea.id}`}
+                                onClick={() => setMobileOpen(false)}
+                                className={cn(
+                                    "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
+                                    pathname.includes(ea.id) ? "bg-sidebar-accent text-foreground font-medium" : "text-muted-foreground hover:text-foreground"
+                                )}
+                            >
+                                <span className="truncate">{ea.name}</span>
+                            </Link>
+                       ))}
+                       {eas.length === 0 && (
+                           <span className="px-2 py-1.5 text-xs text-muted-foreground italic">No EAs found</span>
+                       )}
+                   </div>
+               )}
+           </div>
+
 
           <div
             className={cn(

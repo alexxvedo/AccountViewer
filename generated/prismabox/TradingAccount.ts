@@ -38,6 +38,8 @@ export const TradingAccountRelations = t.Object(
         image: __nullable__(t.String()),
         createdAt: t.Date(),
         updatedAt: t.Date(),
+        telegramChatId: __nullable__(t.String()),
+        telegramConnectionToken: __nullable__(t.String()),
       },
       { additionalProperties: false },
     ),
@@ -116,6 +118,25 @@ export const TradingAccountRelations = t.Object(
           accountId: t.String(),
           name: t.String(),
           magicNumber: t.Integer(),
+          createdAt: t.Date(),
+          updatedAt: t.Date(),
+        },
+        { additionalProperties: false },
+      ),
+      { additionalProperties: false },
+    ),
+    alerts: t.Array(
+      t.Object(
+        {
+          id: t.String(),
+          userId: t.String(),
+          accountId: t.String(),
+          type: t.String(),
+          condition: t.String(),
+          value: t.Number(),
+          active: t.Boolean(),
+          triggered: t.Boolean(),
+          lastTriggeredAt: __nullable__(t.Date()),
           createdAt: t.Date(),
           updatedAt: t.Date(),
         },
@@ -248,6 +269,22 @@ export const TradingAccountRelationsInputCreate = t.Object(
         { additionalProperties: false },
       ),
     ),
+    alerts: t.Optional(
+      t.Object(
+        {
+          connect: t.Array(
+            t.Object(
+              {
+                id: t.String({ additionalProperties: false }),
+              },
+              { additionalProperties: false },
+            ),
+            { additionalProperties: false },
+          ),
+        },
+        { additionalProperties: false },
+      ),
+    ),
   },
   { additionalProperties: false },
 );
@@ -345,6 +382,31 @@ export const TradingAccountRelationsInputUpdate = t.Partial(
         ),
       ),
       expertAdvisors: t.Partial(
+        t.Object(
+          {
+            connect: t.Array(
+              t.Object(
+                {
+                  id: t.String({ additionalProperties: false }),
+                },
+                { additionalProperties: false },
+              ),
+              { additionalProperties: false },
+            ),
+            disconnect: t.Array(
+              t.Object(
+                {
+                  id: t.String({ additionalProperties: false }),
+                },
+                { additionalProperties: false },
+              ),
+              { additionalProperties: false },
+            ),
+          },
+          { additionalProperties: false },
+        ),
+      ),
+      alerts: t.Partial(
         t.Object(
           {
             connect: t.Array(
@@ -494,6 +556,7 @@ export const TradingAccountSelect = t.Partial(
       trades: t.Boolean(),
       snapshots: t.Boolean(),
       expertAdvisors: t.Boolean(),
+      alerts: t.Boolean(),
       _count: t.Boolean(),
     },
     { additionalProperties: false },
@@ -509,6 +572,7 @@ export const TradingAccountInclude = t.Partial(
       trades: t.Boolean(),
       snapshots: t.Boolean(),
       expertAdvisors: t.Boolean(),
+      alerts: t.Boolean(),
       _count: t.Boolean(),
     },
     { additionalProperties: false },
