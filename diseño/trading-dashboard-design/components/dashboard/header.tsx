@@ -10,7 +10,6 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { Search, Bell, Plus, ChevronDown, RefreshCw } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
 
 export function DashboardHeader() {
   return (

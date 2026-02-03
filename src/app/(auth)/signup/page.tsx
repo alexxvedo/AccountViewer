@@ -7,8 +7,9 @@ import { signUp } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Command } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { GMonitorLogo } from "@/components/GMonitorLogo";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -51,12 +52,11 @@ export default function SignupPage() {
 
   return (
     <div className="container relative h-screen flex-col items-center justify-center md:grid lg:max-w-none lg:grid-cols-2 lg:px-0">
-      {/* Columna Derecha: Visual / Arte (Invertido respecto a login si se quisiera, pero mantendré consistencia) */}
-      <div className="relative hidden h-full flex-col bg-muted p-10 text-white lg:flex dark:border-r">
-        <div className="absolute inset-0 bg-zinc-900" />
-        <div className="relative z-20 flex items-center text-lg font-medium">
-          <Command className="mr-2 h-6 w-6" />
-          AccountViewer
+      {/* Columna Derecha: Visual / Arte */}
+      <div className="relative hidden h-full flex-col bg-sidebar p-10 text-sidebar-foreground lg:flex border-r border-border">
+        <div className="absolute inset-0 bg-sidebar" />
+        <div className="relative z-20">
+          <GMonitorLogo size={36} />
         </div>
         <div className="relative z-20 mt-auto">
           <blockquote className="space-y-2">

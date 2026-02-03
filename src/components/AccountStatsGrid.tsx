@@ -35,7 +35,7 @@ export const AccountStatsGrid = memo(function AccountStatsGrid({
 }: AccountStatsGridProps) {
 
     return (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
         <Card className="border-border bg-card relative overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Floating P/L</CardTitle>

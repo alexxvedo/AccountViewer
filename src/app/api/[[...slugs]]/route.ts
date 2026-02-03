@@ -24,7 +24,9 @@ import { ExpertAdvisorPlain } from "@/generated/prismabox/ExpertAdvisor";
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
   liveDataCache: Map<string, { data: any; timestamp: number }>;
-  commandQueue: Map<string, { commands: { id: string; type: string; ticket?: number; createdAt: number }[] }>;
+  commandQueue: Map<string, { commands: { id: string; type: string; ticket?: number; symbol?: string; timeframe?: number; bars?: number; requestId?: string; sl?: number; tp?: number; createdAt: number }[] }>;
+  // Cache para chart data (OHLC) del EA
+  chartDataCache: Map<string, { data: { symbol: string; timeframe: number; bars: Array<{ time: number; open: number; high: number; low: number; close: number; volume?: number }> }; timestamp: number }>;
   // Cache para rate limiting de alertas (evitar spam)
   alertCooldowns: Map<string, number>;
 };
@@ -187,8 +189,12 @@ const liveDataCache = globalForPrisma.liveDataCache ?? new Map<string, { data: a
 if (process.env.NODE_ENV !== "production") globalForPrisma.liveDataCache = liveDataCache;
 
 // Cola de comandos para el EA (cerrar trades, etc.)
-const commandQueue = globalForPrisma.commandQueue ?? new Map<string, { commands: { id: string; type: string; ticket?: number; createdAt: number }[] }>();
+const commandQueue = globalForPrisma.commandQueue ?? new Map<string, { commands: { id: string; type: string; ticket?: number; symbol?: string; timeframe?: number; bars?: number; requestId?: string; sl?: number; tp?: number; createdAt: number }[] }>();
 if (process.env.NODE_ENV !== "production") globalForPrisma.commandQueue = commandQueue;
+
+// Cache para datos de gráficos OHLC del EA (clave: accountId:symbol:timeframe)
+const chartDataCache = globalForPrisma.chartDataCache ?? new Map<string, { data: { symbol: string; timeframe: number; bars: Array<{ time: number; open: number; high: number; low: number; close: number; volume?: number }> }; timestamp: number }>();
+if (process.env.NODE_ENV !== "production") globalForPrisma.chartDataCache = chartDataCache;
 
 
 // ============================================
@@ -1095,7 +1101,7 @@ const app = new Elysia({ prefix: "/api" })
 
       // --- GENERACIÓN EXCEL ---
       const workbook = new ExcelJS.Workbook();
-      workbook.creator = "AccountViewer App";
+      workbook.creator = "GMonitor App";
       workbook.created = new Date();
 
       // HOJA 1: RESUMEN COMPARATIVO
@@ -1441,7 +1447,7 @@ const app = new Elysia({ prefix: "/api" })
 
       // --- GENERACIÓN EXCEL PROFESIONAL ---
       const workbook = new ExcelJS.Workbook();
-      workbook.creator = "AccountViewer App";
+      workbook.creator = "GMonitor App";
       workbook.created = new Date();
 
       // ==========================================
@@ -2025,6 +2031,11 @@ const app = new Elysia({ prefix: "/api" })
           id: c.id,
           type: c.type,
           ticket: c.ticket,
+          symbol: c.symbol,
+          timeframe: c.timeframe,
+          bars: c.bars,
+          sl: c.sl,
+          tp: c.tp,
         }))
       };
     },
@@ -2452,6 +2463,209 @@ const app = new Elysia({ prefix: "/api" })
       } catch (error: any) {
         return { success: false, error: error.message };
       }
+    }
+  )
+
+  // ============================================
+  // CHART DATA - Solicitar datos de gráfico (Frontend -> EA)
+  // ============================================
+  .post(
+    "/accounts/:id/request-chart",
+    async ({ params, body, request }) => {
+      const account = await prisma.tradingAccount.findUnique({
+        where: { id: params.id },
+      });
+
+      if (!account) {
+        return { success: false, error: "Cuenta no encontrada" };
+      }
+
+      await verifySession(request.headers, account.userId);
+
+      // Generar request ID único
+      const requestId = crypto.randomUUID();
+
+      // Añadir comando a la cola del EA
+      const queue = commandQueue.get(params.id) || { commands: [] };
+      queue.commands.push({
+        id: crypto.randomUUID(),
+        type: "request_chart_data",
+        symbol: body.symbol,
+        timeframe: body.timeframe,
+        bars: body.bars || 200,
+        requestId,
+        createdAt: Date.now(),
+      });
+      commandQueue.set(params.id, queue);
+
+      return { 
+        success: true, 
+        message: `Solicitud de datos OHLC enviada para ${body.symbol}`,
+        requestId,
+      };
+    },
+    {
+      params: t.Object({
+        id: t.String(),
+      }),
+      body: t.Object({
+        symbol: t.String(),
+        timeframe: t.Number(), // En minutos: 1, 5, 15, 60, 240, 1440
+        bars: t.Optional(t.Number()),
+      }),
+    }
+  )
+
+  // ============================================
+  // CHART DATA - EA envía datos OHLC
+  // ============================================
+  .post(
+    "/ea/chart-data",
+    async ({ body }) => {
+      // Validar token
+      const account = await prisma.tradingAccount.findUnique({
+        where: { connectionToken: body.token },
+      });
+
+      if (!account) {
+        return { success: false, error: "Token inválido" };
+      }
+
+      // Clave de caché: accountId:symbol:timeframe
+      const cacheKey = `${account.id}:${body.symbol}:${body.timeframe}`;
+
+      // Guardar en caché
+      chartDataCache.set(cacheKey, {
+        data: {
+          symbol: body.symbol,
+          timeframe: body.timeframe,
+          bars: body.bars,
+        },
+        timestamp: Date.now(),
+      });
+
+      console.log(`[CHART] Cached ${body.bars.length} bars for ${body.symbol} TF=${body.timeframe}`);
+
+      return { 
+        success: true, 
+        message: `Datos OHLC recibidos: ${body.symbol} (${body.bars.length} barras)`,
+      };
+    },
+    {
+      body: t.Object({
+        msg_type: t.Optional(t.Literal("chart_data")),
+        token: t.String(),
+        symbol: t.String(),
+        timeframe: t.Number(),
+        bars: t.Array(t.Object({
+          time: t.Number(),
+          open: t.Number(),
+          high: t.Number(),
+          low: t.Number(),
+          close: t.Number(),
+          volume: t.Optional(t.Number()),
+        })),
+        requestId: t.Optional(t.String()),
+      }),
+    }
+  )
+
+  // ============================================
+  // CHART DATA - Frontend obtiene datos cacheados
+  // ============================================
+  .get(
+    "/accounts/:id/chart-data/:symbol",
+    async ({ params, query, request }) => {
+      const account = await prisma.tradingAccount.findUnique({
+        where: { id: params.id },
+      });
+
+      if (!account) {
+        return { success: false, error: "Cuenta no encontrada", available: false, data: null };
+      }
+
+      await verifySession(request.headers, account.userId);
+
+      const timeframe = parseInt(query.timeframe || "60");
+      const cacheKey = `${params.id}:${params.symbol}:${timeframe}`;
+      
+      const cached = chartDataCache.get(cacheKey);
+
+      // TTL: 5 min para TF <= H1, 30 min para D1
+      const ttl = timeframe >= 1440 ? 30 * 60 * 1000 : 5 * 60 * 1000;
+      const isValid = cached && (Date.now() - cached.timestamp < ttl);
+
+      if (isValid && cached) {
+        return {
+          success: true,
+          available: true,
+          data: cached.data,
+          timestamp: cached.timestamp,
+        };
+      }
+
+      return {
+        success: true,
+        available: false,
+        data: null,
+        message: "Datos no disponibles. Solicita al EA con POST /accounts/:id/request-chart",
+      };
+    },
+    {
+      params: t.Object({
+        id: t.String(),
+        symbol: t.String(),
+      }),
+      query: t.Object({
+        timeframe: t.Optional(t.String()),
+      }),
+    }
+  )
+
+  // ============================================
+  // MODIFY TRADE - Modificar SL/TP de una posición
+  // ============================================
+  .post(
+    "/accounts/:id/modify-trade",
+    async ({ params, body, request }) => {
+      const account = await prisma.tradingAccount.findUnique({
+        where: { id: params.id },
+      });
+
+      if (!account) {
+        return { success: false, error: "Cuenta no encontrada" };
+      }
+
+      await verifySession(request.headers, account.userId);
+
+      // Añadir comando a la cola del EA
+      const queue = commandQueue.get(params.id) || { commands: [] };
+      queue.commands.push({
+        id: crypto.randomUUID(),
+        type: "modify_trade",
+        ticket: body.ticket,
+        sl: body.sl,
+        tp: body.tp,
+        createdAt: Date.now(),
+      });
+      commandQueue.set(params.id, queue);
+
+      console.log(`[MODIFY] Trade #${body.ticket} - SL: ${body.sl}, TP: ${body.tp}`);
+
+      return { 
+        success: true, 
+        message: `Comando de modificación enviado para ticket #${body.ticket}`,
+      };
+    },
+    {
+      params: t.Object({
+        id: t.String(),
+      }),
+      body: t.Object({
+        ticket: t.Number(),
+        sl: t.Optional(t.Number()),
+        tp: t.Optional(t.Number()),
+      }),
     }
   );
 

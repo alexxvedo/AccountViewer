@@ -108,7 +108,7 @@ export function AlertsDialog({ accountId, alerts: initialAlerts }: AlertsDialogP
             const res = await fetch("/api/telegram/link", { method: "POST" })
             const data = await res.json()
             const token = data.token
-            const botUsername = "AccountViewerBot_bot"
+            const botUsername = "GMonitorBot_bot"
             window.open(`https://t.me/${botUsername}?start=${token}`, '_blank')
 
             // Check status after a delay

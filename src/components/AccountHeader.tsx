@@ -35,9 +35,7 @@ export const AccountHeader = memo(function AccountHeader({
 
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div className="flex items-center space-x-4">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 text-primary border border-primary/20">
-                        <Activity className="h-7 w-7" />
-                    </div>
+                    
                     <div>
                         <h2 className="text-3xl font-bold tracking-tight flex items-center gap-3">
                             {account.nickname || `Cuenta ${account.accountNumber}`}

@@ -7,17 +7,26 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   LayoutDashboard,
-
   Settings,
-  ChevronLeft,
-  TrendingUp,
   HelpCircle,
   LogOut,
   Loader2,
   Menu,
   ChevronDown,
   Bot,
+  Sun,
+  Moon,
+  ChevronUp,
 } from "lucide-react";
+import { useTheme } from "next-themes";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { GMonitorLogo } from "@/components/GMonitorLogo";
 
 interface NavItem {
   icon: React.ComponentType<{ className?: string }>;
@@ -36,6 +45,7 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { theme, setTheme } = useTheme();
   
   const [accounts, setAccounts] = useState<any[]>([]);
   const [eas, setEas] = useState<any[]>([]);
@@ -121,37 +131,21 @@ export default function DashboardLayout({
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed left-0 top-0 z-50 flex h-screen flex-col border-r border-border bg-sidebar transition-all duration-300 lg:relative",
+          "fixed left-0 top-0 z-50 flex h-screen flex-col bg-sidebar transition-all duration-300 lg:relative",
           collapsed ? "w-16" : "w-64",
           mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
+        {/* Clickable border to toggle collapse */}
+        <div
+          onClick={() => setCollapsed(!collapsed)}
+          className="absolute right-0 top-0 h-full w-1 cursor-ew-resize bg-border hover:bg-accent transition-colors z-10 hidden lg:block"
+          title={collapsed ? "Expandir sidebar" : "Colapsar sidebar"}
+        />
+
         {/* Logo */}
-        <div className="flex h-16 items-center justify-between border-b border-border px-4">
-          {!collapsed && (
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent">
-                <TrendingUp className="h-5 w-5 text-accent-foreground" />
-              </div>
-              <span className="text-lg font-semibold text-foreground">
-                AccountViewer
-              </span>
-            </div>
-          )}
-          {collapsed && (
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent mx-auto">
-              <TrendingUp className="h-5 w-5 text-accent-foreground" />
-            </div>
-          )}
-          <button
-            onClick={() => setCollapsed(!collapsed)}
-            className={cn(
-              "rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground",
-              collapsed && "hidden"
-            )}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
+        <div className="flex h-16 items-center justify-center border-b border-border px-4">
+          <GMonitorLogo size={32} showText={!collapsed} />
         </div>
 
         {/* Main Navigation */}
@@ -278,35 +272,53 @@ export default function DashboardLayout({
 
         {/* User Section */}
         <div className="border-t border-border p-3">
-          <div
-            className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2",
-              collapsed && "justify-center px-0"
-            )}
-          >
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-accent/20 text-sm font-semibold text-accent">
-              {userInitials}
-            </div>
-            {!collapsed && (
-              <div className="flex-1 truncate">
-                <p className="text-sm font-medium text-foreground">
-                  {session.user?.name || "Usuario"}
-                </p>
-                <p className="text-xs text-muted-foreground truncate">
-                  {session.user?.email}
-                </p>
-              </div>
-            )}
-          </div>
-          {!collapsed && (
-            <button
-              onClick={handleSignOut}
-              className="mt-2 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent/50 hover:text-foreground"
-            >
-              <LogOut className="h-4 w-4" />
-              Cerrar Sesión
-            </button>
-          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className={cn(
+                  "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left hover:bg-sidebar-accent transition-colors",
+                  collapsed && "justify-center px-0"
+                )}
+              >
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-accent/20 text-sm font-semibold text-accent shrink-0">
+                  {userInitials}
+                </div>
+                {!collapsed && (
+                  <>
+                    <div className="flex-1 truncate">
+                      <p className="text-sm font-medium text-foreground">
+                        {session.user?.name || "Usuario"}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {session.user?.email}
+                      </p>
+                    </div>
+                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                  </>
+                )}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" side="top" className="w-56">
+              <DropdownMenuItem onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
+                {theme === "dark" ? (
+                  <>
+                    <Sun className="mr-2 h-4 w-4" />
+                    Tema claro
+                  </>
+                ) : (
+                  <>
+                    <Moon className="mr-2 h-4 w-4" />
+                    Tema oscuro
+                  </>
+                )}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
+                <LogOut className="mr-2 h-4 w-4" />
+                Cerrar sesión
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </aside>
 
@@ -320,9 +332,7 @@ export default function DashboardLayout({
           >
             <Menu className="h-5 w-5" />
           </button>
-          <span className="text-sm font-semibold text-foreground">
-            AccountViewer
-          </span>
+          <GMonitorLogo size={28} />
         </header>
 
         {/* Page Content */}

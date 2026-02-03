@@ -106,6 +106,7 @@ import { AccountStatsGrid } from "@/components/AccountStatsGrid";
 import { AccountHistoryTab } from "@/components/AccountHistoryTab";
 import { AlertsDialog } from "@/components/AlertsDialog";
 import { AccountPageSkeleton } from "@/components/skeletons/AccountPageSkeleton";
+import { PositionCharts } from "@/components/PositionCharts";
 
 
 interface Position {
@@ -462,8 +463,8 @@ export default function AccountPage() {
                 return newSet;
               });
               setLiveData(liveData.data);
-              // Forzar sincronización de historial
-              syncHistory(true);
+              // El EA ya envía el trade cerrado via /ea/trade-closed
+              // No es necesario sincronizar todo el historial
               fetchTrades();
               clearInterval(checkClosed);
             }
@@ -507,8 +508,7 @@ export default function AccountPage() {
             if (liveData.data.positions.length === 0) {
               setClosingAll(false);
               setLiveData(liveData.data);
-              // Forzar sincronización de historial
-              syncHistory(true);
+              // El EA envía cada trade cerrado individualmente
               fetchTrades();
               clearInterval(checkClosed);
             }
@@ -946,6 +946,11 @@ export default function AccountPage() {
 
         {/* Positions Tab */}
         <TabsContent value="positions" className="space-y-6">
+          {/* Real-time Charts for Open Positions */}
+          {positions.length > 0 && (
+            <PositionCharts accountId={accountId} positions={positions} />
+          )}
+          
           <Card className="border-border bg-card">
             <CardHeader>
               <div className="flex items-center justify-between">

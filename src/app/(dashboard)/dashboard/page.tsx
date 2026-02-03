@@ -664,7 +664,7 @@ export default function DashboardPage() {
             variant="outline"
             onClick={() => setSelectedSection("all")}
             className={cn(
-              "flex h-auto shrink-0 flex-col items-start gap-1 border-zinc-600 px-4 py-3 text-left transition-all",
+              "flex h-auto shrink-0 flex-col items-start gap-1 border-border px-4 py-3 text-left transition-all",
               selectedSection === "all"
                 ? "border-accent bg-accent/10 text-foreground"
                 : "bg-card text-muted-foreground hover:border-accent/50 hover:bg-secondary"
@@ -695,7 +695,7 @@ export default function DashboardPage() {
                   "group relative flex h-auto shrink-0 flex-col items-start gap-1 rounded-lg border px-4 py-3 text-left transition-all cursor-pointer",
                   isSelected
                     ? "border-accent bg-accent/10 text-foreground"
-                    : "border-zinc-600 bg-card text-muted-foreground hover:border-accent/50 hover:bg-secondary"
+                    : "border-border bg-card text-muted-foreground hover:border-accent/50 hover:bg-secondary"
                 )}
                 onClick={() => setSelectedSection(section.id)}
               >
@@ -703,7 +703,7 @@ export default function DashboardPage() {
                 <div className="flex w-full items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <div
-                      className="flex h-7 w-7 items-center justify-center rounded-md text-xs font-bold text-white"
+                      className="flex h-7 w-7 items-center justify-center rounded-md text-xs font-bold text-primary-foreground"
                       style={{ backgroundColor: section.color || "#71717A" }}
                     >
                       {section.name[0]?.toUpperCase()}
@@ -836,13 +836,13 @@ export default function DashboardPage() {
                     </div>
                     <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center gap-1.5">
-                        <div 
+                        <div
                           className={cn(
                             "h-2 w-2 rounded-full",
-                            account.isConnected ? "bg-green-500 animate-pulse" : "bg-red-500/50"
-                          )} 
+                            account.isConnected ? "bg-profit animate-pulse" : "bg-loss/50"
+                          )}
                         />
-                        <span className={cn("text-xs", account.isConnected ? "text-green-500" : "text-muted-foreground")}>
+                        <span className={cn("text-xs", account.isConnected ? "text-profit" : "text-muted-foreground")}>
                           {account.isConnected ? "Conectado" : "Desconectado"}
                         </span>
                       </div>

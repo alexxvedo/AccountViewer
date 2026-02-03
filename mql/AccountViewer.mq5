@@ -554,6 +554,100 @@ void CheckPendingCommands()
       return;
    }
    
+   // Buscar request_chart_data
+   if(StringFind(response, "\"type\":\"request_chart_data\"") >= 0)
+   {
+      // Extraer symbol
+      string symbol = "";
+      int symbolPos = StringFind(response, "\"symbol\":\"");
+      if(symbolPos >= 0)
+      {
+         int symbolStart = symbolPos + 10;
+         int symbolEnd = StringFind(response, "\"", symbolStart);
+         symbol = StringSubstr(response, symbolStart, symbolEnd - symbolStart);
+      }
+      
+      // Extraer timeframe
+      int timeframe = 60; // default H1
+      int tfPos = StringFind(response, "\"timeframe\":");
+      if(tfPos >= 0)
+      {
+         int tfStart = tfPos + 12;
+         int tfEnd = StringFind(response, ",", tfStart);
+         if(tfEnd < 0) tfEnd = StringFind(response, "}", tfStart);
+         string tfStr = StringSubstr(response, tfStart, tfEnd - tfStart);
+         timeframe = (int)StringToInteger(tfStr);
+      }
+      
+      // Extraer bars
+      int bars = 200; // default
+      int barsPos = StringFind(response, "\"bars\":");
+      if(barsPos >= 0)
+      {
+         int barsStart = barsPos + 7;
+         int barsEnd = StringFind(response, ",", barsStart);
+         if(barsEnd < 0) barsEnd = StringFind(response, "}", barsStart);
+         string barsStr = StringSubstr(response, barsStart, barsEnd - barsStart);
+         bars = (int)StringToInteger(barsStr);
+      }
+      
+      if(StringLen(symbol) > 0)
+      {
+         Log("Comando recibido: SOLICITAR DATOS DE GRÁFICO " + symbol + " TF=" + IntegerToString(timeframe) + " Bars=" + IntegerToString(bars));
+         SendChartData(symbol, timeframe, bars);
+      }
+      return;
+   }
+   
+   // Buscar modify_trade
+   if(StringFind(response, "\"type\":\"modify_trade\"") >= 0)
+   {
+      // Extraer ticket
+      int ticket = 0;
+      int ticketPos = StringFind(response, "\"ticket\":");
+      if(ticketPos >= 0)
+      {
+         int ticketStart = ticketPos + 9;
+         int ticketEnd = StringFind(response, ",", ticketStart);
+         if(ticketEnd < 0) ticketEnd = StringFind(response, "}", ticketStart);
+         string ticketStr = StringSubstr(response, ticketStart, ticketEnd - ticketStart);
+         ticket = (int)StringToInteger(ticketStr);
+      }
+      
+      // Extraer sl (puede ser null o número)
+      double sl = 0;
+      int slPos = StringFind(response, "\"sl\":");
+      if(slPos >= 0)
+      {
+         int slStart = slPos + 5;
+         int slEnd = StringFind(response, ",", slStart);
+         if(slEnd < 0) slEnd = StringFind(response, "}", slStart);
+         string slStr = StringSubstr(response, slStart, slEnd - slStart);
+         if(StringFind(slStr, "null") < 0)
+            sl = StringToDouble(slStr);
+      }
+      
+      // Extraer tp (puede ser null o número)
+      double tp = 0;
+      int tpPos = StringFind(response, "\"tp\":");
+      if(tpPos >= 0)
+      {
+         int tpStart = tpPos + 5;
+         int tpEnd = StringFind(response, ",", tpStart);
+         if(tpEnd < 0) tpEnd = StringFind(response, "}", tpStart);
+         string tpStr = StringSubstr(response, tpStart, tpEnd - tpStart);
+         if(StringFind(tpStr, "null") < 0)
+            tp = StringToDouble(tpStr);
+      }
+      
+      if(ticket > 0)
+      {
+         Log("Comando recibido: MODIFICAR POSICIÓN #" + IntegerToString(ticket) + " SL=" + DoubleToString(sl, 5) + " TP=" + DoubleToString(tp, 5));
+         ModifyPosition(ticket, sl, tp);
+      }
+      return;
+   }
+   
    // Buscar close_trade con ticket
    int ticketPos = StringFind(response, "\"ticket\":");
    while(ticketPos >= 0)
@@ -573,6 +667,131 @@ void CheckPendingCommands()
       }
       
       ticketPos = StringFind(response, "\"ticket\":", ticketPos + 1);
+   }
+}
+
+//+------------------------------------------------------------------+
+//| Enviar datos OHLC de gráfico al servidor                          |
+//+------------------------------------------------------------------+
+void SendChartData(string symbol, int timeframeMin, int barsCount)
+{
+   // Convertir minutos a ENUM_TIMEFRAMES
+   ENUM_TIMEFRAMES tf = PERIOD_H1;
+   switch(timeframeMin)
+   {
+      case 1:    tf = PERIOD_M1; break;
+      case 5:    tf = PERIOD_M5; break;
+      case 15:   tf = PERIOD_M15; break;
+      case 30:   tf = PERIOD_M30; break;
+      case 60:   tf = PERIOD_H1; break;
+      case 240:  tf = PERIOD_H4; break;
+      case 1440: tf = PERIOD_D1; break;
+      default:   tf = PERIOD_H1; break;
+   }
+   
+   // Obtener datos OHLC
+   MqlRates rates[];
+   ArraySetAsSeries(rates, true);
+   
+   int copied = CopyRates(symbol, tf, 0, barsCount, rates);
+   
+   if(copied <= 0)
+   {
+      Log("ERROR: No se pudieron obtener datos para " + symbol + ". Error: " + IntegerToString(GetLastError()));
+      return;
+   }
+   
+   Log("Chart data obtenido: " + symbol + " (" + IntegerToString(copied) + " barras)");
+   
+   // Construir JSON
+   string json = "{";
+   json += "\"msg_type\":\"chart_data\",";
+   json += "\"token\":\"" + InpConnectionToken + "\",";
+   json += "\"symbol\":\"" + symbol + "\",";
+   json += "\"timeframe\":" + IntegerToString(timeframeMin) + ",";
+   json += "\"bars\":[";
+   
+   // Invertir orden para enviar de más antiguo a más reciente
+   for(int i = copied - 1; i >= 0; i--)
+   {
+      if(i < copied - 1) json += ",";
+      
+      json += "{";
+      json += "\"time\":" + IntegerToString((long)rates[i].time) + ",";
+      json += "\"open\":" + DoubleToString(rates[i].open, 5) + ",";
+      json += "\"high\":" + DoubleToString(rates[i].high, 5) + ",";
+      json += "\"low\":" + DoubleToString(rates[i].low, 5) + ",";
+      json += "\"close\":" + DoubleToString(rates[i].close, 5) + ",";
+      json += "\"volume\":" + IntegerToString((long)rates[i].tick_volume);
+      json += "}";
+   }
+   
+   json += "]}";
+   
+   string url = InpServerURL + "/ea/chart-data";
+   if(SendHTTPPost(url, json))
+   {
+      Log("Chart data enviado: " + symbol + " (" + IntegerToString(copied) + " barras)");
+   }
+   else
+   {
+      Log("ERROR: No se pudo enviar chart data para " + symbol);
+   }
+}
+
+//+------------------------------------------------------------------+
+//| Modificar SL/TP de una posición existente                         |
+//+------------------------------------------------------------------+
+bool ModifyPosition(int ticket, double sl, double tp)
+{
+   // Seleccionar la posición por ticket
+   if(!PositionSelectByTicket(ticket))
+   {
+      Log("ERROR: No se pudo seleccionar la posición #" + IntegerToString(ticket));
+      return false;
+   }
+   
+   // Obtener datos de la posición
+   string symbol = PositionGetString(POSITION_SYMBOL);
+   double currentSL = PositionGetDouble(POSITION_SL);
+   double currentTP = PositionGetDouble(POSITION_TP);
+   
+   // Si sl o tp son 0, mantener los actuales
+   double newSL = (sl > 0) ? sl : currentSL;
+   double newTP = (tp > 0) ? tp : currentTP;
+   
+   // Preparar la solicitud de modificación
+   MqlTradeRequest request;
+   MqlTradeResult result;
+   ZeroMemory(request);
+   ZeroMemory(result);
+   
+   request.action = TRADE_ACTION_SLTP;
+   request.position = ticket;
+   request.symbol = symbol;
+   request.sl = NormalizeDouble(newSL, (int)SymbolInfoInteger(symbol, SYMBOL_DIGITS));
+   request.tp = NormalizeDouble(newTP, (int)SymbolInfoInteger(symbol, SYMBOL_DIGITS));
+   
+   // Enviar la orden
+   if(!OrderSend(request, result))
+   {
+      Log("ERROR: OrderSend falló para modificar #" + IntegerToString(ticket) + 
+          " Error: " + IntegerToString(GetLastError()) + 
+          " RetCode: " + IntegerToString(result.retcode));
+      return false;
+   }
+   
+   if(result.retcode == TRADE_RETCODE_DONE)
+   {
+      Log("Posición #" + IntegerToString(ticket) + " modificada - SL: " + 
+          DoubleToString(newSL, 5) + " TP: " + DoubleToString(newTP, 5));
+      return true;
+   }
+   else
+   {
+      Log("ERROR: Modificación rechazada para #" + IntegerToString(ticket) + 
+          " RetCode: " + IntegerToString(result.retcode));
+      return false;
    }
 }
 
