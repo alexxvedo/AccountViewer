@@ -343,7 +343,7 @@ export default function EADetailsPage() {
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
       {/* Header */}
-      <div className="flex items-center justify-between space-y-2">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center space-x-4">
             <Link href={`/accounts/${accountId}`}>
                 <Button variant="outline" size="icon">
@@ -351,11 +351,11 @@ export default function EADetailsPage() {
                 </Button>
             </Link>
             <div>
-                <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-                    <Bot className="h-8 w-8 text-primary" />
-                    {ea.name}
+                <h2 className="text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-2">
+                    <Bot className="h-6 w-6 md:h-8 md:w-8 text-primary" />
+                    <span className="truncate max-w-[200px] md:max-w-none">{ea.name}</span>
                     {isLive && (
-                        <span className="relative flex h-3 w-3">
+                        <span className="relative flex h-3 w-3 shrink-0">
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                           <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
                         </span>
@@ -363,7 +363,7 @@ export default function EADetailsPage() {
                 </h2>
                 <div className="flex items-center gap-2 text-muted-foreground">
                     <span className="bg-secondary px-2 py-0.5 rounded text-xs font-mono">#{ea.magicNumber}</span>
-                    <span>Expert Advisor Real-time Stats</span>
+                    <span className="text-xs hidden sm:inline">Expert Advisor Real-time Stats</span>
                 </div>
             </div>
         </div>
