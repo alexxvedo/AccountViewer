@@ -770,30 +770,32 @@ export default function AccountPage() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="bg-secondary/50 p-1">
-          <TabsTrigger value="overview" className="data-[state=active]:bg-card">
-            <BarChart3 className="mr-2 h-4 w-4" />
-            Overview
+        {/* Tabs compactos en móvil - solo iconos, texto completo en desktop */}
+        <TabsList className="bg-secondary/50 p-1 w-full grid grid-cols-4 md:inline-flex md:w-auto">
+          <TabsTrigger value="overview" className="data-[state=active]:bg-card px-2 md:px-4">
+            <BarChart3 className="h-4 w-4 md:mr-2" />
+            <span className="hidden md:inline">Overview</span>
           </TabsTrigger>
-          <TabsTrigger value="positions" className="data-[state=active]:bg-card">
-            <CircleDot className="mr-2 h-4 w-4" />
-            Posiciones ({positions.length})
+          <TabsTrigger value="positions" className="data-[state=active]:bg-card px-2 md:px-4">
+            <CircleDot className="h-4 w-4 md:mr-2" />
+            <span className="hidden md:inline">Posiciones</span>
+            <span className="ml-1 text-xs">({positions.length})</span>
           </TabsTrigger>
-          <TabsTrigger value="history" className="data-[state=active]:bg-card">
-            <History className="mr-2 h-4 w-4" />
-            Historial
+          <TabsTrigger value="history" className="data-[state=active]:bg-card px-2 md:px-4">
+            <History className="h-4 w-4 md:mr-2" />
+            <span className="hidden md:inline">Historial</span>
           </TabsTrigger>
-          <TabsTrigger value="eas" className="data-[state=active]:bg-card">
-            <Bot className="mr-2 h-4 w-4" />
-             EAs ({eas.length})
+          <TabsTrigger value="eas" className="data-[state=active]:bg-card px-2 md:px-4">
+            <Bot className="h-4 w-4 md:mr-2" />
+            <span className="hidden md:inline">EAs</span>
+            <span className="ml-1 text-xs">({eas.length})</span>
           </TabsTrigger>
-          
         </TabsList>
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6">
           {/* Equity Curve + Radar Chart */}
-          <div className="grid gap-6 lg:grid-cols-3">
+          <div className="grid gap-4 md:gap-6 lg:grid-cols-3">
             {/* Equity Curve (2 columns) */}
             <Card className="border-border bg-card lg:col-span-3">
               <CardHeader>
@@ -869,7 +871,7 @@ export default function AccountPage() {
           </div>
 
           {/* Stats Grid (4 cards) */}
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-2 lg:grid-cols-4">
             <Card className="border-border bg-card">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Profit Factor</CardTitle>
@@ -1007,43 +1009,43 @@ export default function AccountPage() {
                   <Table>
                     <TableHeader>
                       <TableRow className="border-border hover:bg-transparent min-h-full">
-                        <TableHead className="text-muted-foreground">Ticket</TableHead>
+                        <TableHead className="text-muted-foreground hidden md:table-cell">Ticket</TableHead>
                         <TableHead className="text-muted-foreground">Símbolo</TableHead>
                         <TableHead className="text-muted-foreground">Tipo</TableHead>
-                        <TableHead className="text-muted-foreground">Volumen</TableHead>
-                        <TableHead className="text-muted-foreground">Apertura</TableHead>
-                        <TableHead className="text-muted-foreground">Actual</TableHead>
-                        <TableHead className="text-muted-foreground">SL</TableHead>
-                        <TableHead className="text-muted-foreground">TP</TableHead>
+                        <TableHead className="text-muted-foreground hidden sm:table-cell">Vol</TableHead>
+                        <TableHead className="text-muted-foreground hidden lg:table-cell">Apertura</TableHead>
+                        <TableHead className="text-muted-foreground hidden lg:table-cell">Actual</TableHead>
+                        <TableHead className="text-muted-foreground hidden xl:table-cell">SL</TableHead>
+                        <TableHead className="text-muted-foreground hidden xl:table-cell">TP</TableHead>
                         <TableHead className="text-muted-foreground">P&L</TableHead>
-                        <TableHead className="text-right text-muted-foreground">Acción</TableHead>
+                        <TableHead className="text-right text-muted-foreground"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {paginatedPositions.map((p) => (
                         <TableRow key={p.ticket} className="border-border hover:bg-secondary/50">
-                          <TableCell className="font-mono text-sm text-muted-foreground">#{p.ticket}</TableCell>
-                          <TableCell className="font-medium text-foreground">{p.symbol}</TableCell>
+                          <TableCell className="font-mono text-sm text-muted-foreground hidden md:table-cell">#{p.ticket}</TableCell>
+                          <TableCell className="font-medium text-foreground text-sm">{p.symbol}</TableCell>
                           <TableCell>
-                            <Badge variant="outline" className={cn("font-medium uppercase", p.type === "buy" ? "bg-profit/20 text-profit border-profit/30" : "bg-loss/20 text-loss border-loss/30")}>
-                              {p.type}
+                            <Badge variant="outline" className={cn("font-medium uppercase text-xs", p.type === "buy" ? "bg-profit/20 text-profit border-profit/30" : "bg-loss/20 text-loss border-loss/30")}>
+                              {p.type === "buy" ? "B" : "S"}
                             </Badge>
                           </TableCell>
-                          <TableCell className="font-mono">{p.volume}</TableCell>
-                          <TableCell className="font-mono">{p.open_price.toFixed(5)}</TableCell>
-                          <TableCell className="font-mono">{p.current_price.toFixed(5)}</TableCell>
-                          <TableCell className="font-mono text-loss">{p.sl > 0 ? p.sl.toFixed(5) : "—"}</TableCell>
-                          <TableCell className="font-mono text-profit">{p.tp > 0 ? p.tp.toFixed(5) : "—"}</TableCell>
-                          <TableCell className={cn("font-mono font-medium", p.profit >= 0 ? "text-profit" : "text-loss")}>
+                          <TableCell className="font-mono text-sm hidden sm:table-cell">{p.volume}</TableCell>
+                          <TableCell className="font-mono text-sm hidden lg:table-cell">{p.open_price.toFixed(5)}</TableCell>
+                          <TableCell className="font-mono text-sm hidden lg:table-cell">{p.current_price.toFixed(5)}</TableCell>
+                          <TableCell className="font-mono text-sm text-loss hidden xl:table-cell">{p.sl > 0 ? p.sl.toFixed(5) : "—"}</TableCell>
+                          <TableCell className="font-mono text-sm text-profit hidden xl:table-cell">{p.tp > 0 ? p.tp.toFixed(5) : "—"}</TableCell>
+                          <TableCell className={cn("font-mono font-medium text-sm", p.profit >= 0 ? "text-profit" : "text-loss")}>
                             {p.profit >= 0 ? "+" : ""}${p.profit.toFixed(2)}
                           </TableCell>
-                          <TableCell className="text-right">
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              onClick={() => closePosition(p.ticket)} 
+                          <TableCell className="text-right p-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => closePosition(p.ticket)}
                               disabled={closingTickets.has(p.ticket) || closingAll}
-                              className="text-loss hover:text-loss hover:bg-loss/10"
+                              className="text-loss hover:text-loss hover:bg-loss/10 h-7 w-7 p-0"
                             >
                               {closingTickets.has(p.ticket) ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />

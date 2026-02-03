@@ -131,24 +131,24 @@ export const AccountHistoryTab = memo(function AccountHistoryTab({ trades }: Acc
             <CardDescription>{filteredTrades.length} operaciones</CardDescription>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Select 
-              value={historyPerPage.toString()} 
+            <Select
+              value={historyPerPage.toString()}
               onValueChange={(v) => { setHistoryPerPage(Number(v)); setHistoryPage(1); }}
             >
-              <SelectTrigger className="w-[130px] bg-secondary border-border">
-                <SelectValue placeholder="Tratos por pág." />
+              <SelectTrigger className="w-[90px] sm:w-[130px] bg-secondary border-border text-xs sm:text-sm">
+                <SelectValue placeholder="Por pág." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="10">10 por pág.</SelectItem>
-                <SelectItem value="20">20 por pág.</SelectItem>
-                <SelectItem value="50">50 por pág.</SelectItem>
-                <SelectItem value="100">100 por pág.</SelectItem>
-                <SelectItem value="0">Ver Todos</SelectItem>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="20">20</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+                <SelectItem value="0">Todos</SelectItem>
               </SelectContent>
             </Select>
 
             <Select value={historyResultFilter} onValueChange={(v) => { setHistoryResultFilter(v as any); setHistoryPage(1); }}>
-              <SelectTrigger className="w-[130px] bg-secondary border-border">
+              <SelectTrigger className="w-[90px] sm:w-[130px] bg-secondary border-border text-xs sm:text-sm">
                 <SelectValue placeholder="Filtrar" />
               </SelectTrigger>
               <SelectContent>
@@ -159,7 +159,7 @@ export const AccountHistoryTab = memo(function AccountHistoryTab({ trades }: Acc
             </Select>
 
             <Select value={periodFilter} onValueChange={(v) => { setPeriodFilter(v as any); setHistoryPage(1); }}>
-              <SelectTrigger className="w-[130px] bg-secondary border-border">
+              <SelectTrigger className="w-[90px] sm:w-[130px] bg-secondary border-border text-xs sm:text-sm">
                 <SelectValue placeholder="Período" />
               </SelectTrigger>
               <SelectContent>
@@ -167,7 +167,7 @@ export const AccountHistoryTab = memo(function AccountHistoryTab({ trades }: Acc
                 <SelectItem value="today">Hoy</SelectItem>
                 <SelectItem value="week">7 días</SelectItem>
                 <SelectItem value="month">30 días</SelectItem>
-                <SelectItem value="custom">Personalizado</SelectItem>
+                <SelectItem value="custom">Custom</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -202,14 +202,14 @@ export const AccountHistoryTab = memo(function AccountHistoryTab({ trades }: Acc
               <Table>
                 <TableHeader>
                   <TableRow className="border-border hover:bg-transparent">
-                    <TableHead className="text-muted-foreground">Ticket</TableHead>
+                    <TableHead className="text-muted-foreground hidden md:table-cell">Ticket</TableHead>
                     <TableHead className="text-muted-foreground">Símbolo</TableHead>
                     <TableHead className="text-muted-foreground">Tipo</TableHead>
-                    <TableHead className="text-muted-foreground">Vol.</TableHead>
-                    <TableHead className="text-muted-foreground">Apertura</TableHead>
-                    <TableHead className="text-muted-foreground">Cierre</TableHead>
-                    <TableHead className="text-muted-foreground">Fecha Apertura</TableHead>
-                    <TableHead className="text-muted-foreground">Fecha Cierre</TableHead>
+                    <TableHead className="text-muted-foreground hidden sm:table-cell">Vol.</TableHead>
+                    <TableHead className="text-muted-foreground hidden lg:table-cell">Apertura</TableHead>
+                    <TableHead className="text-muted-foreground hidden lg:table-cell">Cierre</TableHead>
+                    <TableHead className="text-muted-foreground hidden xl:table-cell">F. Apertura</TableHead>
+                    <TableHead className="text-muted-foreground hidden sm:table-cell">F. Cierre</TableHead>
                     <TableHead className="text-muted-foreground">P&L</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -218,26 +218,26 @@ export const AccountHistoryTab = memo(function AccountHistoryTab({ trades }: Acc
                     const pl = t.totalProfit;
                     return (
                       <TableRow key={t.id} className="border-border hover:bg-secondary/50">
-                        <TableCell className="font-mono text-sm text-muted-foreground">#{t.ticket}</TableCell>
-                        <TableCell className="font-medium text-foreground">{t.symbol}</TableCell>
+                        <TableCell className="font-mono text-sm text-muted-foreground hidden md:table-cell">#{t.ticket}</TableCell>
+                        <TableCell className="font-medium text-foreground text-sm">{t.symbol}</TableCell>
                         <TableCell>
-                          <Badge variant="outline" className={cn("font-medium uppercase", t.type === "buy" ? "bg-profit/20 text-profit border-profit/30" : "bg-loss/20 text-loss border-loss/30")}>
-                            {t.type}
+                          <Badge variant="outline" className={cn("font-medium uppercase text-xs", t.type === "buy" ? "bg-profit/20 text-profit border-profit/30" : "bg-loss/20 text-loss border-loss/30")}>
+                            {t.type === "buy" ? "B" : "S"}
                           </Badge>
                         </TableCell>
-                        <TableCell className="font-mono">{t.volume}</TableCell>
-                        <TableCell className="font-mono">{t.openPrice.toFixed(5)}</TableCell>
-                        <TableCell className="font-mono">{t.closePrice.toFixed(5)}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground font-mono">
-                          {new Date(t.openTime).toLocaleString("es-ES", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                        <TableCell className="font-mono text-sm hidden sm:table-cell">{t.volume}</TableCell>
+                        <TableCell className="font-mono text-sm hidden lg:table-cell">{t.openPrice.toFixed(5)}</TableCell>
+                        <TableCell className="font-mono text-sm hidden lg:table-cell">{t.closePrice.toFixed(5)}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground font-mono hidden xl:table-cell">
+                          {new Date(t.openTime).toLocaleString("es-ES", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground font-mono">
-                          {t.parsedCloseTime.toLocaleString("es-ES", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                        <TableCell className="text-xs text-muted-foreground font-mono hidden sm:table-cell">
+                          {t.parsedCloseTime.toLocaleString("es-ES", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-2">
-                            {pl >= 0 ? <Check className="h-4 w-4 text-profit" /> : <X className="h-4 w-4 text-loss" />}
-                            <span className={cn("font-mono font-medium", pl >= 0 ? "text-profit" : "text-loss")}>
+                          <div className="flex items-center gap-1">
+                            {pl >= 0 ? <Check className="h-3 w-3 text-profit" /> : <X className="h-3 w-3 text-loss" />}
+                            <span className={cn("font-mono font-medium text-sm", pl >= 0 ? "text-profit" : "text-loss")}>
                               {pl >= 0 ? "+" : ""}${pl.toFixed(2)}
                             </span>
                           </div>
@@ -250,48 +250,51 @@ export const AccountHistoryTab = memo(function AccountHistoryTab({ trades }: Acc
             </div>
 
             {/* Pagination Controls */}
-            <div className="flex items-center justify-between border-t border-border pt-4 mt-4">
-              <p className="text-sm text-muted-foreground">
-                Mostrando {Math.min(filteredTrades.length, (currentPage - 1) * effectiveHistoryPerPage + 1)} - {Math.min(filteredTrades.length, currentPage * effectiveHistoryPerPage)} de {filteredTrades.length} trades
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-border pt-4 mt-4">
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                {Math.min(filteredTrades.length, (currentPage - 1) * effectiveHistoryPerPage + 1)}-{Math.min(filteredTrades.length, currentPage * effectiveHistoryPerPage)} de {filteredTrades.length}
               </p>
 
               {effectiveHistoryPerPage > 0 && totalHistoryPages > 1 && (
-                <div className="flex items-center gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => setHistoryPage(1)} 
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setHistoryPage(1)}
                     disabled={currentPage === 1}
                     className="hidden sm:flex"
                   >
                     Primera
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => setHistoryPage(p => Math.max(1, p - 1))} 
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setHistoryPage(p => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
+                    className="h-8 px-2"
                   >
-                    <ChevronLeft className="h-4 w-4" /> Anteriores
+                    <ChevronLeft className="h-4 w-4" />
+                    <span className="hidden sm:inline ml-1">Ant</span>
                   </Button>
-                  
-                  <div className="flex items-center gap-1 mx-2">
-                    <span className="text-sm font-medium">Página {currentPage}</span>
-                    <span className="text-sm text-muted-foreground">de {totalHistoryPages}</span>
+
+                  <div className="flex items-center gap-1 mx-1 sm:mx-2">
+                    <span className="text-xs sm:text-sm font-medium">{currentPage}/{totalHistoryPages}</span>
                   </div>
-                  
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => setHistoryPage(p => Math.min(totalHistoryPages, p + 1))} 
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setHistoryPage(p => Math.min(totalHistoryPages, p + 1))}
                     disabled={currentPage === totalHistoryPages}
+                    className="h-8 px-2"
                   >
-                    Siguientes <ChevronRight className="h-4 w-4" />
+                    <span className="hidden sm:inline mr-1">Sig</span>
+                    <ChevronRight className="h-4 w-4" />
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => setHistoryPage(totalHistoryPages)} 
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setHistoryPage(totalHistoryPages)}
                     disabled={currentPage === totalHistoryPages}
                     className="hidden sm:flex"
                   >

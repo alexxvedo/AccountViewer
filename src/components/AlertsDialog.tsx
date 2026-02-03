@@ -203,7 +203,7 @@ export function AlertsDialog({ accountId, alerts: initialAlerts }: AlertsDialogP
                     )}
                 </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-hidden flex flex-col">
+            <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-[600px] max-h-[85vh] overflow-hidden flex flex-col">
                 <DialogHeader className="pb-4 border-b">
                     <DialogTitle className="flex items-center gap-2 text-lg">
                         <Bell className="h-5 w-5" />
@@ -248,51 +248,56 @@ export function AlertsDialog({ accountId, alerts: initialAlerts }: AlertsDialogP
                     {/* Create Alert */}
                     <div className="space-y-3">
                         <h4 className="text-sm font-medium">Crear Nueva Alerta</h4>
-                        <div className="flex gap-2">
-                            <Select value={type} onValueChange={setType}>
-                                <SelectTrigger className="w-[130px]">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="BALANCE">Balance</SelectItem>
-                                    <SelectItem value="EQUITY">Equity</SelectItem>
-                                    <SelectItem value="MARGIN">Margen</SelectItem>
-                                </SelectContent>
-                            </Select>
+                        <div className="flex flex-col sm:flex-row gap-2">
+                            <div className="flex gap-2">
+                                <Select value={type} onValueChange={setType}>
+                                    <SelectTrigger className="flex-1 sm:w-[110px]">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="BALANCE">Balance</SelectItem>
+                                        <SelectItem value="EQUITY">Equity</SelectItem>
+                                        <SelectItem value="MARGIN">Margen</SelectItem>
+                                    </SelectContent>
+                                </Select>
 
-                            <Select value={condition} onValueChange={setCondition}>
-                                <SelectTrigger className="w-[140px]">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="GT">Mayor que (&gt;)</SelectItem>
-                                    <SelectItem value="LT">Menor que (&lt;)</SelectItem>
-                                </SelectContent>
-                            </Select>
+                                <Select value={condition} onValueChange={setCondition}>
+                                    <SelectTrigger className="flex-1 sm:w-[100px]">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="GT">&gt; Mayor</SelectItem>
+                                        <SelectItem value="LT">&lt; Menor</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
 
-                            <Input
-                                type="number"
-                                placeholder="Valor..."
-                                className="flex-1"
-                                value={value}
-                                onChange={(e) => setValue(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleCreateAlert()}
-                            />
+                            <div className="flex gap-2 flex-1">
+                                <Input
+                                    type="number"
+                                    inputMode="decimal"
+                                    placeholder="Valor..."
+                                    className="flex-1 text-base"
+                                    value={value}
+                                    onChange={(e) => setValue(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleCreateAlert()}
+                                />
 
-                            <Button
-                                onClick={handleCreateAlert}
-                                disabled={!value || creating}
-                                className="px-4"
-                            >
-                                {creating ? (
-                                    <RefreshCw className="h-4 w-4 animate-spin" />
-                                ) : (
-                                    <Plus className="h-4 w-4" />
-                                )}
-                            </Button>
+                                <Button
+                                    onClick={handleCreateAlert}
+                                    disabled={!value || creating}
+                                    className="px-4"
+                                >
+                                    {creating ? (
+                                        <RefreshCw className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <Plus className="h-4 w-4" />
+                                    )}
+                                </Button>
+                            </div>
                         </div>
                         <p className="text-xs text-muted-foreground">
-                            Recibirás una notificación cuando {getTypeLabel(type).toLowerCase()} sea {condition === 'GT' ? 'mayor' : 'menor'} que el valor indicado.
+                            Notificación cuando {getTypeLabel(type).toLowerCase()} sea {condition === 'GT' ? 'mayor' : 'menor'} que el valor.
                         </p>
                     </div>
 

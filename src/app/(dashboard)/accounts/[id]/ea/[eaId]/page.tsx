@@ -16,7 +16,9 @@ import {
   BarChart3,
   CalendarIcon,
   CalendarDays,
-  Download
+  Download,
+  CircleDot,
+  History as HistoryIcon
 } from "lucide-react";
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
@@ -495,9 +497,15 @@ export default function EADetailsPage() {
 
       {/* TABS Interface */}
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList>
-            <TabsTrigger value="overview">Resumen</TabsTrigger>
-            <TabsTrigger value="positions" className="relative">
+        {/* Scrollable tabs container for mobile */}
+        <div className="overflow-x-auto -mx-2 px-2 scrollbar-hide">
+          <TabsList className="bg-secondary/50 p-1 inline-flex w-auto min-w-full sm:w-auto">
+            <TabsTrigger value="overview" className="data-[state=active]:bg-card whitespace-nowrap">
+              <BarChart3 className="mr-2 h-4 w-4" />
+              Resumen
+            </TabsTrigger>
+            <TabsTrigger value="positions" className="relative data-[state=active]:bg-card whitespace-nowrap">
+                <CircleDot className="mr-2 h-4 w-4" />
                 Posiciones
                 {livePositions.length > 0 && (
                      <Badge variant="destructive" className="ml-2 h-4 w-4 rounded-full p-0 flex items-center justify-center text-[10px]">
@@ -505,8 +513,12 @@ export default function EADetailsPage() {
                      </Badge>
                 )}
             </TabsTrigger>
-            <TabsTrigger value="history">Historial</TabsTrigger>
-        </TabsList>
+            <TabsTrigger value="history" className="data-[state=active]:bg-card whitespace-nowrap">
+              <HistoryIcon className="mr-2 h-4 w-4" />
+              Historial
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* TAB 1: OVERVIEW (Charts & Calendar) */}
         <TabsContent value="overview" className="space-y-4">

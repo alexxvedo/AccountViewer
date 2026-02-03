@@ -259,9 +259,13 @@ export function TradingChart({ accountId, symbol, positions, currentPrice }: Tra
   useEffect(() => {
     if (!chartContainerRef.current) return;
 
+    // Altura responsiva: 300px en móvil, 450px en desktop
+    const isMobile = window.innerWidth < 768;
+    const chartHeight = isMobile ? 300 : 450;
+
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
-      height: 450,
+      height: chartHeight,
       layout: {
         background: { color: "transparent" },
         textColor: "rgba(255, 255, 255, 0.7)",
@@ -323,13 +327,11 @@ export function TradingChart({ accountId, symbol, positions, currentPrice }: Tra
     }
   }, [isDragging]);
 
-  // Mouse events para drag y tooltip
+  // Mouse and touch events para drag y tooltip
   useEffect(() => {
     const container = chartContainerRef.current;
     if (!container || !chartRef.current) return;
 
-    const priceScale = chartRef.current.priceScale("right");
-    
     // Convertir Y a precio
     const yToPrice = (y: number): number | null => {
       const series = candleSeriesRef.current;
@@ -341,9 +343,10 @@ export function TradingChart({ accountId, symbol, positions, currentPrice }: Tra
       }
     };
 
-    // Encontrar línea cercana
-    const findNearbyLine = (price: number): LineInfo | null => {
-      const threshold = 0.0005 * (currentPrice || 1); // 0.05% del precio
+    // Encontrar línea cercana (threshold más grande en móvil)
+    const findNearbyLine = (price: number, isMobile = false): LineInfo | null => {
+      const baseThreshold = 0.0005 * (currentPrice || 1); // 0.05% del precio
+      const threshold = isMobile ? baseThreshold * 3 : baseThreshold; // 3x más tolerancia en móvil
       for (const info of priceLinesRef.current) {
         if (info.lineType !== "entry" && Math.abs(info.price - price) < threshold) {
           return info;
@@ -352,12 +355,13 @@ export function TradingChart({ accountId, symbol, positions, currentPrice }: Tra
       return null;
     };
 
-    const handleMouseMove = (e: MouseEvent) => {
+    // Shared handler para mouse y touch move
+    const handleMove = (clientX: number, clientY: number, isMobile = false) => {
       const rect = container.getBoundingClientRect();
-      const y = e.clientY - rect.top;
-      const x = e.clientX - rect.left;
+      const y = clientY - rect.top;
+      const x = clientX - rect.left;
       const price = yToPrice(y);
-      
+
       if (price === null) return;
 
       if (isDragging && dragLineInfo) {
@@ -369,24 +373,24 @@ export function TradingChart({ accountId, symbol, positions, currentPrice }: Tra
           lineInfo.line.applyOptions({ price });
           lineInfo.price = price;
           setDragPrice(price);
-          
+
           // Mostrar tooltip con P&L potencial
           const pos = positions.find(p => p.ticket === dragLineInfo.ticket);
           if (pos) {
             const pl = calculatePotentialPL(pos, price);
             setTooltipInfo({
               visible: true,
-              x: x + 10,
-              y: y - 30,
+              x: Math.min(x + 10, rect.width - 150), // Evitar que salga del contenedor
+              y: Math.max(y - 50, 10), // Más arriba en móvil para no tapar el dedo
               text: `${dragLineInfo.lineType.toUpperCase()}: ${price.toFixed(5)} (${pl >= 0 ? '+' : ''}$${pl.toFixed(2)})`,
               color: dragLineInfo.lineType === "tp" ? "#22c55e" : "#ef4444",
             });
           }
         }
-        container.style.cursor = "ns-resize";
-      } else {
-        // Detectar hover sobre líneas
-        const nearLine = findNearbyLine(price);
+        if (!isMobile) container.style.cursor = "ns-resize";
+      } else if (!isMobile) {
+        // Detectar hover sobre líneas (solo mouse)
+        const nearLine = findNearbyLine(price, false);
         if (nearLine) {
           container.style.cursor = "ns-resize";
           const pos = positions.find(p => p.ticket === nearLine.ticket);
@@ -407,28 +411,31 @@ export function TradingChart({ accountId, symbol, positions, currentPrice }: Tra
       }
     };
 
-    const handleMouseDown = (e: MouseEvent) => {
+    // Shared handler para mouse y touch start
+    const handleStart = (clientX: number, clientY: number, isMobile = false) => {
       const rect = container.getBoundingClientRect();
-      const y = e.clientY - rect.top;
+      const y = clientY - rect.top;
       const price = yToPrice(y);
-      
-      if (price === null) return;
-      
-      const nearLine = findNearbyLine(price);
+
+      if (price === null) return false;
+
+      const nearLine = findNearbyLine(price, isMobile);
       if (nearLine && nearLine.lineType !== "entry") {
         setIsDragging(true);
         setDragLineInfo({ ticket: nearLine.ticket, lineType: nearLine.lineType as "sl" | "tp" });
-        e.preventDefault();
+        return true; // Indica que se inició un drag
       }
+      return false;
     };
 
-    const handleMouseUp = () => {
+    // Shared handler para mouse y touch end
+    const handleEnd = () => {
       if (isDragging && dragLineInfo && dragPrice !== null) {
         // Guardar precio modificado para evitar que vuelva atrás
         const key = `${dragLineInfo.ticket}-${dragLineInfo.lineType}`;
         pendingModificationsRef.current.set(key, dragPrice);
         forceUpdate(n => n + 1); // Forzar re-render para actualizar líneas
-        
+
         // Timeout: si no se confirma en 5 segundos, restaurar (modificación fallida)
         setTimeout(() => {
           if (pendingModificationsRef.current.has(key)) {
@@ -436,7 +443,7 @@ export function TradingChart({ accountId, symbol, positions, currentPrice }: Tra
             forceUpdate(n => n + 1);
           }
         }, 5000);
-        
+
         // Enviar modificación al backend
         const { ticket, lineType } = dragLineInfo;
         if (lineType === "sl") {
@@ -445,29 +452,64 @@ export function TradingChart({ accountId, symbol, positions, currentPrice }: Tra
           modifyTrade(ticket, undefined, dragPrice);
         }
       }
-      
+
       setIsDragging(false);
       setDragLineInfo(null);
       setDragPrice(null);
       setTooltipInfo(null);
     };
 
+    // Mouse events
+    const handleMouseMove = (e: MouseEvent) => handleMove(e.clientX, e.clientY, false);
+    const handleMouseDown = (e: MouseEvent) => {
+      if (handleStart(e.clientX, e.clientY, false)) {
+        e.preventDefault();
+      }
+    };
+    const handleMouseUp = () => handleEnd();
     const handleMouseLeave = () => {
       if (!isDragging) {
         setTooltipInfo(null);
       }
     };
 
+    // Touch events
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 1) {
+        const touch = e.touches[0];
+        if (handleStart(touch.clientX, touch.clientY, true)) {
+          e.preventDefault(); // Prevenir scroll solo si estamos arrastrando una línea
+        }
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 1 && isDragging) {
+        const touch = e.touches[0];
+        handleMove(touch.clientX, touch.clientY, true);
+        e.preventDefault(); // Prevenir scroll durante drag
+      }
+    };
+
+    const handleTouchEnd = () => handleEnd();
+
+    // Agregar listeners
     container.addEventListener("mousemove", handleMouseMove);
     container.addEventListener("mousedown", handleMouseDown);
     container.addEventListener("mouseup", handleMouseUp);
     container.addEventListener("mouseleave", handleMouseLeave);
+    container.addEventListener("touchstart", handleTouchStart, { passive: false });
+    container.addEventListener("touchmove", handleTouchMove, { passive: false });
+    container.addEventListener("touchend", handleTouchEnd);
 
     return () => {
       container.removeEventListener("mousemove", handleMouseMove);
       container.removeEventListener("mousedown", handleMouseDown);
       container.removeEventListener("mouseup", handleMouseUp);
       container.removeEventListener("mouseleave", handleMouseLeave);
+      container.removeEventListener("touchstart", handleTouchStart);
+      container.removeEventListener("touchmove", handleTouchMove);
+      container.removeEventListener("touchend", handleTouchEnd);
     };
   }, [isDragging, dragLineInfo, dragPrice, positions, currentPrice, calculatePotentialPL, modifyTrade]);
 
@@ -536,13 +578,13 @@ export function TradingChart({ accountId, symbol, positions, currentPrice }: Tra
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="flex gap-1">
+            <div className="flex flex-wrap gap-1">
               {TIMEFRAMES.map(tf => (
                 <Button
                   key={tf}
                   variant={selectedTimeframe === tf ? "default" : "ghost"}
                   size="sm"
-                  className="h-7 px-2 text-xs"
+                  className="h-6 px-1.5 text-xs md:h-7 md:px-2"
                   onClick={() => setSelectedTimeframe(tf)}
                   disabled={isLoading}
                 >
@@ -563,7 +605,7 @@ export function TradingChart({ accountId, symbol, positions, currentPrice }: Tra
         </div>
       </CardHeader>
       <CardContent className="p-0">
-        <div ref={chartContainerRef} className="w-full h-[450px] relative">
+        <div ref={chartContainerRef} className="w-full h-[300px] md:h-[450px] relative">
           {isLoading && !hasData && (
             <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />

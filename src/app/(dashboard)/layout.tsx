@@ -324,8 +324,8 @@ export default function DashboardLayout({
 
       {/* Main Content */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Mobile Header */}
-        <header className="flex h-14 items-center gap-4 border-b border-border bg-card px-4 lg:hidden">
+        {/* Mobile Header - Sticky */}
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b border-border bg-card px-4 lg:hidden">
           <button
             onClick={() => setMobileOpen(true)}
             className="text-muted-foreground hover:text-foreground"
@@ -337,7 +337,7 @@ export default function DashboardLayout({
 
         {/* Page Content */}
         <main className="flex-1 overflow-y-auto">
-          <div className="container mx-auto max-w-full p-6">
+          <div className="container mx-auto max-w-full p-3 md:p-6">
             {children}
           </div>
         </main>
