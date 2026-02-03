@@ -154,18 +154,24 @@ export const AccountOverviewTab = memo(function AccountOverviewTab({
                     <CardDescription>Crecimiento de la cuenta</CardDescription>
                   </div>
                   <div className="flex items-center gap-1 bg-secondary/30 p-1 rounded-lg">
-                    {(["1W", "1M", "3M", "YTD", "ALL"] as const).map((range) => (
+                    {[
+                      { l: "1S", v: "1W" },
+                      { l: "1M", v: "1M" },
+                      { l: "3M", v: "3M" },
+                      { l: "Anual", v: "YTD" },
+                      { l: "Todo", v: "ALL" }
+                    ].map((item) => (
                       <button
-                        key={range}
-                        onClick={() => setChartRange(range)}
+                        key={item.v}
+                        onClick={() => setChartRange(item.v as any)}
                         className={cn(
                           "px-3 py-1 text-xs font-medium rounded-md transition-all",
-                          chartRange === range
+                          chartRange === item.v
                             ? "bg-background text-foreground shadow-sm"
                             : "text-muted-foreground hover:text-foreground hover:bg-background/50"
                         )}
                       >
-                        {range}
+                        {item.l}
                       </button>
                     ))}
                   </div>
@@ -221,7 +227,7 @@ export const AccountOverviewTab = memo(function AccountOverviewTab({
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             <Card className="border-border bg-card">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Profit Factor</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">Factor de Beneficio</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex items-baseline gap-2">
@@ -231,22 +237,22 @@ export const AccountOverviewTab = memo(function AccountOverviewTab({
                   </span>
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Avg Win: ${avgWin.toFixed(0)} | Avg Loss: ${avgLoss.toFixed(0)}
+                  Gan. Media: ${avgWin.toFixed(0)} | Pérd. Media: ${avgLoss.toFixed(0)}
                 </p>
               </CardContent>
             </Card>
 
             <Card className="border-border bg-card">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Expectancy</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">Esperanza Matemática</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex items-baseline gap-2">
                   <span className={cn("text-3xl font-bold font-mono", expectancy >= 0 ? "text-profit" : "text-loss")}>${expectancy.toFixed(2)}</span>
-                  <span className="text-xs text-muted-foreground">por trade</span>
+                  <span className="text-xs text-muted-foreground">por operación</span>
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Basado en {totalTrades} trades
+                  Basado en {totalTrades} operaciones
                 </p>
               </CardContent>
             </Card>
@@ -259,11 +265,11 @@ export const AccountOverviewTab = memo(function AccountOverviewTab({
                 <div className="flex items-center gap-4">
                   <div>
                     <span className="text-2xl font-bold font-mono text-profit">{maxWins}</span>
-                    <p className="text-xs text-muted-foreground">Wins seguidos</p>
+                    <p className="text-xs text-muted-foreground">Ganancias cons.</p>
                   </div>
                   <div>
                     <span className="text-2xl font-bold font-mono text-loss">{maxLosses}</span>
-                    <p className="text-xs text-muted-foreground">Losses seguidos</p>
+                    <p className="text-xs text-muted-foreground">Pérdidas cons.</p>
                   </div>
                 </div>
               </CardContent>
@@ -271,17 +277,17 @@ export const AccountOverviewTab = memo(function AccountOverviewTab({
 
             <Card className="border-border bg-card">
               <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Long vs Short</CardTitle>
-                <CardTitle className="text-sm font-medium text-muted-foreground">Winrate</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">Compras vs Ventas</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">Tasa Acierto</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Long ({longTrades.length})</span>
+                    <span className="text-muted-foreground">Compras ({longTrades.length})</span>
                     <span className="font-mono text-profit">{longWinRate.toFixed(0)}%</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Short ({shortTrades.length})</span>
+                    <span className="text-muted-foreground">Ventas ({shortTrades.length})</span>
                     <span className="font-mono text-chart-3">{shortWinRate.toFixed(0)}%</span>
                   </div>
                 </div>

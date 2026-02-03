@@ -20,6 +20,7 @@ interface EAStatsCardProps {
     };
     eaPositions: any[];
     onDelete: (id: string) => void;
+    currentBalance?: number;
 }
 
 export const EAStatsCard = memo(function EAStatsCard({ 
@@ -27,11 +28,14 @@ export const EAStatsCard = memo(function EAStatsCard({
     accountId, 
     stats, 
     eaPositions, 
-    onDelete 
+    onDelete,
+    currentBalance = 0
 }: EAStatsCardProps) {
     
     const floatingPnL = eaPositions.reduce((sum: number, p: any) => sum + (p.profit || 0) + (p.swap || 0) + (p.commission || 0), 0);
     const isOperating = eaPositions.length > 0;
+    
+    const estimatedInitial = currentBalance - stats.profit;
 
     return (
         <Card className="border-border bg-card">
@@ -57,7 +61,14 @@ export const EAStatsCard = memo(function EAStatsCard({
                                 {stats.profit >= 0 ? "+" : ""}${stats.profit.toFixed(2)}
                             </span>
                         </div>
-                        <p className="text-[10px] text-muted-foreground uppercase font-semibold">Closed P/L</p>
+                        <p className="text-[10px] text-muted-foreground uppercase font-semibold">
+                            P/L Cerrado
+                            {currentBalance > 0 && (
+                                <span className={cn("ml-1", stats.profit >= 0 ? "text-profit" : "text-loss")}>
+                                    ({estimatedInitial > 0 ? ((stats.profit / estimatedInitial) * 100).toFixed(2) : "0.00"}%)
+                                </span>
+                            )}
+                        </p>
                     </div>
                     
                     {/* Floating PnL Display */}
@@ -67,22 +78,27 @@ export const EAStatsCard = memo(function EAStatsCard({
                             </div>
                             <p className="text-[10px] text-muted-foreground uppercase font-semibold flex items-center justify-end gap-1">
                             {isOperating && <Zap className="h-3 w-3 text-yellow-500 fill-yellow-500" />}
-                            Floating ({eaPositions.length})
+                            Flotante ({eaPositions.length})
+                             {currentBalance > 0 && (
+                                <span className={cn("ml-1", floatingPnL >= 0 ? "text-profit" : "text-loss")}>
+                                    ({((floatingPnL / currentBalance) * 100).toFixed(2)}%)
+                                </span>
+                            )}
                             </p>
                     </div>
                 </div>
                 <div className="flex items-center text-xs text-muted-foreground mb-4">
                     <span className="font-mono bg-secondary/50 px-1.5 py-0.5 rounded mr-2">#{ea.magicNumber}</span>
-                    <span>Magic Number</span>
+                    <span>Número Mágico</span>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border">
                     <div>
-                        <p className="text-xs text-muted-foreground font-medium uppercase">Trades</p>
+                        <p className="text-xs text-muted-foreground font-medium uppercase">Operaciones</p>
                         <p className="text-lg font-semibold">{stats.totalTrades}</p>
                     </div>
                     <div>
-                        <p className="text-xs text-muted-foreground font-medium uppercase">Win Rate</p>
+                        <p className="text-xs text-muted-foreground font-medium uppercase">Tasa de Acierto</p>
                         <p className={cn("text-lg font-semibold", stats.winRate >= 50 ? "text-profit" : "text-loss")}>
                             {stats.winRate.toFixed(1)}%
                         </p>

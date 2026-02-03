@@ -167,7 +167,7 @@ export const AccountHistoryTab = memo(function AccountHistoryTab({ trades }: Acc
                 <SelectItem value="today">Hoy</SelectItem>
                 <SelectItem value="week">7 días</SelectItem>
                 <SelectItem value="month">30 días</SelectItem>
-                <SelectItem value="custom">Custom</SelectItem>
+                <SelectItem value="custom">Personalizado</SelectItem>
               </SelectContent>
             </Select>
           </div>

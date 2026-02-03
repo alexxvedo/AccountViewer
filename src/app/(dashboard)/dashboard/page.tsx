@@ -904,7 +904,7 @@ export default function DashboardPage() {
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground mb-1">Profit/Loss</p>
+                      <p className="text-xs text-muted-foreground mb-1">Beneficio/Pérdida</p>
                       <div className="flex items-center gap-1">
                         {profit >= 0 ? (
                           <TrendingUp className="h-4 w-4 text-profit" />
@@ -913,6 +913,7 @@ export default function DashboardPage() {
                         )}
                         <p className={cn("text-xl font-bold font-mono", profit >= 0 ? "text-profit" : "text-loss")}>
                           {profit >= 0 ? "+" : ""}${Math.abs(profit).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 3 })}
+                          <span className="text-xs ml-1 font-normal opacity-80">({profitPercent.toFixed(2)}%)</span>
                         </p>
                       </div>
                     </div>
@@ -939,15 +940,15 @@ export default function DashboardPage() {
                   {/* Stats Row */}
                   <div className="grid grid-cols-3 gap-2 pt-3 border-t border-border">
                     <div className="text-center">
-                      <p className="text-xs text-muted-foreground">Win Rate</p>
+                      <p className="text-xs text-muted-foreground">Tasa Acierto</p>
                       <p className={cn("text-sm font-bold", winRate >= 50 ? "text-foreground" : "text-warning")}>{winRate}%</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-xs text-muted-foreground">Trades</p>
+                      <p className="text-xs text-muted-foreground">Operaciones</p>
                       <p className="text-sm font-bold text-foreground">{trades}</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-xs text-muted-foreground">P. Factor</p>
+                      <p className="text-xs text-muted-foreground">F. Beneficio</p>
                       <p className="text-sm font-bold text-foreground">{pFactor > 0 ? pFactor.toFixed(2) : "—"}</p>
                     </div>
                   </div>

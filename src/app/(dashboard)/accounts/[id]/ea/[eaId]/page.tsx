@@ -363,7 +363,7 @@ export default function EADetailsPage() {
                 </h2>
                 <div className="flex items-center gap-2 text-muted-foreground">
                     <span className="bg-secondary px-2 py-0.5 rounded text-xs font-mono">#{ea.magicNumber}</span>
-                    <span className="text-xs hidden sm:inline">Expert Advisor Real-time Stats</span>
+                    <span className="text-xs hidden sm:inline">Estadísticas de EA en Tiempo Real</span>
                 </div>
             </div>
         </div>
@@ -435,7 +435,7 @@ export default function EADetailsPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="border-border bg-card relative overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Floating P/L</CardTitle>
+            <CardTitle className="text-sm font-medium">P/L Flotante</CardTitle>
             <Zap className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -443,7 +443,7 @@ export default function EADetailsPage() {
               {stats.floatingPnL >= 0 ? "+" : ""}${stats.floatingPnL.toFixed(2)}
             </div>
             <p className="text-xs text-muted-foreground">
-               Running Positions: {livePositions.length}
+               {stats.totalEquity - stats.floatingPnL > 0 ? ((stats.floatingPnL / (stats.totalEquity - stats.floatingPnL)) * 100).toFixed(2) : "0.00"}% · Posiciones: {livePositions.length}
             </p>
             <div className={cn("absolute right-0 top-0 h-full w-1 opacity-50", stats.floatingPnL >= 0 ? "bg-profit" : "bg-loss")} />
           </CardContent>
@@ -451,7 +451,7 @@ export default function EADetailsPage() {
 
         <Card className="border-border bg-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Equity</CardTitle>
+            <CardTitle className="text-sm font-medium">Equidad Total</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -459,14 +459,14 @@ export default function EADetailsPage() {
               ${stats.totalEquity.toFixed(2)}
             </div>
             <p className="text-xs text-muted-foreground">
-              Balance + Floating
+              Balance: ${(stats.totalEquity - stats.floatingPnL).toFixed(2)}
             </p>
           </CardContent>
         </Card>
 
         <Card className="border-border bg-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Profit (Close)</CardTitle>
+            <CardTitle className="text-sm font-medium">Beneficio Total (Cerrado)</CardTitle>
              <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -474,14 +474,20 @@ export default function EADetailsPage() {
                {stats.totalClosedProfit >= 0 ? "+" : ""}${stats.totalClosedProfit.toFixed(2)}
             </div>
             <p className="text-xs text-muted-foreground">
-              {stats.winningTrades} W / {stats.losingTrades} L ({stats.winRate.toFixed(0)}%)
+              <span className={cn(stats.totalClosedProfit >= 0 ? "text-profit" : "text-loss")}>
+                  {stats.totalClosedProfit >= 0 ? "+" : ""}
+                  {(stats.totalEquity - stats.floatingPnL - stats.totalClosedProfit) > 0 
+                      ? ((stats.totalClosedProfit / (stats.totalEquity - stats.floatingPnL - stats.totalClosedProfit)) * 100).toFixed(2) 
+                      : "0.00"}%
+              </span>
+              {" "}· {stats.winningTrades} G / {stats.losingTrades} P
             </p>
           </CardContent>
         </Card>
 
         <Card className="border-border bg-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Profit Factor</CardTitle>
+            <CardTitle className="text-sm font-medium">Factor de Beneficio</CardTitle>
             <Target className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -489,7 +495,7 @@ export default function EADetailsPage() {
               {stats.profitFactor.toFixed(2)}
             </div>
             <p className="text-xs text-muted-foreground">
-              Exp. Payoff: ${stats.expectedPayoff.toFixed(2)}
+              Esperanza Mat.: ${stats.expectedPayoff.toFixed(2)}
             </p>
           </CardContent>
         </Card>
@@ -632,7 +638,7 @@ export default function EADetailsPage() {
                                                 <TableCell className="font-medium text-foreground">{p.symbol}</TableCell>
                                                 <TableCell>
                                                     <Badge variant="outline" className={cn("font-medium uppercase", p.type === "buy" ? "bg-profit/20 text-profit border-profit/30" : "bg-loss/20 text-loss border-loss/30")}>
-                                                        {p.type}
+                                                        {p.type === "buy" ? "COMPRA" : "VENTA"}
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell className="font-mono">{p.volume}</TableCell>
@@ -674,17 +680,17 @@ export default function EADetailsPage() {
                                                 <span className="text-xs text-muted-foreground">#{p.ticket}</span>
                                             </div>
                                             <Badge variant="outline" className={cn("font-medium uppercase text-xs", p.type === "buy" ? "bg-profit/20 text-profit border-profit/30" : "bg-loss/20 text-loss border-loss/30")}>
-                                                {p.type} {p.volume}
+                                                {p.type === "buy" ? "COMPRA" : "VENTA"} {p.volume}
                                             </Badge>
                                         </div>
                                         
                                         <div className="grid grid-cols-2 gap-2 text-sm">
                                             <div className="flex flex-col">
-                                                <span className="text-xs text-muted-foreground">Open</span>
+                                                <span className="text-xs text-muted-foreground">Apertura</span>
                                                 <span className="font-mono">{p.open_price.toFixed(5)}</span>
                                             </div>
                                             <div className="flex flex-col items-end">
-                                                <span className="text-xs text-muted-foreground">Current</span>
+                                                <span className="text-xs text-muted-foreground">Actual</span>
                                                 <span className="font-mono">{p.current_price.toFixed(5)}</span>
                                             </div>
                                             <div className="flex flex-col">
@@ -699,7 +705,7 @@ export default function EADetailsPage() {
 
                                         <div className="flex items-center justify-between border-t border-border pt-3 mt-1">
                                             <div className="flex flex-col">
-                                                <span className="text-xs text-muted-foreground">Profit</span>
+                                                <span className="text-xs text-muted-foreground">Beneficio</span>
                                                 <span className={cn("font-mono font-medium text-lg", p.profit >= 0 ? "text-profit" : "text-loss")}>
                                                     {p.profit >= 0 ? "+" : ""}${p.profit.toFixed(2)}
                                                 </span>

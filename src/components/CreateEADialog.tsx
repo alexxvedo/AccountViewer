@@ -33,7 +33,7 @@ export const CreateEADialog = memo(function CreateEADialog({ accountId, onSucces
     }
     const magicNum = parseInt(magic);
     if (!magic || isNaN(magicNum)) {
-      alert("Magic Number inválido");
+      alert("Número Mágico inválido");
       return;
     }
 
@@ -73,7 +73,7 @@ export const CreateEADialog = memo(function CreateEADialog({ accountId, onSucces
         <AlertDialogHeader>
           <AlertDialogTitle>Registrar Nuevo EA</AlertDialogTitle>
           <AlertDialogDescription>
-            Asocia un nombre a un Magic Number para rastrear sus estadísticas.
+            Asocia un nombre a un Número Mágico para rastrear sus estadísticas.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="grid gap-4 py-4">
@@ -87,7 +87,7 @@ export const CreateEADialog = memo(function CreateEADialog({ accountId, onSucces
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="magic">Magic Number</Label>
+            <Label htmlFor="magic">Número Mágico</Label>
             <Input 
               id="magic" 
               placeholder="Ej: 123456" 

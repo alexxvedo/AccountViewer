@@ -38,7 +38,7 @@ export const AccountStatsGrid = memo(function AccountStatsGrid({
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
         <Card className="border-border bg-card relative overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Floating P/L</CardTitle>
+            <CardTitle className="text-sm font-medium">P/L Flotante</CardTitle>
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -46,7 +46,7 @@ export const AccountStatsGrid = memo(function AccountStatsGrid({
               {floatingPL >= 0 ? "+" : ""}${floatingPL.toFixed(2)}
             </div>
             <p className="text-xs text-muted-foreground">
-               Live Positions: {liveData?.positions?.length || 0}
+               {currentBalance > 0 ? ((floatingPL / currentBalance) * 100).toFixed(2) : "0.00"}% · Posiciones Activas: {liveData?.positions?.length || 0}
             </p>
             <div className={cn("absolute right-0 top-0 h-full w-1 opacity-50", floatingPL >= 0 ? "bg-profit" : "bg-loss")} />
           </CardContent>
@@ -57,7 +57,7 @@ export const AccountStatsGrid = memo(function AccountStatsGrid({
         <Card className="border-border bg-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           
-            <CardTitle className="text-sm font-medium">Total Equity</CardTitle>
+            <CardTitle className="text-sm font-medium">Equidad Total</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -72,7 +72,7 @@ export const AccountStatsGrid = memo(function AccountStatsGrid({
 
         <Card className="border-border bg-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Profit</CardTitle>
+            <CardTitle className="text-sm font-medium">Beneficio Total</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -80,14 +80,17 @@ export const AccountStatsGrid = memo(function AccountStatsGrid({
                {totalProfit >= 0 ? "+" : ""}${totalProfit.toFixed(2)}
             </div>
             <p className="text-xs text-muted-foreground">
-              {totalTrades} trades
+              <span className={cn(totalProfit >= 0 ? "text-profit" : "text-loss")}>
+                {totalProfit >= 0 ? "+" : ""}{currentBalance - totalProfit > 0 ? ((totalProfit / (currentBalance - totalProfit)) * 100).toFixed(2) : "0.00"}%
+              </span>
+              {" "}· {totalTrades} operaciones
             </p>
           </CardContent>
         </Card>
 
         <Card className="border-border bg-card">
            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Win Rate</CardTitle>
+            <CardTitle className="text-sm font-medium">Tasa de Acierto</CardTitle>
             <Target className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -95,21 +98,21 @@ export const AccountStatsGrid = memo(function AccountStatsGrid({
                {winRate.toFixed(1)}%
             </div>
             <p className="text-xs text-muted-foreground">
-               {winningTrades}W / {losingTrades}L
+               {winningTrades}G / {losingTrades}P
             </p>
           </CardContent>
         </Card>
 
         <Card className="border-border bg-card">
            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Profit Factor</CardTitle>
+            <CardTitle className="text-sm font-medium">Factor de Beneficio</CardTitle>
             <Scale className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
              <div className="text-2xl font-bold">
                {profitFactor ? profitFactor.toFixed(2) : "0.00"}
             </div>
-             <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                Exp: ${expectancy.toFixed(2)}
             </p>
           </CardContent>
@@ -117,7 +120,7 @@ export const AccountStatsGrid = memo(function AccountStatsGrid({
 
          <Card className="border-border bg-card">
            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Free Margin</CardTitle>
+            <CardTitle className="text-sm font-medium">Margen Libre</CardTitle>
             <Percent className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -125,7 +128,7 @@ export const AccountStatsGrid = memo(function AccountStatsGrid({
                ${currentFreeMargin.toLocaleString("en-US", { minimumFractionDigits: 0 })}
             </div>
              <p className="text-xs text-muted-foreground">
-               Available
+               Disponible
             </p>
           </CardContent>
         </Card>

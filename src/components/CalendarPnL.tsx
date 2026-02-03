@@ -96,7 +96,7 @@ const CalendarPnL = memo(({ trades }: CalendarPnLProps) => {
                   </Badge>
               </div>
               <Badge variant="secondary" className="h-9 px-3 text-sm">
-                  {monthActiveDays} days
+                  {monthActiveDays} días
               </Badge>
               <div className="flex gap-1">
                   <Button variant="ghost" size="icon" className="h-8 w-8"><Settings className="h-4 w-4" /></Button>
@@ -144,7 +144,7 @@ const CalendarPnL = memo(({ trades }: CalendarPnLProps) => {
                                   ${Math.abs(data.pnl).toLocaleString("en-US", { notation: "compact" })}
                               </span>
                               <span className="text-[9px] text-muted-foreground">
-                                  {data.trades} trade{data.trades !== 1 ? 's' : ''}
+                                  {data.trades} op{data.trades !== 1 ? 's' : ''}
                               </span>
                               <span className={cn("text-[9px] font-medium", isProfit ? "text-profit" : "text-loss")}>
                                   {data.trades > 0 ? ((data.wins / data.trades) * 100).toFixed(0) : 0}%

@@ -209,7 +209,7 @@ export function TradingChart({ accountId, symbol, positions, currentPrice }: Tra
         lineWidth: 2,
         lineStyle: LineStyle.Solid,
         axisLabelVisible: true,
-        title: `Entry`,
+        title: `Entrada`,
       });
       if (entryLine) {
         priceLinesRef.current.push({ line: entryLine, ticket: pos.ticket, lineType: "entry", price: pos.open_price });
@@ -639,7 +639,7 @@ export function TradingChart({ accountId, symbol, positions, currentPrice }: Tra
           {positions.filter(p => p.symbol === symbol).map(p => (
             <span key={p.ticket} className="mr-4">
               <span className={p.type === "buy" ? "text-green-500" : "text-red-500"}>
-                {p.type.toUpperCase()}
+                {p.type === "buy" ? "COMPRA" : "VENTA"}
               </span>
               {" "}
               {p.volume} @ {p.open_price.toFixed(5)}

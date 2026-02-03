@@ -774,7 +774,7 @@ export default function AccountPage() {
         <TabsList className="bg-secondary/50 p-1 w-full grid grid-cols-4 md:inline-flex md:w-auto">
           <TabsTrigger value="overview" className="data-[state=active]:bg-card px-2 md:px-4">
             <BarChart3 className="h-4 w-4 md:mr-2" />
-            <span className="hidden md:inline">Overview</span>
+            <span className="hidden md:inline">Resumen</span>
           </TabsTrigger>
           <TabsTrigger value="positions" className="data-[state=active]:bg-card px-2 md:px-4">
             <CircleDot className="h-4 w-4 md:mr-2" />

@@ -151,6 +151,7 @@ export function AccountEAsTab({
                             stats={stats} 
                             eaPositions={eaPositions} 
                             onDelete={onDeleteEA} 
+                            currentBalance={liveData?.account?.balance || 0}
                         />
                     );
                 })}

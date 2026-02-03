@@ -173,7 +173,7 @@ export function AlertsDialog({ accountId, alerts: initialAlerts }: AlertsDialogP
     const getTypeLabel = (t: string) => {
         switch(t) {
             case 'BALANCE': return 'Balance'
-            case 'EQUITY': return 'Equity'
+            case 'EQUITY': return 'Equidad'
             case 'MARGIN': return 'Margen'
             default: return t
         }
@@ -257,7 +257,7 @@ export function AlertsDialog({ accountId, alerts: initialAlerts }: AlertsDialogP
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="BALANCE">Balance</SelectItem>
-                                            <SelectItem value="EQUITY">Equity</SelectItem>
+                                            <SelectItem value="EQUITY">Equidad</SelectItem>
                                             <SelectItem value="MARGIN">Margen</SelectItem>
                                         </SelectContent>
                                     </Select>
