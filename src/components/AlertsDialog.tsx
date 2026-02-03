@@ -248,36 +248,40 @@ export function AlertsDialog({ accountId, alerts: initialAlerts }: AlertsDialogP
                     {/* Create Alert */}
                     <div className="space-y-3">
                         <h4 className="text-sm font-medium">Crear Nueva Alerta</h4>
-                        <div className="flex flex-col sm:flex-row gap-2">
-                            <div className="flex gap-2">
-                                <Select value={type} onValueChange={setType}>
-                                    <SelectTrigger className="flex-1 sm:w-[110px]">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="BALANCE">Balance</SelectItem>
-                                        <SelectItem value="EQUITY">Equity</SelectItem>
-                                        <SelectItem value="MARGIN">Margen</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                        <div className="flex flex-col gap-3">
+                            <div className="flex gap-3">
+                                <div className="flex-1">
+                                    <Select value={type} onValueChange={setType}>
+                                        <SelectTrigger className="w-full">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="BALANCE">Balance</SelectItem>
+                                            <SelectItem value="EQUITY">Equity</SelectItem>
+                                            <SelectItem value="MARGIN">Margen</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
 
-                                <Select value={condition} onValueChange={setCondition}>
-                                    <SelectTrigger className="flex-1 sm:w-[100px]">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="GT">&gt; Mayor</SelectItem>
-                                        <SelectItem value="LT">&lt; Menor</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                                <div className="w-[110px]">
+                                    <Select value={condition} onValueChange={setCondition}>
+                                        <SelectTrigger className="w-full">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="GT">Mayor que {'>'}</SelectItem>
+                                            <SelectItem value="LT">Menor que {'<'}</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                             </div>
 
-                            <div className="flex gap-2 flex-1">
+                            <div className="flex gap-3">
                                 <Input
                                     type="number"
                                     inputMode="decimal"
-                                    placeholder="Valor..."
-                                    className="flex-1 text-base"
+                                    placeholder="Valor (ej: 1000)"
+                                    className="flex-1 text-base h-10"
                                     value={value}
                                     onChange={(e) => setValue(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && handleCreateAlert()}
@@ -286,13 +290,14 @@ export function AlertsDialog({ accountId, alerts: initialAlerts }: AlertsDialogP
                                 <Button
                                     onClick={handleCreateAlert}
                                     disabled={!value || creating}
-                                    className="px-4"
+                                    className="px-4 h-10 shrink-0"
                                 >
                                     {creating ? (
                                         <RefreshCw className="h-4 w-4 animate-spin" />
                                     ) : (
                                         <Plus className="h-4 w-4" />
                                     )}
+                                    <span className="ml-2 sm:hidden">Crear</span>
                                 </Button>
                             </div>
                         </div>

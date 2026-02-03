@@ -172,7 +172,7 @@ export const AccountOverviewTab = memo(function AccountOverviewTab({
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="h-[300px]">
+                <div className="h-[300px] outline-none focus:outline-none [&_.recharts-wrapper]:outline-none [&_.recharts-surface]:outline-none" tabIndex={-1}>
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={dailyBalanceHistory}>
                       <defs>

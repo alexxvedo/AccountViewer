@@ -140,3 +140,30 @@
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* Remove Recharts default outline forcefully */
+.recharts-wrapper,
+.recharts-responsive-container,
+.recharts-surface,
+.recharts-tooltip-cursor,
+.recharts-cartesian-axis-tick,
+div[class*="recharts-wrapper"],
+div[class*="recharts-responsive-container"] {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+
+.recharts-wrapper *:focus {
+  outline: none;
+}
+
+/* Specific focus and active removal */
+div.recharts-wrapper:focus,
+div.recharts-wrapper:active,
+*:focus-visible { 
+    /* Nota: Esto quita el focus ring globalmente para elementos clickeados con mouse */
+    /* Se mantiene para navegación con teclado nativa si el navegador lo gestiona bien */
+    outline: none !important;
+}

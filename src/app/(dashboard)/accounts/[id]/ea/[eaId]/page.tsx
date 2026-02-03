@@ -529,7 +529,7 @@ export default function EADetailsPage() {
                         <CardDescription>Curva de equity (operaciones cerradas).</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="h-[300px]">
+                        <div className="h-[300px] outline-none focus:outline-none [&_.recharts-wrapper]:outline-none">
                         <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={balanceCurve}>
                             <defs>
@@ -607,60 +607,123 @@ export default function EADetailsPage() {
                             No hay posiciones abiertas
                         </div>
                     ) : (
-                        <div className="overflow-auto">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow className="border-border hover:bg-transparent">
-                                        <TableHead className="text-muted-foreground">Ticket</TableHead>
-                                        <TableHead className="text-muted-foreground">Símbolo</TableHead>
-                                        <TableHead className="text-muted-foreground">Tipo</TableHead>
-                                        <TableHead className="text-muted-foreground">Volumen</TableHead>
-                                        <TableHead className="text-muted-foreground">Apertura</TableHead>
-                                        <TableHead className="text-muted-foreground">Actual</TableHead>
-                                        <TableHead className="text-muted-foreground">SL</TableHead>
-                                        <TableHead className="text-muted-foreground">TP</TableHead>
-                                        <TableHead className="text-muted-foreground">P&L</TableHead>
-                                        <TableHead className="text-right text-muted-foreground">Acción</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {livePositions.map((p) => (
-                                        <TableRow key={p.ticket} className="border-border hover:bg-secondary/50">
-                                            <TableCell className="font-mono text-sm text-muted-foreground">#{p.ticket}</TableCell>
-                                            <TableCell className="font-medium text-foreground">{p.symbol}</TableCell>
-                                            <TableCell>
-                                                <Badge variant="outline" className={cn("font-medium uppercase", p.type === "buy" ? "bg-profit/20 text-profit border-profit/30" : "bg-loss/20 text-loss border-loss/30")}>
-                                                    {p.type}
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell className="font-mono">{p.volume}</TableCell>
-                                            <TableCell className="font-mono">{p.open_price.toFixed(5)}</TableCell>
-                                            <TableCell className="font-mono">{p.current_price.toFixed(5)}</TableCell>
-                                            <TableCell className="font-mono text-loss">{p.sl > 0 ? p.sl.toFixed(5) : "—"}</TableCell>
-                                            <TableCell className="font-mono text-profit">{p.tp > 0 ? p.tp.toFixed(5) : "—"}</TableCell>
-                                            <TableCell className={cn("font-mono font-medium", p.profit >= 0 ? "text-profit" : "text-loss")}>
-                                                {p.profit >= 0 ? "+" : ""}${p.profit.toFixed(2)}
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => closePosition(p.ticket)}
-                                                    disabled={closingTickets.has(p.ticket)}
-                                                    className="text-loss hover:text-loss hover:bg-loss/10"
-                                                >
-                                                    {closingTickets.has(p.ticket) ? (
-                                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                                    ) : (
-                                                        <X className="h-4 w-4" />
-                                                    )}
-                                                </Button>
-                                            </TableCell>
+                        <>
+                            {/* Desktop Table View */}
+                            <div className="hidden md:block overflow-auto">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow className="border-border hover:bg-transparent">
+                                            <TableHead className="text-muted-foreground">Ticket</TableHead>
+                                            <TableHead className="text-muted-foreground">Símbolo</TableHead>
+                                            <TableHead className="text-muted-foreground">Tipo</TableHead>
+                                            <TableHead className="text-muted-foreground">Volumen</TableHead>
+                                            <TableHead className="text-muted-foreground">Apertura</TableHead>
+                                            <TableHead className="text-muted-foreground">Actual</TableHead>
+                                            <TableHead className="text-muted-foreground">SL</TableHead>
+                                            <TableHead className="text-muted-foreground">TP</TableHead>
+                                            <TableHead className="text-muted-foreground">P&L</TableHead>
+                                            <TableHead className="text-right text-muted-foreground">Acción</TableHead>
                                         </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </div>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {livePositions.map((p) => (
+                                            <TableRow key={p.ticket} className="border-border hover:bg-secondary/50">
+                                                <TableCell className="font-mono text-sm text-muted-foreground">#{p.ticket}</TableCell>
+                                                <TableCell className="font-medium text-foreground">{p.symbol}</TableCell>
+                                                <TableCell>
+                                                    <Badge variant="outline" className={cn("font-medium uppercase", p.type === "buy" ? "bg-profit/20 text-profit border-profit/30" : "bg-loss/20 text-loss border-loss/30")}>
+                                                        {p.type}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell className="font-mono">{p.volume}</TableCell>
+                                                <TableCell className="font-mono">{p.open_price.toFixed(5)}</TableCell>
+                                                <TableCell className="font-mono">{p.current_price.toFixed(5)}</TableCell>
+                                                <TableCell className="font-mono text-loss">{p.sl > 0 ? p.sl.toFixed(5) : "—"}</TableCell>
+                                                <TableCell className="font-mono text-profit">{p.tp > 0 ? p.tp.toFixed(5) : "—"}</TableCell>
+                                                <TableCell className={cn("font-mono font-medium", p.profit >= 0 ? "text-profit" : "text-loss")}>
+                                                    {p.profit >= 0 ? "+" : ""}${p.profit.toFixed(2)}
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => closePosition(p.ticket)}
+                                                        disabled={closingTickets.has(p.ticket)}
+                                                        className="text-loss hover:text-loss hover:bg-loss/10"
+                                                    >
+                                                        {closingTickets.has(p.ticket) ? (
+                                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                                        ) : (
+                                                            <X className="h-4 w-4" />
+                                                        )}
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </div>
+
+                            {/* Mobile Card View */}
+                            <div className="md:hidden space-y-3 p-4">
+                                {livePositions.map((p) => (
+                                    <div key={p.ticket} className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4 shadow-sm">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-medium text-foreground">{p.symbol}</span>
+                                                <span className="text-xs text-muted-foreground">#{p.ticket}</span>
+                                            </div>
+                                            <Badge variant="outline" className={cn("font-medium uppercase text-xs", p.type === "buy" ? "bg-profit/20 text-profit border-profit/30" : "bg-loss/20 text-loss border-loss/30")}>
+                                                {p.type} {p.volume}
+                                            </Badge>
+                                        </div>
+                                        
+                                        <div className="grid grid-cols-2 gap-2 text-sm">
+                                            <div className="flex flex-col">
+                                                <span className="text-xs text-muted-foreground">Open</span>
+                                                <span className="font-mono">{p.open_price.toFixed(5)}</span>
+                                            </div>
+                                            <div className="flex flex-col items-end">
+                                                <span className="text-xs text-muted-foreground">Current</span>
+                                                <span className="font-mono">{p.current_price.toFixed(5)}</span>
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-xs text-muted-foreground">SL</span>
+                                                <span className="font-mono text-loss">{p.sl > 0 ? p.sl.toFixed(5) : "—"}</span>
+                                            </div>
+                                            <div className="flex flex-col items-end">
+                                                <span className="text-xs text-muted-foreground">TP</span>
+                                                <span className="font-mono text-profit">{p.tp > 0 ? p.tp.toFixed(5) : "—"}</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-between border-t border-border pt-3 mt-1">
+                                            <div className="flex flex-col">
+                                                <span className="text-xs text-muted-foreground">Profit</span>
+                                                <span className={cn("font-mono font-medium text-lg", p.profit >= 0 ? "text-profit" : "text-loss")}>
+                                                    {p.profit >= 0 ? "+" : ""}${p.profit.toFixed(2)}
+                                                </span>
+                                            </div>
+                                            
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => closePosition(p.ticket)}
+                                                disabled={closingTickets.has(p.ticket)}
+                                                className="text-red-500 hover:text-red-600 hover:bg-red-500/10 border-red-500/20"
+                                            >
+                                                {closingTickets.has(p.ticket) ? (
+                                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                                ) : (
+                                                    <X className="h-4 w-4 mr-2" />
+                                                )}
+                                                Cerrar
+                                            </Button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </>
                     )}
                 </CardContent>
             </Card>
