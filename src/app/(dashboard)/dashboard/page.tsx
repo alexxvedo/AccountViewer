@@ -293,32 +293,50 @@ export default function DashboardPage() {
     if (!session?.user?.id) return;
     const accNum = parseInt(accountForm.accountNumber);
     if (!accountForm.accountNumber || isNaN(accNum)) {
-      // Feedback básico si no tenemos toast
-      alert("Por favor ingrese un número de cuenta válido"); 
+      alert("Por favor ingrese un número de cuenta válido");
       return;
     }
-    
+    if (!accountForm.broker.trim()) {
+      alert("Por favor ingrese el broker");
+      return;
+    }
+    if (!accountForm.server.trim()) {
+      alert("Por favor ingrese el servidor");
+      return;
+    }
+
     setFormLoading(true);
     try {
-      await fetch("/api/accounts", {
+      const payload: Record<string, unknown> = {
+        userId: session.user.id,
+        accountNumber: accNum,
+        broker: accountForm.broker.trim(),
+        server: accountForm.server.trim(),
+        platform: accountForm.platform,
+      };
+      // Solo incluir campos opcionales si tienen valor
+      if (accountForm.nickname) payload.nickname = accountForm.nickname;
+      if (accountForm.sectionId) payload.sectionId = accountForm.sectionId;
+      if (accountForm.accountTypeId) payload.accountTypeId = accountForm.accountTypeId;
+
+      const res = await fetch("/api/accounts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: session.user.id,
-          accountNumber: accNum,
-          broker: accountForm.broker,
-          server: accountForm.server,
-          platform: accountForm.platform,
-          nickname: accountForm.nickname || null,
-          sectionId: accountForm.sectionId || null,
-          accountTypeId: accountForm.accountTypeId || null,
-        }),
+        body: JSON.stringify(payload),
       });
+
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({}));
+        alert("Error al crear cuenta: " + (error.message || res.statusText));
+        return;
+      }
+
       setShowAccountModal(false);
       setAccountForm({ accountNumber: "", broker: "", server: "", platform: "MT5", nickname: "", sectionId: "", accountTypeId: "" });
       fetchStructure();
     } catch (error) {
       console.error("Error creating account:", error);
+      alert("Error de conexión al crear cuenta");
     } finally {
       setFormLoading(false);
     }

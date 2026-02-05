@@ -343,10 +343,7 @@ bool SendHTTPPost(string url, string jsonData)
       Log("HTTP Error: " + IntegerToString(res));
       return false;
    }
-
-   // Actualizar tiempo del último request para throttling
-   g_lastRequestTime = GetTickCount64();
-
+   
    return true;
 }
 
@@ -526,10 +523,7 @@ void CheckPendingCommands()
    int timeout = 3000;
    ResetLastError();
    int res = WebRequest("POST", url, headers, timeout, post, result, resultHeaders);
-
-   // Actualizar tiempo del último request para throttling
-   g_lastRequestTime = GetTickCount64();
-
+   
    if(res != 200)
       return;
    

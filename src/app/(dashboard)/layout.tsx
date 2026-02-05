@@ -7,8 +7,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   LayoutDashboard,
-  Settings,
-  HelpCircle,
+
+  Download,
   LogOut,
   Loader2,
   Menu,
@@ -102,8 +102,7 @@ export default function DashboardLayout({
   };
 
   const secondaryNav: NavItem[] = [
-    { icon: Settings, label: "Ajustes", href: "/dashboard/settings" },
-    { icon: HelpCircle, label: "Ayuda", href: "/dashboard/help" },
+    { icon: Download, label: "Descargas", href: "/dashboard/downloads" },
   ];
 
   const isActive = (href: string) => {

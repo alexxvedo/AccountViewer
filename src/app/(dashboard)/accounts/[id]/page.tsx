@@ -226,18 +226,16 @@ export default function AccountPage() {
       try {
         const res = await fetch(`/api/accounts/${accountId}/live`);
         const data = await res.json();
-        
-        if (data.connected && data.data) {
-          // Optimization: Check if data actually changed significantly to avoid re-renders
+
+        // Siempre actualizar liveData si hay datos, independiente de connected
+        if (data.data) {
           setLiveData(prev => {
-              // Deep compare or simple JSON stringify for small objects
               if (prev && JSON.stringify(prev) === JSON.stringify(data.data)) {
                   return prev;
               }
               return data.data;
           });
-          setIsLive(true);
-          
+
           setEquityHistory((prev) => {
             const newPoint = {
               time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -249,9 +247,10 @@ export default function AccountPage() {
             }
             return [...prev, newPoint].slice(-30);
           });
-        } else {
-          setIsLive(false);
         }
+
+        // El estado isLive indica si los datos son recientes (< 30s)
+        setIsLive(data.connected);
       } catch (error) {
         console.error("Error fetching live data:", error);
       }

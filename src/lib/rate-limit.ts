@@ -18,7 +18,7 @@ const rateLimitMaps = {
 const RATE_LIMITS = {
   api: { max: 100, windowMs: 60000 },      // 100 requests/minuto por usuario
   login: { max: 5, windowMs: 60000 },      // 5 intentos/minuto por IP
-  ea: { max: 120, windowMs: 60000 },       // 120 requests/minuto por token EA
+  ea: { max: 1200, windowMs: 60000 },      // 1200 requests/minuto por token EA (20/s para real-time)
 };
 
 /**
