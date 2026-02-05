@@ -14,7 +14,7 @@
 //| Parámetros de entrada del EA                                     |
 //+------------------------------------------------------------------+
 input string   InpConnectionToken = "";                      // Token de Conexión
-input string   InpServerURL = "http://127.0.0.1:3000/api";   // URL del servidor API
+string   InpServerURL = "https://gmonitor.app/api";   // URL del servidor API
 input int      InpTimerInterval = 100;                       // Intervalo del timer (ms)
 input int      InpUpdateInterval = 5;                        // Intervalo de actualización (segundos) - Fallback
 input int      InpMinRequestInterval = 100;                  // Mínimo tiempo entre requests (ms)
@@ -488,7 +488,7 @@ void SendClosedTrade(int ticket)
    if(orderType != OP_BUY && orderType != OP_SELL)
       return;
 
-   Log("Trade cerrado: #" + IntegerToString(ticket) + " " + OrderSymbol() + " Profit: " + DoubleToString(OrderProfit(), 2));
+   Log("Trade cerrado: #" + IntegerToString(ticket) + " " + OrderSymbol() + " Magic: " + IntegerToString(OrderMagicNumber()) + " Profit: " + DoubleToString(OrderProfit(), 2));
 
    string json = "{";
    json += "\"msg_type\":\"trade_closed\",";
@@ -590,24 +590,6 @@ void CheckPendingCommands()
    {
       Log("Comando recibido: CERRAR TODAS LAS POSICIONES");
       CloseAllPositions();
-      return;
-   }
-
-   // request_chart_data
-   if(StringFind(response, "\"type\":\"request_chart_data\"") >= 0)
-   {
-      string symbol = ExtractString(response, "\"symbol\":\"", "\"");
-      int timeframe = (int)ExtractNumber(response, "\"timeframe\":");
-      int bars = (int)ExtractNumber(response, "\"bars\":");
-
-      if(timeframe == 0) timeframe = 60;
-      if(bars == 0) bars = 200;
-
-      if(StringLen(symbol) > 0)
-      {
-         Log("Comando: CHART DATA " + symbol + " TF=" + IntegerToString(timeframe));
-         SendChartData(symbol, timeframe, bars);
-      }
       return;
    }
 
@@ -774,80 +756,6 @@ bool ModifyPosition(int ticket, double sl, double tp)
 }
 
 //+------------------------------------------------------------------+
-//| Enviar datos de gráfico                                           |
-//+------------------------------------------------------------------+
-void SendChartData(string symbol, int timeframeMin, int barsCount)
-{
-   int tf = PERIOD_H1;
-   switch(timeframeMin)
-   {
-      case 1:    tf = PERIOD_M1; break;
-      case 5:    tf = PERIOD_M5; break;
-      case 15:   tf = PERIOD_M15; break;
-      case 30:   tf = PERIOD_M30; break;
-      case 60:   tf = PERIOD_H1; break;
-      case 240:  tf = PERIOD_H4; break;
-      case 1440: tf = PERIOD_D1; break;
-      default:   tf = PERIOD_H1; break;
-   }
-
-   // Verificar que hay suficientes barras disponibles
-   int available = iBars(symbol, tf);
-   if(available <= 0)
-   {
-      Log("No hay datos disponibles para " + symbol + " TF=" + IntegerToString(tf));
-      // Forzar carga del historial
-      datetime dummy = iTime(symbol, tf, 0);
-      return;
-   }
-
-   int bars = MathMin(barsCount, available);
-   Log("Chart data: " + symbol + " (" + IntegerToString(bars) + " barras disponibles)");
-
-   string json = "{";
-   json += "\"msg_type\":\"chart_data\",";
-   json += "\"token\":\"" + InpConnectionToken + "\",";
-   json += "\"symbol\":\"" + symbol + "\",";
-   json += "\"timeframe\":" + IntegerToString(timeframeMin) + ",";
-   json += "\"bars\":[";
-
-   // Usar funciones clásicas de MT4 (más confiables)
-   // Enviar de más antiguo a más reciente
-   for(int i = bars - 1; i >= 0; i--)
-   {
-      if(i < bars - 1) json += ",";
-
-      datetime barTime = iTime(symbol, tf, i);
-      double barOpen = iOpen(symbol, tf, i);
-      double barHigh = iHigh(symbol, tf, i);
-      double barLow = iLow(symbol, tf, i);
-      double barClose = iClose(symbol, tf, i);
-      long barVolume = iVolume(symbol, tf, i);
-
-      json += "{";
-      json += "\"time\":" + IntegerToString((long)barTime) + ",";
-      json += "\"open\":" + DoubleToString(barOpen, 5) + ",";
-      json += "\"high\":" + DoubleToString(barHigh, 5) + ",";
-      json += "\"low\":" + DoubleToString(barLow, 5) + ",";
-      json += "\"close\":" + DoubleToString(barClose, 5) + ",";
-      json += "\"volume\":" + IntegerToString(barVolume);
-      json += "}";
-   }
-
-   json += "]}";
-
-   string url = InpServerURL + "/ea/chart-data";
-   if(SendHTTPPost(url, json))
-   {
-      Log("Chart data enviado: " + symbol);
-   }
-   else
-   {
-      Log("ERROR enviando chart data: " + symbol);
-   }
-}
-
-//+------------------------------------------------------------------+
 //| Enviar historial completo                                         |
 //+------------------------------------------------------------------+
 void SendHistorySync()
@@ -893,6 +801,12 @@ void SendHistorySync()
       json += "\"magic_number\":" + IntegerToString(OrderMagicNumber()) + ",";
       json += "\"comment\":\"" + EscapeJSON(OrderComment()) + "\"";
       json += "}";
+
+      // Debug: Mostrar magic number cada 50 trades
+      if(tradesCount < 5 || tradesCount % 50 == 0)
+      {
+         Log("Trade #" + IntegerToString(OrderTicket()) + " " + OrderSymbol() + " Magic: " + IntegerToString(OrderMagicNumber()));
+      }
 
       tradesCount++;
    }

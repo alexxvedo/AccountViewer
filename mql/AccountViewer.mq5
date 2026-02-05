@@ -14,7 +14,7 @@
 //| Parámetros de entrada del EA                                     |
 //+------------------------------------------------------------------+
 input string   InpConnectionToken = "";                      // Token de Conexión
-input string   InpServerURL = "http://127.0.0.1:3000/api";   // URL del servidor API
+string   InpServerURL = "https://gmonitor.app/api";   // URL del servidor API
 input int      InpTimerInterval = 100;                       // Intervalo del timer (ms)
 input int      InpUpdateInterval = 5;                        // Intervalo de actualización (segundos) - Fallback
 input int      InpMinRequestInterval = 100;                  // Mínimo tiempo entre requests (ms)
@@ -409,7 +409,8 @@ void CheckClosedTrades()
       {
          double openPrice = 0;
          datetime openTime = 0;
-         
+         int entryMagic = 0; // Magic number del deal de entrada
+
          // Buscar el deal de entrada
          int posDealsCount = HistoryDealsTotal();
          for(int k = 0; k < posDealsCount; k++)
@@ -419,10 +420,11 @@ void CheckClosedTrades()
              {
                  openPrice = HistoryDealGetDouble(t, DEAL_PRICE);
                  openTime = (datetime)HistoryDealGetInteger(t, DEAL_TIME);
+                 entryMagic = (int)HistoryDealGetInteger(t, DEAL_MAGIC);
                  break;
              }
          }
-         
+
          // Obtener datos del deal de salida
          string symbol = HistoryDealGetString(ticket, DEAL_SYMBOL);
          int type = (int)HistoryDealGetInteger(ticket, DEAL_TYPE);
@@ -434,12 +436,18 @@ void CheckClosedTrades()
          datetime closeTime = (datetime)HistoryDealGetInteger(ticket, DEAL_TIME);
          int magicNumber = (int)HistoryDealGetInteger(ticket, DEAL_MAGIC);
          string comment = HistoryDealGetString(ticket, DEAL_COMMENT);
-         
+
+         // Usar el magic number del deal de entrada si el de salida es 0
+         if(magicNumber == 0 && entryMagic != 0)
+         {
+            magicNumber = entryMagic;
+         }
+
          // Fallback si no se encontró openTime
          if(openTime == 0) openTime = closeTime - 60;
-         
-         Log("Trade cerrado: #" + IntegerToString((int)ticket) + " " + symbol + " Profit: " + DoubleToString(profit, 2));
-         
+
+         Log("Trade cerrado: #" + IntegerToString((int)ticket) + " " + symbol + " Magic: " + IntegerToString(magicNumber) + " Profit: " + DoubleToString(profit, 2));
+
          // Enviar al servidor
          SendTradeClosed(ticket, symbol, type, volume, openPrice, closePrice, profit, swap, commission, openTime, closeTime, magicNumber, comment);
       }
@@ -560,51 +568,6 @@ void CheckPendingCommands()
       return;
    }
    
-   // Buscar request_chart_data
-   if(StringFind(response, "\"type\":\"request_chart_data\"") >= 0)
-   {
-      // Extraer symbol
-      string symbol = "";
-      int symbolPos = StringFind(response, "\"symbol\":\"");
-      if(symbolPos >= 0)
-      {
-         int symbolStart = symbolPos + 10;
-         int symbolEnd = StringFind(response, "\"", symbolStart);
-         symbol = StringSubstr(response, symbolStart, symbolEnd - symbolStart);
-      }
-      
-      // Extraer timeframe
-      int timeframe = 60; // default H1
-      int tfPos = StringFind(response, "\"timeframe\":");
-      if(tfPos >= 0)
-      {
-         int tfStart = tfPos + 12;
-         int tfEnd = StringFind(response, ",", tfStart);
-         if(tfEnd < 0) tfEnd = StringFind(response, "}", tfStart);
-         string tfStr = StringSubstr(response, tfStart, tfEnd - tfStart);
-         timeframe = (int)StringToInteger(tfStr);
-      }
-      
-      // Extraer bars
-      int bars = 200; // default
-      int barsPos = StringFind(response, "\"bars\":");
-      if(barsPos >= 0)
-      {
-         int barsStart = barsPos + 7;
-         int barsEnd = StringFind(response, ",", barsStart);
-         if(barsEnd < 0) barsEnd = StringFind(response, "}", barsStart);
-         string barsStr = StringSubstr(response, barsStart, barsEnd - barsStart);
-         bars = (int)StringToInteger(barsStr);
-      }
-      
-      if(StringLen(symbol) > 0)
-      {
-         Log("Comando recibido: SOLICITAR DATOS DE GRÁFICO " + symbol + " TF=" + IntegerToString(timeframe) + " Bars=" + IntegerToString(bars));
-         SendChartData(symbol, timeframe, bars);
-      }
-      return;
-   }
-   
    // Buscar modify_trade
    if(StringFind(response, "\"type\":\"modify_trade\"") >= 0)
    {
@@ -673,75 +636,6 @@ void CheckPendingCommands()
       }
       
       ticketPos = StringFind(response, "\"ticket\":", ticketPos + 1);
-   }
-}
-
-//+------------------------------------------------------------------+
-//| Enviar datos OHLC de gráfico al servidor                          |
-//+------------------------------------------------------------------+
-void SendChartData(string symbol, int timeframeMin, int barsCount)
-{
-   // Convertir minutos a ENUM_TIMEFRAMES
-   ENUM_TIMEFRAMES tf = PERIOD_H1;
-   switch(timeframeMin)
-   {
-      case 1:    tf = PERIOD_M1; break;
-      case 5:    tf = PERIOD_M5; break;
-      case 15:   tf = PERIOD_M15; break;
-      case 30:   tf = PERIOD_M30; break;
-      case 60:   tf = PERIOD_H1; break;
-      case 240:  tf = PERIOD_H4; break;
-      case 1440: tf = PERIOD_D1; break;
-      default:   tf = PERIOD_H1; break;
-   }
-   
-   // Obtener datos OHLC
-   MqlRates rates[];
-   ArraySetAsSeries(rates, true);
-   
-   int copied = CopyRates(symbol, tf, 0, barsCount, rates);
-   
-   if(copied <= 0)
-   {
-      Log("Info: Historial incompleto para " + symbol + ". Iniciando descarga en segundo plano. Los datos aparecerán en breve.");
-      return;
-   }
-   
-   Log("Chart data obtenido: " + symbol + " (" + IntegerToString(copied) + " barras)");
-   
-   // Construir JSON
-   string json = "{";
-   json += "\"msg_type\":\"chart_data\",";
-   json += "\"token\":\"" + InpConnectionToken + "\",";
-   json += "\"symbol\":\"" + symbol + "\",";
-   json += "\"timeframe\":" + IntegerToString(timeframeMin) + ",";
-   json += "\"bars\":[";
-   
-   // Invertir orden para enviar de más antiguo a más reciente
-   for(int i = copied - 1; i >= 0; i--)
-   {
-      if(i < copied - 1) json += ",";
-      
-      json += "{";
-      json += "\"time\":" + IntegerToString((long)rates[i].time) + ",";
-      json += "\"open\":" + DoubleToString(rates[i].open, 5) + ",";
-      json += "\"high\":" + DoubleToString(rates[i].high, 5) + ",";
-      json += "\"low\":" + DoubleToString(rates[i].low, 5) + ",";
-      json += "\"close\":" + DoubleToString(rates[i].close, 5) + ",";
-      json += "\"volume\":" + IntegerToString((long)rates[i].tick_volume);
-      json += "}";
-   }
-   
-   json += "]}";
-   
-   string url = InpServerURL + "/ea/chart-data";
-   if(SendHTTPPost(url, json))
-   {
-      Log("Chart data enviado: " + symbol + " (" + IntegerToString(copied) + " barras)");
-   }
-   else
-   {
-      Log("ERROR: No se pudo enviar chart data para " + symbol);
    }
 }
 
@@ -923,10 +817,11 @@ void SendHistorySync()
       int magicNumber = (int)HistoryDealGetInteger(dealTicket, DEAL_MAGIC);
       string comment = HistoryDealGetString(dealTicket, DEAL_COMMENT);
       
-      // Buscar el deal de entrada correspondiente para obtener el precio de apertura
+      // Buscar el deal de entrada correspondiente para obtener el precio de apertura y magic number
       double openPrice = 0;
       datetime openTime = dealTime - 3600; // Aproximación por defecto
-      
+      int entryMagic = 0; // Magic number del deal de entrada
+
       // Buscar el position ID para encontrar el deal de entrada
       long positionId = HistoryDealGetInteger(dealTicket, DEAL_POSITION_ID);
       if(positionId > 0)
@@ -939,11 +834,24 @@ void SendHistorySync()
             {
                openPrice = HistoryDealGetDouble(entryTicket, DEAL_PRICE);
                openTime = (datetime)HistoryDealGetInteger(entryTicket, DEAL_TIME);
+               entryMagic = (int)HistoryDealGetInteger(entryTicket, DEAL_MAGIC);
                break;
             }
          }
       }
-      
+
+      // Usar el magic number del deal de entrada si el de salida es 0
+      if(magicNumber == 0 && entryMagic != 0)
+      {
+         magicNumber = entryMagic;
+      }
+
+      // Debug: Mostrar magic number cada 50 trades para no saturar logs
+      if(tradesCount < 5 || tradesCount % 50 == 0)
+      {
+         Log("Trade #" + IntegerToString((int)dealTicket) + " " + symbol + " Magic: " + IntegerToString(magicNumber));
+      }
+
       json += "{";
       json += "\"ticket\":" + IntegerToString((int)dealTicket) + ",";
       json += "\"symbol\":\"" + symbol + "\",";

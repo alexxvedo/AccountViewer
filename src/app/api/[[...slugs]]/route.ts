@@ -24,9 +24,7 @@ import { ExpertAdvisorPlain } from "@/generated/prismabox/ExpertAdvisor";
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
   liveDataCache: Map<string, { data: any; timestamp: number }>;
-  commandQueue: Map<string, { commands: { id: string; type: string; ticket?: number; symbol?: string; timeframe?: number; bars?: number; requestId?: string; sl?: number; tp?: number; createdAt: number }[] }>;
-  // Cache para chart data (OHLC) del EA
-  chartDataCache: Map<string, { data: { symbol: string; timeframe: number; bars: Array<{ time: number; open: number; high: number; low: number; close: number; volume?: number }> }; timestamp: number }>;
+  commandQueue: Map<string, { commands: { id: string; type: string; ticket?: number; sl?: number; tp?: number; createdAt: number }[] }>;
   // Cache para rate limiting de alertas (evitar spam)
   alertCooldowns: Map<string, number>;
 };
@@ -189,12 +187,8 @@ const liveDataCache = globalForPrisma.liveDataCache ?? new Map<string, { data: a
 if (process.env.NODE_ENV !== "production") globalForPrisma.liveDataCache = liveDataCache;
 
 // Cola de comandos para el EA (cerrar trades, etc.)
-const commandQueue = globalForPrisma.commandQueue ?? new Map<string, { commands: { id: string; type: string; ticket?: number; symbol?: string; timeframe?: number; bars?: number; requestId?: string; sl?: number; tp?: number; createdAt: number }[] }>();
+const commandQueue = globalForPrisma.commandQueue ?? new Map<string, { commands: { id: string; type: string; ticket?: number; sl?: number; tp?: number; createdAt: number }[] }>();
 if (process.env.NODE_ENV !== "production") globalForPrisma.commandQueue = commandQueue;
-
-// Cache para datos de gráficos OHLC del EA (clave: accountId:symbol:timeframe)
-const chartDataCache = globalForPrisma.chartDataCache ?? new Map<string, { data: { symbol: string; timeframe: number; bars: Array<{ time: number; open: number; high: number; low: number; close: number; volume?: number }> }; timestamp: number }>();
-if (process.env.NODE_ENV !== "production") globalForPrisma.chartDataCache = chartDataCache;
 
 
 // ============================================
@@ -946,6 +940,54 @@ const app = new Elysia({ prefix: "/api" })
   )
 
   // ============================================
+  // Check Trades by Magic Number (for EA creation)
+  // ============================================
+  .get(
+    "/accounts/:id/trades/check-magic",
+    async ({ params, query, request }) => {
+      const account = await prisma.tradingAccount.findUnique({ where: { id: params.id } });
+      if (!account) throw new Error("Account not found");
+      await verifySession(request.headers, account.userId);
+
+      const magicNumber = Number(query.magic);
+      if (!magicNumber || isNaN(magicNumber)) {
+        return { count: 0 };
+      }
+
+      const trades = await prisma.tradeHistory.findMany({
+        where: {
+          accountId: params.id,
+          magicNumber: magicNumber
+        },
+        orderBy: { closeTime: "asc" },
+        select: {
+          profit: true,
+          commission: true,
+          swap: true,
+          closeTime: true,
+        }
+      });
+
+      if (trades.length === 0) {
+        return { count: 0 };
+      }
+
+      const totalProfit = trades.reduce((sum, t) => sum + t.profit + (t.commission || 0) + (t.swap || 0), 0);
+
+      return {
+        count: trades.length,
+        totalProfit,
+        firstTradeDate: trades[0].closeTime.toISOString(),
+        lastTradeDate: trades[trades.length - 1].closeTime.toISOString(),
+      };
+    },
+    {
+      params: t.Object({ id: t.String() }),
+      query: t.Object({ magic: t.String() }),
+    }
+  )
+
+  // ============================================
   // Snapshots de Equidad
   // ============================================
   .get(
@@ -1331,6 +1373,7 @@ const app = new Elysia({ prefix: "/api" })
       body: t.Object({
         name: t.String(),
         magicNumber: t.Integer(),
+        linkExistingTrades: t.Optional(t.Boolean()),
       }),
     }
   )
@@ -1358,6 +1401,121 @@ const app = new Elysia({ prefix: "/api" })
   )
 
   // ============================================
+  // Expert Advisors (EAs) - Sincronizar operaciones
+  // ============================================
+  .post(
+    "/eas/:id/sync",
+    async ({ params, request }) => {
+      const ea = await prisma.expertAdvisor.findUnique({ where: { id: params.id } });
+      if (!ea) return { success: false, message: "EA no encontrado" };
+
+      const account = await prisma.tradingAccount.findUnique({ where: { id: ea.accountId } });
+      if (!account) throw new Error("Account not found");
+      await verifySession(request.headers, account.userId);
+
+      // Buscar operaciones que coincidan con el magic number de esta EA
+      const matchingTrades = await prisma.tradeHistory.findMany({
+        where: {
+          accountId: ea.accountId,
+          magicNumber: ea.magicNumber,
+        },
+        select: {
+          id: true,
+          ticket: true,
+          profit: true,
+          commission: true,
+          swap: true,
+          closeTime: true,
+        },
+        orderBy: { closeTime: "asc" },
+      });
+
+      // También buscar operaciones que podrían estar sin vincular (magicNumber = 0 o null)
+      const unlinkedTrades = await prisma.tradeHistory.findMany({
+        where: {
+          accountId: ea.accountId,
+          OR: [
+            { magicNumber: 0 },
+            { magicNumber: null },
+          ],
+        },
+        select: {
+          id: true,
+          ticket: true,
+          symbol: true,
+          profit: true,
+          closeTime: true,
+        },
+        orderBy: { closeTime: "desc" },
+        take: 100,
+      });
+
+      const totalProfit = matchingTrades.reduce(
+        (sum, t) => sum + t.profit + (t.commission || 0) + (t.swap || 0),
+        0
+      );
+
+      return {
+        success: true,
+        linkedTrades: matchingTrades.length,
+        totalProfit,
+        unlinkedTrades: unlinkedTrades.length,
+        firstTradeDate: matchingTrades.length > 0 ? matchingTrades[0].closeTime : null,
+        lastTradeDate: matchingTrades.length > 0 ? matchingTrades[matchingTrades.length - 1].closeTime : null,
+      };
+    },
+    {
+      params: t.Object({ id: t.String() }),
+    }
+  )
+
+  // ============================================
+  // Expert Advisors (EAs) - Diagnóstico de Magic Numbers
+  // ============================================
+  .get(
+    "/accounts/:id/trades/magic-numbers",
+    async ({ params, request }) => {
+      const account = await prisma.tradingAccount.findUnique({ where: { id: params.id } });
+      if (!account) throw new Error("Account not found");
+      await verifySession(request.headers, account.userId);
+
+      // Obtener todos los magic numbers únicos en las operaciones de la cuenta
+      const trades = await prisma.tradeHistory.findMany({
+        where: { accountId: params.id },
+        select: { magicNumber: true },
+      });
+
+      // Contar operaciones por magic number
+      const magicCounts: Record<string, number> = {};
+      trades.forEach(t => {
+        const key = t.magicNumber === null ? "null" : String(t.magicNumber);
+        magicCounts[key] = (magicCounts[key] || 0) + 1;
+      });
+
+      // Obtener EAs registradas para esta cuenta
+      const eas = await prisma.expertAdvisor.findMany({
+        where: { accountId: params.id },
+        select: { id: true, name: true, magicNumber: true },
+      });
+
+      return {
+        totalTrades: trades.length,
+        magicNumbers: Object.entries(magicCounts)
+          .map(([magic, count]) => ({
+            magic,
+            count,
+            hasEA: eas.some(ea => String(ea.magicNumber) === magic),
+          }))
+          .sort((a, b) => b.count - a.count),
+        registeredEAs: eas,
+      };
+    },
+    {
+      params: t.Object({ id: t.String() }),
+    }
+  )
+
+  // ============================================
   // Expert Advisors (EAs) - Obtener Uno
   // ============================================
   .get(
@@ -1365,7 +1523,7 @@ const app = new Elysia({ prefix: "/api" })
     async ({ params, request }) => {
       const ea = await prisma.expertAdvisor.findUnique({ where: { id: params.id } });
       if (!ea) throw new Error("EA not found");
-      
+
       const account = await prisma.tradingAccount.findUnique({ where: { id: ea.accountId } });
       if (!account) throw new Error("Account not found");
       await verifySession(request.headers, account.userId);
@@ -1378,36 +1536,36 @@ const app = new Elysia({ prefix: "/api" })
   )
 
   // ============================================
-  // Expert Advisors (EAs) - Reporte Excel
+  // Expert Advisors (EAs) - Reporte Excel Mejorado
   // ============================================
   .get(
     "/eas/:id/report",
     async ({ params, query, request }) => {
       const ea = await prisma.expertAdvisor.findUnique({ where: { id: params.id } });
       if (!ea) throw new Error("EA not found");
-      
+
       const account = await prisma.tradingAccount.findUnique({ where: { id: ea.accountId } });
       if (!account) throw new Error("Account not found");
       await verifySession(request.headers, account.userId);
-      
+
       // Filtros de fecha
-      const whereClause: any = { 
-          accountId: ea.accountId, 
-          magicNumber: ea.magicNumber 
+      const whereClause: any = {
+          accountId: ea.accountId,
+          magicNumber: ea.magicNumber
       };
-      
+
       if (query.from || query.to) {
           whereClause.closeTime = {};
           if (query.from) whereClause.closeTime.gte = new Date(Number(query.from));
           if (query.to) whereClause.closeTime.lte = new Date(Number(query.to));
       }
 
-      const trades = await prisma.tradeHistory.findMany({ 
-          where: whereClause, 
-          orderBy: { closeTime: "asc" } 
+      const trades = await prisma.tradeHistory.findMany({
+          where: whereClause,
+          orderBy: { closeTime: "asc" }
       });
 
-      // --- CÁLCULO DE ESTADÍSTICAS ---
+      // --- CÁLCULO DE ESTADÍSTICAS COMPLETAS ---
       let totalTrades = trades.length;
       let winningTrades = 0;
       let losingTrades = 0;
@@ -1415,27 +1573,85 @@ const app = new Elysia({ prefix: "/api" })
       let grossProfit = 0;
       let grossLoss = 0;
       let maxDrawdown = 0;
-      
+      let maxDrawdownPercent = 0;
+
       let runningBalance = 0;
       let peakBalance = 0;
 
-      // Stats pre-calc
-      trades.forEach(t => {
+      // For streaks
+      let currentWinStreak = 0;
+      let currentLossStreak = 0;
+      let maxWinStreak = 0;
+      let maxLossStreak = 0;
+
+      // For best/worst
+      let bestTrade = 0;
+      let worstTrade = 0;
+
+      // For duration
+      let totalDuration = 0;
+
+      // Equity curve data
+      const equityCurve: { date: Date; balance: number; trade: number }[] = [];
+
+      // Monthly breakdown
+      const monthlyData: Record<string, { profit: number; trades: number; wins: number }> = {};
+
+      // Symbol breakdown
+      const symbolData: Record<string, { profit: number; trades: number; wins: number; volume: number }> = {};
+
+      trades.forEach((t, i) => {
           const net = t.profit + (t.commission || 0) + (t.swap || 0);
           totalProfit += net;
           runningBalance += net;
 
+          // Equity curve
+          equityCurve.push({ date: t.closeTime, balance: runningBalance, trade: i + 1 });
+
+          // Drawdown
           if (runningBalance > peakBalance) peakBalance = runningBalance;
           const drawdown = peakBalance - runningBalance;
-          if (drawdown > maxDrawdown) maxDrawdown = drawdown;
+          if (drawdown > maxDrawdown) {
+              maxDrawdown = drawdown;
+              maxDrawdownPercent = peakBalance > 0 ? (drawdown / peakBalance) * 100 : 0;
+          }
 
+          // Win/Loss
           if (net > 0) {
               winningTrades++;
               grossProfit += net;
+              currentWinStreak++;
+              currentLossStreak = 0;
+              maxWinStreak = Math.max(maxWinStreak, currentWinStreak);
           } else {
               losingTrades++;
               grossLoss += Math.abs(net);
+              currentLossStreak++;
+              currentWinStreak = 0;
+              maxLossStreak = Math.max(maxLossStreak, currentLossStreak);
           }
+
+          // Best/Worst
+          if (net > bestTrade) bestTrade = net;
+          if (net < worstTrade) worstTrade = net;
+
+          // Duration
+          const duration = t.closeTime.getTime() - t.openTime.getTime();
+          totalDuration += duration;
+
+          // Monthly
+          const monthKey = `${t.closeTime.getFullYear()}-${String(t.closeTime.getMonth() + 1).padStart(2, '0')}`;
+          if (!monthlyData[monthKey]) monthlyData[monthKey] = { profit: 0, trades: 0, wins: 0 };
+          monthlyData[monthKey].profit += net;
+          monthlyData[monthKey].trades++;
+          if (net > 0) monthlyData[monthKey].wins++;
+
+          // Symbol
+          if (!symbolData[t.symbol]) symbolData[t.symbol] = { profit: 0, trades: 0, wins: 0, volume: 0 };
+          symbolData[t.symbol].profit += net;
+          symbolData[t.symbol].trades++;
+          symbolData[t.symbol].volume += t.volume;
+          if (net > 0) symbolData[t.symbol].wins++;
       });
 
       const winRate = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0;
@@ -1443,160 +1659,373 @@ const app = new Elysia({ prefix: "/api" })
       const expectedPayoff = totalTrades > 0 ? totalProfit / totalTrades : 0;
       const avgWin = winningTrades > 0 ? grossProfit / winningTrades : 0;
       const avgLoss = losingTrades > 0 ? grossLoss / losingTrades : 0;
-
+      const riskReward = avgLoss > 0 ? avgWin / avgLoss : avgWin > 0 ? 999 : 0;
+      const avgDurationHours = totalTrades > 0 ? totalDuration / totalTrades / (1000 * 60 * 60) : 0;
+      const recoveryFactor = maxDrawdown > 0 ? totalProfit / maxDrawdown : 0;
 
       // --- GENERACIÓN EXCEL PROFESIONAL ---
       const workbook = new ExcelJS.Workbook();
-      workbook.creator = "GMonitor App";
+      workbook.creator = "GMonitor";
       workbook.created = new Date();
 
-      // ==========================================
-      // HOJA 1: DASHBOARD
-      // ==========================================
-      const dashboard = workbook.addWorksheet("Dashboard", {
-        views: [{ showGridLines: false }]
-      });
+      // Helper functions
+      const applyHeaderStyle = (row: ExcelJS.Row) => {
+          row.font = { bold: true, color: { argb: 'FFFFFFFF' }, name: 'Calibri', size: 11 };
+          row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } };
+          row.alignment = { horizontal: 'center', vertical: 'middle' };
+          row.height = 25;
+      };
 
-      // --- Header Branding ---
-      dashboard.mergeCells('B2:E2');
-      const titleCell = dashboard.getCell('B2');
-      titleCell.value = `INFORME DE RENDIMIENTO: ${ea.name.toUpperCase()}`;
-      titleCell.font = { name: 'Arial', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
-      titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } }; // Slate-800
+      // ==========================================
+      // HOJA 1: RESUMEN EJECUTIVO
+      // ==========================================
+      const summary = workbook.addWorksheet("Resumen", { views: [{ showGridLines: false }] });
+
+      // Title
+      summary.mergeCells('B2:G2');
+      const titleCell = summary.getCell('B2');
+      titleCell.value = `📊 INFORME DE RENDIMIENTO`;
+      titleCell.font = { name: 'Calibri', size: 20, bold: true, color: { argb: 'FF1E293B' } };
       titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
-      dashboard.getRow(2).height = 30;
+      summary.getRow(2).height = 35;
 
-      dashboard.mergeCells('B3:E3');
-      const subtitleCell = dashboard.getCell('B3');
-      subtitleCell.value = `Generado: ${new Date().toLocaleDateString()} | Cuenta: ${ea.accountId.substring(0,8)}...`;
-      subtitleCell.font = { name: 'Arial', size: 10, italic: true, color: { argb: 'FF94A3B8' } }; // Slate-400
-      subtitleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } };
-      subtitleCell.alignment = { horizontal: 'center', vertical: 'middle' };
-      
-      // --- Metrics Grid ---
-      const startRow = 5;
-      const metrics = [
-          { label: "Beneficio Neto", value: totalProfit, type: "money", color: totalProfit >= 0 ? 'FF10B981' : 'FFEF4444' },
-          { label: "Factor de Beneficio", value: profitFactor, type: "number" },
-          { label: "Total Operaciones", value: totalTrades, type: "int" },
-          { label: "Win Rate", value: winRate / 100, type: "percent" }, // Excel uses 0-1 for %
-          { label: "Drawdown Máx.", value: maxDrawdown, type: "money", color: 'FFEF4444' },
-          { label: "Esperanza (Payoff)", value: expectedPayoff, type: "money" },
-          { label: "Promedio Ganancia", value: avgWin, type: "money", color: 'FF10B981' },
-          { label: "Promedio Pérdida", value: -avgLoss, type: "money", color: 'FFEF4444' },
+      summary.mergeCells('B3:G3');
+      const eaNameCell = summary.getCell('B3');
+      eaNameCell.value = ea.name;
+      eaNameCell.font = { name: 'Calibri', size: 14, color: { argb: 'FF64748B' } };
+      eaNameCell.alignment = { horizontal: 'center' };
+
+      summary.mergeCells('B4:G4');
+      const dateCell = summary.getCell('B4');
+      const dateFrom = trades.length > 0 ? trades[0].closeTime.toLocaleDateString('es-ES') : '-';
+      const dateTo = trades.length > 0 ? trades[trades.length - 1].closeTime.toLocaleDateString('es-ES') : '-';
+      dateCell.value = `Período: ${dateFrom} → ${dateTo} | Generado: ${new Date().toLocaleDateString('es-ES')}`;
+      dateCell.font = { name: 'Calibri', size: 10, color: { argb: 'FF94A3B8' } };
+      dateCell.alignment = { horizontal: 'center' };
+
+      // Main Metrics Cards
+      const cardStartRow = 7;
+
+      const addMetricCard = (row: number, col: number, label: string, value: number | string, format: string, isPositive?: boolean) => {
+          // Card background
+          for (let r = row; r <= row + 2; r++) {
+              for (let c = col; c <= col + 1; c++) {
+                  const cell = summary.getCell(r, c);
+                  cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+                  cell.border = {
+                      top: r === row ? { style: 'thin', color: { argb: 'FFE2E8F0' } } : undefined,
+                      bottom: r === row + 2 ? { style: 'thin', color: { argb: 'FFE2E8F0' } } : undefined,
+                      left: c === col ? { style: 'thin', color: { argb: 'FFE2E8F0' } } : undefined,
+                      right: c === col + 1 ? { style: 'thin', color: { argb: 'FFE2E8F0' } } : undefined,
+                  };
+              }
+          }
+
+          // Label
+          const labelCell = summary.getCell(row, col);
+          labelCell.value = label;
+          labelCell.font = { name: 'Calibri', size: 9, color: { argb: 'FF64748B' }, bold: true };
+
+          // Value
+          summary.mergeCells(row + 1, col, row + 1, col + 1);
+          const valueCell = summary.getCell(row + 1, col);
+          valueCell.value = value;
+
+          let fontColor = 'FF0F172A';
+          if (isPositive === true) fontColor = 'FF16A34A';
+          if (isPositive === false) fontColor = 'FFDC2626';
+
+          valueCell.font = { name: 'Calibri', size: 18, bold: true, color: { argb: fontColor } };
+          valueCell.alignment = { horizontal: 'left', vertical: 'middle' };
+
+          if (format === 'money') valueCell.numFmt = '"$"#,##0.00';
+          if (format === 'percent') valueCell.numFmt = '0.00%';
+          if (format === 'number') valueCell.numFmt = '0.00';
+      };
+
+      // Row 1 of cards
+      addMetricCard(cardStartRow, 2, 'BENEFICIO NETO', totalProfit, 'money', totalProfit >= 0);
+      addMetricCard(cardStartRow, 5, 'FACTOR DE BENEFICIO', profitFactor > 100 ? '∞' : profitFactor, profitFactor > 100 ? '' : 'number');
+
+      // Row 2 of cards
+      addMetricCard(cardStartRow + 4, 2, 'WIN RATE', winRate / 100, 'percent');
+      addMetricCard(cardStartRow + 4, 5, 'TOTAL OPERACIONES', totalTrades, '');
+
+      // Row 3 of cards
+      addMetricCard(cardStartRow + 8, 2, 'MAX DRAWDOWN', -maxDrawdown, 'money', false);
+      addMetricCard(cardStartRow + 8, 5, 'DRAWDOWN %', -maxDrawdownPercent / 100, 'percent', false);
+
+      // Row 4 of cards
+      addMetricCard(cardStartRow + 12, 2, 'ESPERANZA MATEMÁTICA', expectedPayoff, 'money', expectedPayoff >= 0);
+      addMetricCard(cardStartRow + 12, 5, 'RISK/REWARD', riskReward > 100 ? '∞' : riskReward, riskReward > 100 ? '' : 'number');
+
+      // Row 5 of cards
+      addMetricCard(cardStartRow + 16, 2, 'MEJOR OPERACIÓN', bestTrade, 'money', true);
+      addMetricCard(cardStartRow + 16, 5, 'PEOR OPERACIÓN', worstTrade, 'money', false);
+
+      // Row 6 of cards
+      addMetricCard(cardStartRow + 20, 2, 'RACHA GANADORA MÁX', maxWinStreak, '');
+      addMetricCard(cardStartRow + 20, 5, 'RACHA PERDEDORA MÁX', maxLossStreak, '');
+
+      // Additional stats section
+      const statsRow = cardStartRow + 25;
+      summary.mergeCells(`B${statsRow}:G${statsRow}`);
+      const statsTitle = summary.getCell(`B${statsRow}`);
+      statsTitle.value = 'ESTADÍSTICAS ADICIONALES';
+      statsTitle.font = { name: 'Calibri', size: 12, bold: true, color: { argb: 'FF1E293B' } };
+      statsTitle.border = { bottom: { style: 'medium', color: { argb: 'FF1E293B' } } };
+
+      const additionalStats = [
+          ['Ganancia Bruta', grossProfit, 'money'],
+          ['Pérdida Bruta', -grossLoss, 'money'],
+          ['Operaciones Ganadoras', winningTrades, ''],
+          ['Operaciones Perdedoras', losingTrades, ''],
+          ['Promedio Ganancia', avgWin, 'money'],
+          ['Promedio Pérdida', -avgLoss, 'money'],
+          ['Duración Media (horas)', avgDurationHours, 'number'],
+          ['Factor de Recuperación', recoveryFactor, 'number'],
       ];
 
-      // Draw Metrics in 2 columns
-      metrics.forEach((m, i) => {
-          const r = startRow + Math.floor(i / 2) * 2;
-          const c = 2 + (i % 2) * 2; // Col B (2) or D (4)
-          
-          // Label Cell
-          const labelCell = dashboard.getCell(r, c);
-          labelCell.value = m.label;
-          labelCell.font = { name: 'Arial', size: 9, color: { argb: 'FF64748B' }, bold: true };
-          labelCell.border = { bottom: {style:'thin', color: {argb:'FFCBD5E1'}} };
-          
-          // Value Cell
-          const valCell = dashboard.getCell(r + 1, c);
-          valCell.value = m.value;
-          valCell.font = { name: 'Arial', size: 14, bold: true, color: { argb: m.color || 'FF0F172A' } };
-          valCell.alignment = { horizontal: 'left' };
-          
-          // Formatting
-          if (m.type === 'money') valCell.numFmt = '"$"#,##0.00';
-          if (m.type === 'percent') valCell.numFmt = '0.00%';
-          if (m.type === 'number') valCell.numFmt = '0.00';
-          
-          // Background Box Effect (optional simple border for the block)
-          // dashboard.getCell(r, c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
-          // dashboard.getCell(r+1, c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+      additionalStats.forEach((stat, i) => {
+          const r = statsRow + 2 + i;
+          summary.getCell(r, 2).value = stat[0];
+          summary.getCell(r, 2).font = { name: 'Calibri', size: 10, color: { argb: 'FF64748B' } };
+
+          const valCell = summary.getCell(r, 5);
+          valCell.value = stat[1];
+          valCell.font = { name: 'Calibri', size: 10, bold: true };
+          if (stat[2] === 'money') valCell.numFmt = '"$"#,##0.00';
+          if (stat[2] === 'number') valCell.numFmt = '0.00';
       });
 
-      dashboard.getColumn(2).width = 25; // Col B
-      dashboard.getColumn(3).width = 5;  // Spacer
-      dashboard.getColumn(4).width = 25; // Col D
+      // Column widths
+      summary.getColumn(1).width = 3;
+      summary.getColumn(2).width = 22;
+      summary.getColumn(3).width = 12;
+      summary.getColumn(4).width = 3;
+      summary.getColumn(5).width = 22;
+      summary.getColumn(6).width = 12;
+      summary.getColumn(7).width = 3;
 
       // ==========================================
-      // HOJA 2: OPERACIONES (DETAILED)
+      // HOJA 2: RESUMEN MENSUAL
       // ==========================================
-      const dataSheet = workbook.addWorksheet("Operaciones");
-      
-      const columns = [
+      const monthlySheet = workbook.addWorksheet("Resumen Mensual");
+
+      monthlySheet.columns = [
+        { header: "Mes", key: "month", width: 15 },
+        { header: "Operaciones", key: "trades", width: 14 },
+        { header: "Ganadas", key: "wins", width: 12 },
+        { header: "Win Rate", key: "winRate", width: 12 },
+        { header: "Beneficio", key: "profit", width: 15 },
+        { header: "Balance Acum.", key: "cumBalance", width: 15 },
+      ];
+
+      applyHeaderStyle(monthlySheet.getRow(1));
+
+      let cumBalance = 0;
+      const sortedMonths = Object.keys(monthlyData).sort();
+      sortedMonths.forEach((month, i) => {
+          const data = monthlyData[month];
+          cumBalance += data.profit;
+
+          const row = monthlySheet.addRow({
+              month: month,
+              trades: data.trades,
+              wins: data.wins,
+              winRate: data.trades > 0 ? data.wins / data.trades : 0,
+              profit: data.profit,
+              cumBalance: cumBalance,
+          });
+
+          // Striped rows
+          if (i % 2 !== 0) {
+              row.eachCell({ includeEmpty: true }, (cell) => {
+                  cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+              });
+          }
+
+          // Color profit
+          const profitCell = row.getCell(5);
+          profitCell.font = { color: { argb: data.profit >= 0 ? 'FF16A34A' : 'FFDC2626' }, bold: true };
+          profitCell.numFmt = '"$"#,##0.00';
+
+          row.getCell(4).numFmt = '0.0%';
+          row.getCell(6).numFmt = '"$"#,##0.00';
+      });
+
+      monthlySheet.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: 6 } };
+      monthlySheet.views = [{ state: 'frozen', xSplit: 0, ySplit: 1 }];
+
+      // ==========================================
+      // HOJA 3: ANÁLISIS POR SÍMBOLO
+      // ==========================================
+      const symbolSheet = workbook.addWorksheet("Por Símbolo");
+
+      symbolSheet.columns = [
+        { header: "Símbolo", key: "symbol", width: 12 },
+        { header: "Operaciones", key: "trades", width: 14 },
+        { header: "Ganadas", key: "wins", width: 12 },
+        { header: "Win Rate", key: "winRate", width: 12 },
+        { header: "Beneficio", key: "profit", width: 15 },
+        { header: "Volumen Total", key: "volume", width: 14 },
+        { header: "% del Total", key: "percentage", width: 12 },
+      ];
+
+      applyHeaderStyle(symbolSheet.getRow(1));
+
+      const sortedSymbols = Object.entries(symbolData).sort((a, b) => b[1].profit - a[1].profit);
+      sortedSymbols.forEach(([symbol, data], i) => {
+          const row = symbolSheet.addRow({
+              symbol: symbol,
+              trades: data.trades,
+              wins: data.wins,
+              winRate: data.trades > 0 ? data.wins / data.trades : 0,
+              profit: data.profit,
+              volume: data.volume,
+              percentage: totalTrades > 0 ? data.trades / totalTrades : 0,
+          });
+
+          if (i % 2 !== 0) {
+              row.eachCell({ includeEmpty: true }, (cell) => {
+                  cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+              });
+          }
+
+          const profitCell = row.getCell(5);
+          profitCell.font = { color: { argb: data.profit >= 0 ? 'FF16A34A' : 'FFDC2626' }, bold: true };
+          profitCell.numFmt = '"$"#,##0.00';
+
+          row.getCell(4).numFmt = '0.0%';
+          row.getCell(6).numFmt = '0.00';
+          row.getCell(7).numFmt = '0.0%';
+      });
+
+      symbolSheet.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: 7 } };
+      symbolSheet.views = [{ state: 'frozen', xSplit: 0, ySplit: 1 }];
+
+      // ==========================================
+      // HOJA 4: CURVA DE EQUITY
+      // ==========================================
+      const equitySheet = workbook.addWorksheet("Curva de Equity");
+
+      equitySheet.columns = [
+        { header: "#", key: "trade", width: 8 },
+        { header: "Fecha", key: "date", width: 18 },
+        { header: "Balance", key: "balance", width: 15 },
+      ];
+
+      applyHeaderStyle(equitySheet.getRow(1));
+
+      equityCurve.forEach((point, i) => {
+          const row = equitySheet.addRow({
+              trade: point.trade,
+              date: point.date,
+              balance: point.balance,
+          });
+
+          if (i % 2 !== 0) {
+              row.eachCell({ includeEmpty: true }, (cell) => {
+                  cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+              });
+          }
+
+          row.getCell(3).numFmt = '"$"#,##0.00';
+      });
+
+      equitySheet.views = [{ state: 'frozen', xSplit: 0, ySplit: 1 }];
+
+      // ==========================================
+      // HOJA 5: HISTORIAL COMPLETO
+      // ==========================================
+      const tradesSheet = workbook.addWorksheet("Historial");
+
+      tradesSheet.columns = [
         { header: "Ticket", key: "ticket", width: 12 },
         { header: "Símbolo", key: "symbol", width: 10 },
         { header: "Tipo", key: "type", width: 8 },
         { header: "Volumen", key: "volume", width: 10 },
-        { header: "Apertura", key: "openTime", width: 20 },
+        { header: "Apertura", key: "openTime", width: 18 },
         { header: "Precio Open", key: "openPrice", width: 12 },
-        { header: "Cierre", key: "closeTime", width: 20 },
+        { header: "Cierre", key: "closeTime", width: 18 },
         { header: "Precio Close", key: "closePrice", width: 12 },
+        { header: "Pips", key: "pips", width: 10 },
         { header: "Beneficio", key: "profit", width: 12 },
-        { header: "Comisión", key: "commission", width: 12 },
-        { header: "Swap", key: "swap", width: 12 },
+        { header: "Comisión", key: "commission", width: 10 },
+        { header: "Swap", key: "swap", width: 10 },
         { header: "Neto", key: "netProfit", width: 12 },
+        { header: "Duración", key: "duration", width: 12 },
       ];
-      
-      dataSheet.columns = columns;
 
-      // Header Row Style
-      const headerRow = dataSheet.getRow(1);
-      headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-      headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } };
-      headerRow.alignment = { horizontal: 'center' };
+      applyHeaderStyle(tradesSheet.getRow(1));
 
-      // Add Data
       const sortedTrades = [...trades].sort((a, b) => b.closeTime.getTime() - a.closeTime.getTime());
-      
+
       sortedTrades.forEach((t, index) => {
           const net = t.profit + (t.commission || 0) + (t.swap || 0);
-          const row = dataSheet.addRow({
+          const durationMs = t.closeTime.getTime() - t.openTime.getTime();
+          const durationHours = durationMs / (1000 * 60 * 60);
+
+          // Calculate pips (simplified)
+          const priceDiff = t.type === 'buy' ? t.closePrice - t.openPrice : t.openPrice - t.closePrice;
+          const pipMultiplier = t.symbol.includes('JPY') ? 100 : 10000;
+          const pips = priceDiff * pipMultiplier;
+
+          const row = tradesSheet.addRow({
               ticket: t.ticket.toString(),
               symbol: t.symbol,
-              type: t.type,
+              type: t.type.toUpperCase(),
               volume: t.volume,
               openTime: t.openTime,
               openPrice: t.openPrice,
               closeTime: t.closeTime,
               closePrice: t.closePrice,
+              pips: pips,
               profit: t.profit,
-              commission: t.commission,
-              swap: t.swap,
+              commission: t.commission || 0,
+              swap: t.swap || 0,
               netProfit: net,
+              duration: durationHours < 1 ? `${Math.round(durationHours * 60)}m` : `${durationHours.toFixed(1)}h`,
           });
 
-          // Striped Rows
           if (index % 2 !== 0) {
               row.eachCell({ includeEmpty: true }, (cell) => {
-                  cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+                  cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
               });
           }
 
-          // Color for Net Profit
-          const netCell = row.getCell(12); // Last column
-          netCell.font = { color: { argb: net >= 0 ? 'FF16A34A' : 'FFDC2626' }, bold: true };
-          
+          // Style type
           const typeCell = row.getCell(3);
-          typeCell.font = { color: { argb: t.type === 'buy' ? 'FF2563EB' : 'FFDB2777' } }; // Blue buy, Pink sell
+          typeCell.font = { color: { argb: t.type === 'buy' ? 'FF2563EB' : 'FFDB2777' }, bold: true };
+
+          // Style pips
+          const pipsCell = row.getCell(9);
+          pipsCell.font = { color: { argb: pips >= 0 ? 'FF16A34A' : 'FFDC2626' } };
+          pipsCell.numFmt = '0.0';
+
+          // Style net profit
+          const netCell = row.getCell(13);
+          netCell.font = { color: { argb: net >= 0 ? 'FF16A34A' : 'FFDC2626' }, bold: true };
+          netCell.numFmt = '"$"#,##0.00';
+
+          // Number formats
+          row.getCell(4).numFmt = '0.00';
+          row.getCell(6).numFmt = '0.00000';
+          row.getCell(8).numFmt = '0.00000';
+          row.getCell(10).numFmt = '"$"#,##0.00';
+          row.getCell(11).numFmt = '"$"#,##0.00';
+          row.getCell(12).numFmt = '"$"#,##0.00';
       });
 
-      // AutoFilter
-      dataSheet.autoFilter = {
-          from: { row: 1, column: 1 },
-          to: { row: 1, column: columns.length }
-      };
-
-      // Freeze Header
-      dataSheet.views = [
-          { state: 'frozen', xSplit: 0, ySplit: 1 }
-      ];
+      tradesSheet.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: 14 } };
+      tradesSheet.views = [{ state: 'frozen', xSplit: 0, ySplit: 1 }];
 
       const buffer = await workbook.xlsx.writeBuffer();
-      
+
       return new Response(buffer, {
         headers: {
             "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            "Content-Disposition": `attachment; filename="Report_${ea.name.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0,10)}.xlsx"`
+            "Content-Disposition": `attachment; filename="${ea.name.replace(/\s+/g, '_')}_Report_${new Date().toISOString().slice(0,10)}.xlsx"`
         }
       });
     },
@@ -1750,6 +2179,9 @@ const app = new Elysia({ prefix: "/api" })
         timestamp: Date.now(),
       });
 
+      // Verificar si es la primera conexión (lastSeen es null o no hay trades)
+      const isFirstConnection = !account.lastSeen;
+
       // Actualizar lastSeen y datos de la cuenta
       const updatedAccount = await prisma.tradingAccount.update({
         where: { id: account.id },
@@ -1763,6 +2195,18 @@ const app = new Elysia({ prefix: "/api" })
           equity: body.account.equity,
         },
       });
+
+      // Auto-sync en primera conexión: añadir comando sync_history
+      if (isFirstConnection) {
+        console.log(`[AUTO-SYNC] Primera conexión de cuenta ${account.id}, programando sincronización automática...`);
+        const queue = commandQueue.get(account.id) || { commands: [] };
+        queue.commands.push({
+          id: crypto.randomUUID(),
+          type: "sync_history",
+          createdAt: Date.now(),
+        });
+        commandQueue.set(account.id, queue);
+      }
 
       // Validar alertas asíncronamente (no bloquear respuesta)
       checkAlerts(updatedAccount); // Pasamos la cuenta actualizada
@@ -2025,15 +2469,12 @@ const app = new Elysia({ prefix: "/api" })
         commandQueue.set(account.id, { commands: [] });
       }
 
-      return { 
-        success: true, 
+      return {
+        success: true,
         commands: commands.map(c => ({
           id: c.id,
           type: c.type,
           ticket: c.ticket,
-          symbol: c.symbol,
-          timeframe: c.timeframe,
-          bars: c.bars,
           sl: c.sl,
           tp: c.tp,
         }))
@@ -2140,6 +2581,8 @@ const app = new Elysia({ prefix: "/api" })
       // 2. Inserción Masiva (Bulk Insert) de los nuevos
       // createMany es mucho más eficiente. skipDuplicates ignora los que ya existen (por ticket + accountId unique)
       let imported = 0;
+      let updated = 0;
+
       try {
         const result = await prisma.tradeHistory.createMany({
           data: preparedTrades,
@@ -2151,11 +2594,49 @@ const app = new Elysia({ prefix: "/api" })
         return { success: false, error: "Error procesando trades", imported: 0 };
       }
 
-      return { 
-        success: true, 
-        message: `Sincronización rápida: ${imported} nuevos trades importados`,
+      // 3. Actualizar magic numbers de trades existentes que tengan magic 0 o diferente
+      // Esto es importante porque los trades pueden haber sido importados antes de configurar el magic number
+      try {
+        const tradesWithMagic = preparedTrades.filter(t => t.magicNumber && t.magicNumber !== 0);
+
+        if (tradesWithMagic.length > 0) {
+          // Agrupar por magic number para hacer updates en batch
+          const updatePromises = tradesWithMagic.map(async (trade) => {
+            const result = await prisma.tradeHistory.updateMany({
+              where: {
+                accountId: account.id,
+                ticket: trade.ticket,
+                OR: [
+                  { magicNumber: 0 },
+                  { magicNumber: null },
+                  { magicNumber: { not: trade.magicNumber } },
+                ],
+              },
+              data: {
+                magicNumber: trade.magicNumber,
+              },
+            });
+            return result.count;
+          });
+
+          const results = await Promise.all(updatePromises);
+          updated = results.reduce((sum, count) => sum + count, 0);
+
+          if (updated > 0) {
+            console.log(`[SYNC] Actualizados ${updated} trades con magic numbers`);
+          }
+        }
+      } catch (error) {
+        console.error("Error actualizando magic numbers:", error);
+        // No es crítico, continuamos
+      }
+
+      return {
+        success: true,
+        message: `Sincronización: ${imported} nuevos, ${updated} actualizados`,
         imported,
-        skipped: trades.length - imported, // Estimado
+        updated,
+        skipped: trades.length - imported - updated,
       };
     },
     {
@@ -2463,162 +2944,6 @@ const app = new Elysia({ prefix: "/api" })
       } catch (error: any) {
         return { success: false, error: error.message };
       }
-    }
-  )
-
-  // ============================================
-  // CHART DATA - Solicitar datos de gráfico (Frontend -> EA)
-  // ============================================
-  .post(
-    "/accounts/:id/request-chart",
-    async ({ params, body, request }) => {
-      const account = await prisma.tradingAccount.findUnique({
-        where: { id: params.id },
-      });
-
-      if (!account) {
-        return { success: false, error: "Cuenta no encontrada" };
-      }
-
-      await verifySession(request.headers, account.userId);
-
-      // Generar request ID único
-      const requestId = crypto.randomUUID();
-
-      // Añadir comando a la cola del EA
-      const queue = commandQueue.get(params.id) || { commands: [] };
-      queue.commands.push({
-        id: crypto.randomUUID(),
-        type: "request_chart_data",
-        symbol: body.symbol,
-        timeframe: body.timeframe,
-        bars: body.bars || 200,
-        requestId,
-        createdAt: Date.now(),
-      });
-      commandQueue.set(params.id, queue);
-
-      return { 
-        success: true, 
-        message: `Solicitud de datos OHLC enviada para ${body.symbol}`,
-        requestId,
-      };
-    },
-    {
-      params: t.Object({
-        id: t.String(),
-      }),
-      body: t.Object({
-        symbol: t.String(),
-        timeframe: t.Number(), // En minutos: 1, 5, 15, 60, 240, 1440
-        bars: t.Optional(t.Number()),
-      }),
-    }
-  )
-
-  // ============================================
-  // CHART DATA - EA envía datos OHLC
-  // ============================================
-  .post(
-    "/ea/chart-data",
-    async ({ body }) => {
-      // Validar token
-      const account = await prisma.tradingAccount.findUnique({
-        where: { connectionToken: body.token },
-      });
-
-      if (!account) {
-        return { success: false, error: "Token inválido" };
-      }
-
-      // Clave de caché: accountId:symbol:timeframe
-      const cacheKey = `${account.id}:${body.symbol}:${body.timeframe}`;
-
-      // Guardar en caché
-      chartDataCache.set(cacheKey, {
-        data: {
-          symbol: body.symbol,
-          timeframe: body.timeframe,
-          bars: body.bars,
-        },
-        timestamp: Date.now(),
-      });
-
-      console.log(`[CHART] Cached ${body.bars.length} bars for ${body.symbol} TF=${body.timeframe}`);
-
-      return { 
-        success: true, 
-        message: `Datos OHLC recibidos: ${body.symbol} (${body.bars.length} barras)`,
-      };
-    },
-    {
-      body: t.Object({
-        msg_type: t.Optional(t.Literal("chart_data")),
-        token: t.String(),
-        symbol: t.String(),
-        timeframe: t.Number(),
-        bars: t.Array(t.Object({
-          time: t.Number(),
-          open: t.Number(),
-          high: t.Number(),
-          low: t.Number(),
-          close: t.Number(),
-          volume: t.Optional(t.Number()),
-        })),
-        requestId: t.Optional(t.String()),
-      }),
-    }
-  )
-
-  // ============================================
-  // CHART DATA - Frontend obtiene datos cacheados
-  // ============================================
-  .get(
-    "/accounts/:id/chart-data/:symbol",
-    async ({ params, query, request }) => {
-      const account = await prisma.tradingAccount.findUnique({
-        where: { id: params.id },
-      });
-
-      if (!account) {
-        return { success: false, error: "Cuenta no encontrada", available: false, data: null };
-      }
-
-      await verifySession(request.headers, account.userId);
-
-      const timeframe = parseInt(query.timeframe || "60");
-      const cacheKey = `${params.id}:${params.symbol}:${timeframe}`;
-      
-      const cached = chartDataCache.get(cacheKey);
-
-      // TTL: 5 min para TF <= H1, 30 min para D1
-      const ttl = timeframe >= 1440 ? 30 * 60 * 1000 : 5 * 60 * 1000;
-      const isValid = cached && (Date.now() - cached.timestamp < ttl);
-
-      if (isValid && cached) {
-        return {
-          success: true,
-          available: true,
-          data: cached.data,
-          timestamp: cached.timestamp,
-        };
-      }
-
-      return {
-        success: true,
-        available: false,
-        data: null,
-        message: "Datos no disponibles. Solicita al EA con POST /accounts/:id/request-chart",
-      };
-    },
-    {
-      params: t.Object({
-        id: t.String(),
-        symbol: t.String(),
-      }),
-      query: t.Object({
-        timeframe: t.Optional(t.String()),
-      }),
     }
   )
 

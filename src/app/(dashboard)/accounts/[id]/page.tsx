@@ -5,10 +5,7 @@ import { useSession } from "@/lib/auth-client";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { DatePicker } from "@/components/ui/date-picker";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -16,13 +13,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -42,13 +32,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   ArrowLeft,
-  Wifi,
-  WifiOff,
   TrendingUp,
   TrendingDown,
   DollarSign,
@@ -63,19 +48,19 @@ import {
   Target,
   Scale,
   RefreshCw,
-  PieChart as PieChartIcon,
   X,
-  AlertTriangle,
-  Timer,
-  Flame,
-  Download,
-  ChevronLeft,
-  ChevronRight,
   Plus,
   Trash2,
   Bot,
   ArrowUpRight,
-  Zap
+  Wallet,
+  ChartLine,
+  Flame,
+  Timer,
+  TrendingDown as DrawdownIcon,
+  Clock,
+  Award,
+  AlertTriangle,
 } from "lucide-react";
 import {
   XAxis,
@@ -85,28 +70,17 @@ import {
   ResponsiveContainer,
   AreaChart,
   Area,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-  RadarChart,
-  Radar,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
 } from "recharts";
 import { cn } from "@/lib/utils";
 
 import { CalendarPnL } from "@/components/CalendarPnL";
 import { CreateEADialog } from "@/components/CreateEADialog";
 import { EAStatsCard } from "@/components/EAStatsCard";
-import { AccountHeader } from "@/components/AccountHeader";
-import { AccountStatsGrid } from "@/components/AccountStatsGrid";
 import { AccountHistoryTab } from "@/components/AccountHistoryTab";
 import { AlertsDialog } from "@/components/AlertsDialog";
 import { AccountPageSkeleton } from "@/components/skeletons/AccountPageSkeleton";
-import { PositionCharts } from "@/components/PositionCharts";
+import { EditPositionDialog } from "@/components/EditPositionDialog";
+import { Pencil } from "lucide-react";
 
 
 interface Position {
@@ -196,9 +170,8 @@ export default function AccountPage() {
   const [loading, setLoading] = useState(true);
   const [copiedToken, setCopiedToken] = useState(false);
   const [eas, setEas] = useState<ExpertAdvisor[]>([]);
-  const [alerts, setAlerts] = useState<any[]>([]); // TODO: Type this properly
-  // Removed local state for Create EA dialog to optimize re-renders
-  
+  const [alerts, setAlerts] = useState<any[]>([]);
+
   const [activeTab, setActiveTab] = useState("overview");
   const [positionsPage, setPositionsPage] = useState(1);
   const [syncing, setSyncing] = useState(false);
@@ -206,6 +179,54 @@ export default function AccountPage() {
   const [closingAll, setClosingAll] = useState(false);
   const [positionsPerPage, setPositionsPerPage] = useState(0);
   const [chartRange, setChartRange] = useState<"1W" | "1M" | "3M" | "YTD" | "ALL">("1M");
+  const [tradeError, setTradeError] = useState<string | null>(null);
+  const [editingPositionTicket, setEditingPositionTicket] = useState<number | null>(null);
+
+  // Mapa de códigos de error MQL5 a mensajes legibles
+  const getMT5ErrorMessage = (code: number): string => {
+    const errors: Record<number, string> = {
+      10004: "Requote - El precio ha cambiado, intenta de nuevo",
+      10006: "Solicitud rechazada por el servidor",
+      10007: "Solicitud cancelada por el trader",
+      10008: "Orden colocada",
+      10009: "Solicitud completada",
+      10010: "Solo parte de la solicitud fue completada",
+      10011: "Error de proceso de solicitud",
+      10012: "Solicitud cancelada por timeout",
+      10013: "Solicitud inválida",
+      10014: "Volumen inválido en la solicitud",
+      10015: "Precio inválido en la solicitud",
+      10016: "Stops inválidos en la solicitud",
+      10017: "Trading deshabilitado",
+      10018: "Mercado cerrado",
+      10019: "Fondos insuficientes para completar la operación",
+      10020: "Los precios han cambiado",
+      10021: "No hay cotizaciones para procesar la solicitud",
+      10022: "Fecha de expiración inválida en la solicitud",
+      10023: "Estado de la orden ha cambiado",
+      10024: "Demasiadas solicitudes, reduce la frecuencia",
+      10025: "No hay cambios en la solicitud",
+      10026: "AutoTrading deshabilitado por el servidor",
+      10027: "AutoTrading deshabilitado en el cliente - Activa el botón 'AutoTrading' en MetaTrader",
+      10028: "Solicitud bloqueada por el dealer",
+      10029: "Modificación fallida - la orden o posición está demasiado cerca del mercado",
+      10030: "Modo de ejecución de órdenes no soportado",
+      10031: "Transacción bloqueada hasta que se complete la anterior",
+      10032: "Solo se permiten posiciones largas",
+      10033: "Solo se permiten posiciones cortas",
+      10034: "Solo se permite cerrar posiciones (FIFO)",
+      10035: "La posición ya ha sido cerrada",
+      10036: "Una orden de cierre ya existe para esta posición",
+      10038: "El número de posiciones abiertas ha alcanzado el límite",
+      10039: "La orden de activación de pending ya ha sido ejecutada",
+      10040: "Solo se permiten órdenes largas",
+      10041: "Solo se permiten órdenes cortas",
+      10042: "Solo se permiten órdenes cortas",
+      10043: "El volumen de la posición ha cambiado",
+      10044: "La posición no se encontró",
+    };
+    return errors[code] || `Error desconocido (código: ${code})`;
+  };
 
   useEffect(() => {
     if (session?.user?.id) {
@@ -217,8 +238,6 @@ export default function AccountPage() {
     }
   }, [session?.user?.id, accountId]);
 
-
-
   useEffect(() => {
     if (!accountId) return;
 
@@ -227,7 +246,6 @@ export default function AccountPage() {
         const res = await fetch(`/api/accounts/${accountId}/live`);
         const data = await res.json();
 
-        // Siempre actualizar liveData si hay datos, independiente de connected
         if (data.data) {
           setLiveData(prev => {
               if (prev && JSON.stringify(prev) === JSON.stringify(data.data)) {
@@ -249,7 +267,6 @@ export default function AccountPage() {
           });
         }
 
-        // El estado isLive indica si los datos son recientes (< 30s)
         setIsLive(data.connected);
       } catch (error) {
         console.error("Error fetching live data:", error);
@@ -268,17 +285,13 @@ export default function AccountPage() {
       try {
         const res = await fetch(`/api/accounts/${accountId}/trades?limit=100000`);
         const data = await res.json();
-        
-        // Optimización: Solo actualizar si hay cambios
+
         setAllTrades(prev => {
           if (data.length !== prev.length) return data;
-          // Simple check for last element if sorted by time, or check first if sorted desc
-          // Assuming data comes sorted by time usually
           if (data.length > 0 && prev.length > 0) {
              const lastData = data[data.length - 1];
              const lastPrev = prev[prev.length - 1];
              if (lastData.ticket !== lastPrev.ticket) return data;
-             // Check first element too just in case sorting fits
              const firstData = data[0];
              const firstPrev = prev[0];
              if (firstData.ticket !== firstPrev.ticket) return data;
@@ -361,15 +374,9 @@ export default function AccountPage() {
 
   const statsByEA = useMemo(() => {
     const stats: Record<string, any> = {};
-    
+
     eas.forEach(ea => {
-      // Filtrar trades por magic number. IMPORTANTE: trade.magicNumber puede ser null, hay que manejarlo
       const eaTrades = allTrades.filter(t => {
-         // Asegurar comparacion correcta. magicNumber en trade puede venir como string o number si no está tipado estricto en runtime
-         // En la interfaz Trade definimos magicNumber como optional? No lo veo en la interfaz Trade arriba
-         // Voy a asumir que debemos extender la interfaz Trade o castearlo.
-         // Revisando fetchTrades: devuelve TradeHistory, schema dice magicNumber Int?
-          
          return t.magicNumber === ea.magicNumber;
       });
 
@@ -377,7 +384,7 @@ export default function AccountPage() {
       const profit = eaTrades.reduce((sum, t) => sum + t.profit + t.swap + t.commission, 0);
       const wins = eaTrades.filter(t => t.profit + t.swap + t.commission > 0).length;
       const winRate = totalTrades > 0 ? (wins / totalTrades) * 100 : 0;
-      
+
       stats[ea.id] = { totalTrades, profit, winRate };
     });
     return stats;
@@ -416,16 +423,14 @@ export default function AccountPage() {
   };
 
   const syncHistory = useCallback(async (silent = false) => {
-    // Permitir sincronizar aunque no esté live si tenemos token
     if (!silent) setSyncing(true);
     try {
       const res = await fetch(`/api/accounts/${accountId}/sync-history`, { method: "POST" });
       const data = await res.json();
       if (data.success) {
-        // Si es silencioso o no, damos un tiempo para que el EA procese y luego actualizamos
-        setTimeout(() => { 
-          fetchTrades(); 
-          if (!silent) setSyncing(false); 
+        setTimeout(() => {
+          fetchTrades();
+          if (!silent) setSyncing(false);
         }, 3000);
       } else {
         if (!silent) setSyncing(false);
@@ -437,9 +442,9 @@ export default function AccountPage() {
   }, [accountId]);
 
   const closePosition = async (ticket: number) => {
-    // Marcar como cerrándose
+    setTradeError(null);
     setClosingTickets(prev => new Set(prev).add(ticket));
-    
+
     try {
       const res = await fetch(`/api/accounts/${accountId}/close-trade`, {
         method: "POST",
@@ -447,41 +452,73 @@ export default function AccountPage() {
         body: JSON.stringify({ ticket }),
       });
       const data = await res.json();
-      
-      if (data.success) {
-        // Polling más rápido temporalmente para detectar el cierre
-        const checkClosed = setInterval(async () => {
+
+      if (!data.success) {
+        setTradeError(`Error al cerrar #${ticket}: ${data.error || "Error desconocido"}`);
+        setClosingTickets(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(ticket);
+          return newSet;
+        });
+        return;
+      }
+
+      // Comando enviado - verificar después de un tiempo si la posición sigue abierta
+      let attempts = 0;
+      const maxAttempts = 10;
+
+      const checkClosed = setInterval(async () => {
+        attempts++;
+        try {
           const liveRes = await fetch(`/api/accounts/${accountId}/live`);
           const liveData = await liveRes.json();
+
           if (liveData.connected && liveData.data) {
             const stillOpen = liveData.data.positions.some((p: Position) => p.ticket === ticket);
+
             if (!stillOpen) {
+              // Posición cerrada exitosamente
               setClosingTickets(prev => {
                 const newSet = new Set(prev);
                 newSet.delete(ticket);
                 return newSet;
               });
               setLiveData(liveData.data);
-              // El EA ya envía el trade cerrado via /ea/trade-closed
-              // No es necesario sincronizar todo el historial
               fetchTrades();
               clearInterval(checkClosed);
+            } else if (attempts >= maxAttempts) {
+              // Después de varios intentos, la posición sigue abierta - mostrar error
+              clearInterval(checkClosed);
+              setClosingTickets(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(ticket);
+                return newSet;
+              });
+              setTradeError(`No se pudo cerrar la posición #${ticket}. ${getMT5ErrorMessage(10027)}`);
             }
           }
-        }, 500);
-        
-        // Timeout después de 10 segundos
-        setTimeout(() => {
-          clearInterval(checkClosed);
-          setClosingTickets(prev => {
-            const newSet = new Set(prev);
+        } catch (e) {
+          console.error("Error checking position status:", e);
+        }
+      }, 500);
+
+      // Timeout de seguridad
+      setTimeout(() => {
+        clearInterval(checkClosed);
+        setClosingTickets(prev => {
+          const newSet = new Set(prev);
+          if (newSet.has(ticket)) {
             newSet.delete(ticket);
-            return newSet;
-          });
-        }, 10000);
-      }
+            // Si todavía estaba en la lista de cierre, probablemente falló
+            setTradeError(`Timeout al cerrar #${ticket}. Verifica que AutoTrading esté habilitado en MetaTrader.`);
+          }
+          return newSet;
+        });
+      }, 6000);
+
     } catch (error) {
       console.error("Error closing position:", error);
+      setTradeError(`Error de conexión al intentar cerrar #${ticket}`);
       setClosingTickets(prev => {
         const newSet = new Set(prev);
         newSet.delete(ticket);
@@ -491,86 +528,182 @@ export default function AccountPage() {
   };
 
   const closeAllPositions = async () => {
-    
+    setTradeError(null);
     setClosingAll(true);
-    
+    const initialPositionCount = positions.length;
+
     try {
       const res = await fetch(`/api/accounts/${accountId}/close-all`, { method: "POST" });
       const data = await res.json();
-      
-      if (data.success) {
-        // Polling más rápido para detectar que todas se cerraron
-        const checkClosed = setInterval(async () => {
+
+      if (!data.success) {
+        setTradeError(`Error al cerrar todas las posiciones: ${data.error || "Error desconocido"}`);
+        setClosingAll(false);
+        return;
+      }
+
+      let attempts = 0;
+      const maxAttempts = 20;
+
+      const checkClosed = setInterval(async () => {
+        attempts++;
+        try {
           const liveRes = await fetch(`/api/accounts/${accountId}/live`);
           const liveData = await liveRes.json();
+
           if (liveData.connected && liveData.data) {
-            if (liveData.data.positions.length === 0) {
+            const remainingPositions = liveData.data.positions.length;
+
+            if (remainingPositions === 0) {
+              // Todas las posiciones cerradas
               setClosingAll(false);
               setLiveData(liveData.data);
-              // El EA envía cada trade cerrado individualmente
               fetchTrades();
               clearInterval(checkClosed);
+            } else if (attempts >= maxAttempts) {
+              // Algunas posiciones siguen abiertas
+              clearInterval(checkClosed);
+              setClosingAll(false);
+              setTradeError(`No se pudieron cerrar todas las posiciones. Quedan ${remainingPositions} de ${initialPositionCount} abiertas. ${getMT5ErrorMessage(10027)}`);
             }
           }
-        }, 500);
-        
-        // Timeout después de 15 segundos
-        setTimeout(() => {
-          clearInterval(checkClosed);
+        } catch (e) {
+          console.error("Error checking positions:", e);
+        }
+      }, 500);
+
+      // Timeout de seguridad
+      setTimeout(() => {
+        clearInterval(checkClosed);
+        if (closingAll) {
           setClosingAll(false);
-        }, 15000);
-      }
+          setTradeError(`Timeout al cerrar posiciones. Verifica que AutoTrading esté habilitado en MetaTrader.`);
+        }
+      }, 12000);
+
     } catch (error) {
       console.error("Error closing all positions:", error);
+      setTradeError(`Error de conexión al intentar cerrar todas las posiciones`);
       setClosingAll(false);
     }
   };
 
-  // Cálculos Memoizados para Rendimiento (Movidos al inicio para evitar violación de reglas de Hooks)
   const stats = useMemo(() => {
     const totalTrades = allTrades.length;
     const winningTrades = allTrades.filter(t => t.profit + t.swap + t.commission > 0).length;
     const losingTrades = allTrades.filter(t => t.profit + t.swap + t.commission < 0).length;
     const winRate = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0;
     const totalProfit = allTrades.reduce((sum, t) => sum + t.profit + t.swap + t.commission, 0);
-    
+
     const winTradesList = allTrades.filter(t => t.profit + t.swap + t.commission > 0);
     const lossTradesList = allTrades.filter(t => t.profit + t.swap + t.commission < 0);
-    
-    const avgWin = winningTrades > 0 
-      ? winTradesList.reduce((sum, t) => sum + t.profit + t.swap + t.commission, 0) / winningTrades 
+
+    const avgWin = winningTrades > 0
+      ? winTradesList.reduce((sum, t) => sum + t.profit + t.swap + t.commission, 0) / winningTrades
       : 0;
-    const avgLoss = losingTrades > 0 
+    const avgLoss = losingTrades > 0
       ? Math.abs(lossTradesList.reduce((sum, t) => sum + t.profit + t.swap + t.commission, 0) / losingTrades)
       : 0;
     const profitFactor = avgLoss > 0 ? avgWin / avgLoss : 0;
     const expectancy = totalTrades > 0 ? totalProfit / totalTrades : 0;
 
-    return { totalTrades, winningTrades, losingTrades, winRate, totalProfit, avgWin, avgLoss, profitFactor, expectancy };
+    // Best and worst trades
+    const tradePLs = allTrades.map(t => t.profit + t.swap + t.commission);
+    const bestTrade = tradePLs.length > 0 ? Math.max(...tradePLs) : 0;
+    const worstTrade = tradePLs.length > 0 ? Math.min(...tradePLs) : 0;
+
+    // Risk-Reward Ratio (average win / average loss)
+    const riskRewardRatio = avgLoss > 0 ? avgWin / avgLoss : 0;
+
+    // Average trade duration (in hours)
+    let avgDurationHours = 0;
+    if (allTrades.length > 0) {
+      const totalDuration = allTrades.reduce((sum, t) => {
+        const open = new Date(t.openTime).getTime();
+        const close = new Date(t.closeTime).getTime();
+        return sum + (close - open);
+      }, 0);
+      avgDurationHours = (totalDuration / allTrades.length) / (1000 * 60 * 60);
+    }
+
+    return {
+      totalTrades, winningTrades, losingTrades, winRate, totalProfit,
+      avgWin, avgLoss, profitFactor, expectancy,
+      bestTrade, worstTrade, riskRewardRatio, avgDurationHours
+    };
   }, [allTrades]);
 
-  const { totalTrades, winningTrades, losingTrades, winRate, totalProfit, avgWin, avgLoss, profitFactor, expectancy } = stats;
+  const { totalTrades, winningTrades, losingTrades, winRate, totalProfit, avgWin, avgLoss, profitFactor, expectancy, bestTrade, worstTrade, riskRewardRatio, avgDurationHours } = stats;
 
   const positions = liveData?.positions || [];
   const totalFloatingPL = useMemo(() => positions.reduce((sum: number, pos: Position) => sum + pos.profit, 0), [positions]);
-  
-  // Usar datos live o fallback a stored account data
+
+  // Get the current position data from positions (updates in real-time)
+  const editingPosition = useMemo(() => {
+    if (!editingPositionTicket) return null;
+    return positions.find(p => p.ticket === editingPositionTicket) || null;
+  }, [editingPositionTicket, positions]);
+
   const currentBalance = liveData?.account.balance ?? account?.balance ?? 0;
   const currentEquity = liveData?.account.equity ?? account?.equity ?? 0;
-  const currentFreeMargin = liveData?.account.free_margin ?? 0; // Stored data might not have free margin easily unless snapshotted
-  
+  const currentFreeMargin = liveData?.account.free_margin ?? 0;
+
   const floatingPL = liveData ? liveData.account.equity - liveData.account.balance : (currentEquity - currentBalance);
 
+  // Calculate Drawdown from balance history
+  const drawdownStats = useMemo(() => {
+    if (!allTrades || allTrades.length === 0) return { maxDrawdown: 0, maxDrawdownPercent: 0, currentDrawdown: 0, currentDrawdownPercent: 0, initialBalance: 0, roi: 0 };
 
+    // Build balance history by sorting trades chronologically
+    const sortedTrades = [...allTrades].sort((a, b) =>
+      new Date(a.closeTime).getTime() - new Date(b.closeTime).getTime()
+    );
+
+    // Calculate initial balance (current balance - total profit)
+    const calcInitialBalance = currentBalance - totalProfit;
+
+    let runningBalance = calcInitialBalance;
+    let peak = calcInitialBalance;
+    let maxDrawdown = 0;
+    let maxDrawdownPercent = 0;
+
+    sortedTrades.forEach(t => {
+      const pl = t.profit + t.swap + t.commission;
+      runningBalance += pl;
+
+      if (runningBalance > peak) {
+        peak = runningBalance;
+      }
+
+      const drawdown = peak - runningBalance;
+      const drawdownPercent = peak > 0 ? (drawdown / peak) * 100 : 0;
+
+      if (drawdown > maxDrawdown) {
+        maxDrawdown = drawdown;
+        maxDrawdownPercent = drawdownPercent;
+      }
+    });
+
+    // Current drawdown (from current peak to current balance)
+    const currentPeak = Math.max(peak, currentBalance);
+    const currentDrawdown = currentPeak - currentBalance;
+    const currentDrawdownPercent = currentPeak > 0 ? (currentDrawdown / currentPeak) * 100 : 0;
+
+    // ROI calculation
+    const roi = calcInitialBalance > 0 ? ((currentBalance - calcInitialBalance) / calcInitialBalance) * 100 : 0;
+
+    return { maxDrawdown, maxDrawdownPercent, currentDrawdown, currentDrawdownPercent, initialBalance: calcInitialBalance, roi };
+  }, [allTrades, currentBalance, totalProfit]);
+
+  const { maxDrawdown, maxDrawdownPercent, currentDrawdown, currentDrawdownPercent, initialBalance, roi } = drawdownStats;
 
   const effectivePositionsPerPage = positionsPerPage === 0 ? positions.length : positionsPerPage;
   const totalPositionPages = effectivePositionsPerPage > 0 ? Math.ceil(positions.length / effectivePositionsPerPage) : 1;
-  const paginatedPositions = useMemo(() => 
+  const paginatedPositions = useMemo(() =>
     positionsPerPage === 0 ? positions : positions.slice((positionsPage - 1) * positionsPerPage, positionsPage * positionsPerPage),
     [positions, positionsPage, positionsPerPage]
   );
 
-  // Datos para gráficos (Memoizados)
   const symbolDistribution = useMemo(() => {
     const bySymbol: Record<string, { profit: number; trades: number }> = {};
     allTrades.forEach((t: Trade) => {
@@ -586,52 +719,36 @@ export default function AccountPage() {
       .slice(0, 5);
   }, [allTrades]);
 
-
-  // Datos para gráfico de Balance Diario (Calculado hacia atrás desde el balance actual)
   const dailyBalanceHistory = useMemo(() => {
     if (!allTrades || allTrades.length === 0) return [];
 
-    // 1. Agrupar trades por día y sumar PnL (profit + swap + commission)
     const pnlByDay: Record<string, number> = {};
-    // Usamos un mapa para ordenar fechas correctamente
     allTrades.forEach(t => {
-      const dateStr = new Date(t.closeTime).toISOString().split('T')[0]; // YYYY-MM-DD
+      const dateStr = new Date(t.closeTime).toISOString().split('T')[0];
       const pnl = t.profit + t.swap + t.commission;
       pnlByDay[dateStr] = (pnlByDay[dateStr] || 0) + pnl;
     });
 
-    // 2. Obtener fechas ordenadas descendente (más reciente primero) para restar del balance actual
     const sortedDatesDesc = Object.keys(pnlByDay).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
-    
-    // 3. Crear puntos de historia { date, balance }
-    // Empezamos con el balance actual como el punto final (hoy/ahora)
+
     const historyPoints = [];
     let runningBalance = currentBalance;
 
-    // El último punto es hoy con el balance actual
-    // (Opcional: Si queremos que el gráfico termine EXACTAMENTE en el último trade, 
-    // pero usualmente 'currentBalance' es lo más preciso "ahora mismo")
-    // historyPoints.push({ date: new Date().toISOString().split('T')[0], balance: runningBalance });
-
-    // Iteramos hacia atrás: El balance del día anterior = Balance Final del día actual - PnL del día actual
     for (const dateStr of sortedDatesDesc) {
-      // Guardamos el punto final de este día
-      historyPoints.push({ 
-        date: dateStr, 
+      historyPoints.push({
+        date: dateStr,
         balance: runningBalance,
         displayDate: new Date(dateStr).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
       });
 
-      // Restamos el PnL de este día para obtener el balance al inicio del día (o final del anterior)
       runningBalance -= pnlByDay[dateStr];
     }
 
-    // 4. Agregar el punto de "Capital Inicial" (Día antes del primer trade)
     if (sortedDatesDesc.length > 0) {
         const oldestDate = new Date(sortedDatesDesc[sortedDatesDesc.length - 1]);
         oldestDate.setDate(oldestDate.getDate() - 1);
         const initialDateStr = oldestDate.toISOString().split('T')[0];
-        
+
         historyPoints.push({
             date: initialDateStr,
             balance: runningBalance,
@@ -639,12 +756,10 @@ export default function AccountPage() {
         });
     }
 
-    // 5. Invertimos para tener orden ascendente
     const fullHistory = historyPoints.reverse();
 
-    // 6. Filtrar según chartRange y asegurar punto de inicio correcto
     const now = new Date();
-    let startDate = new Date(0); // Default ALL
+    let startDate = new Date(0);
 
     if (chartRange === "1W") {
       startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -656,14 +771,10 @@ export default function AccountPage() {
       startDate = new Date(now.getFullYear(), 0, 1);
     }
 
-    // Encontrar el primer punto dentro del rango
     const startIndex = fullHistory.findIndex(p => new Date(p.date) >= startDate);
-    
-    if (startIndex === -1) return []; // No hay datos en el rango
-    
-    // Si el rango empieza después del histórico completo (startIndex > 0),
-    // necesitamos añadir un punto artificial al inicio del rango con el balance que tenía
-    // en ese momento (que es el balance del punto anterior en el histórico completo).
+
+    if (startIndex === -1) return [];
+
     if (startIndex > 0) {
         const startBalance = fullHistory[startIndex - 1].balance;
         const syntheticStart = {
@@ -677,11 +788,9 @@ export default function AccountPage() {
     return fullHistory;
   }, [allTrades, currentBalance, chartRange]);
 
-
-
   const longTrades = useMemo(() => allTrades.filter((t: Trade) => t.type === "buy"), [allTrades]);
   const shortTrades = useMemo(() => allTrades.filter((t: Trade) => t.type === "sell"), [allTrades]);
-  
+
   const longWinRate = useMemo(() => {
     const wins = longTrades.filter(t => t.profit + t.swap + t.commission > 0).length;
     return longTrades.length > 0 ? (wins / longTrades.length) * 100 : 0;
@@ -692,7 +801,6 @@ export default function AccountPage() {
     return shortTrades.length > 0 ? (wins / shortTrades.length) * 100 : 0;
   }, [shortTrades]);
 
-  // Rachas
   const streaks = useMemo(() => {
     let maxWins = 0, maxLosses = 0, currentWins = 0, currentLosses = 0;
     [...allTrades].reverse().forEach(t => {
@@ -712,15 +820,9 @@ export default function AccountPage() {
 
   const { maxWins, maxLosses } = streaks;
 
-  // Radar data para perfil de trading
-  const radarData = useMemo(() => [
-    { metric: "Win Rate", value: Math.min(winRate, 100), fullMark: 100 },
-    { metric: "Profit Factor", value: Math.min(profitFactor * 25, 100), fullMark: 100 },
-    { metric: "Risk/Reward", value: avgLoss > 0 ? Math.min((avgWin / avgLoss) * 30, 100) : 50, fullMark: 100 },
-    { metric: "Consistencia", value: totalTrades > 5 ? Math.min(60 + (profitFactor * 10), 100) : 0, fullMark: 100 },
-    { metric: "Disciplina", value: totalTrades > 0 ? Math.min(70 + winRate * 0.3, 100) : 0, fullMark: 100 },
-    { metric: "Drawdown", value: 80, fullMark: 100 },
-  ], [winRate, profitFactor, avgWin, avgLoss, totalTrades]);
+  const formatCurrency = (value: number) => {
+    return value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
 
   if (loading) {
     return <AccountPageSkeleton />;
@@ -728,10 +830,14 @@ export default function AccountPage() {
 
   if (!account) {
     return (
-      <div className="flex h-full flex-col items-center justify-center">
-        <p className="text-muted-foreground">Cuenta no encontrada</p>
-        <Button variant="ghost" onClick={() => router.push("/dashboard")} className="mt-4 text-accent">
-          <ArrowLeft className="mr-2 h-4 w-4" />
+      <div className="flex h-full flex-col items-center justify-center py-24">
+        <div className="w-20 h-20 rounded-3xl bg-secondary/80 flex items-center justify-center mb-6">
+          <Wallet className="h-10 w-10 text-muted-foreground" />
+        </div>
+        <h3 className="text-xl font-semibold text-foreground mb-2">Cuenta no encontrada</h3>
+        <p className="text-muted-foreground mb-6">La cuenta que buscas no existe o fue eliminada.</p>
+        <Button variant="outline" onClick={() => router.push("/dashboard")} className="gap-2 rounded-xl">
+          <ArrowLeft className="h-4 w-4" />
           Volver al Dashboard
         </Button>
       </div>
@@ -739,239 +845,499 @@ export default function AccountPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <AccountHeader
-        account={account}
-        isLive={isLive}
-        syncing={syncing}
-        copiedToken={copiedToken}
-        onCopyToken={copyToken}
-        onSync={() => syncHistory()}
-        actions={<AlertsDialog accountId={accountId} alerts={alerts} />}
-      />
+    <div className="min-h-screen">
+      {/* === HERO SECTION === */}
+      <div className="relative mb-8 -mx-3 md:-mx-6 -mt-3 md:-mt-6 px-3 md:px-6 pt-6 pb-8 bg-gradient-to-b from-secondary/50 via-secondary/20 to-transparent">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 opacity-[0.015] dark:opacity-[0.03]" style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+        }} />
 
-      {/* Quick Stats Cards (Redesigned) */}
-      <AccountStatsGrid 
-        liveData={liveData}
-        floatingPL={floatingPL}
-        currentBalance={currentBalance}
-        currentEquity={currentEquity}
-        totalProfit={totalProfit}
-        totalTrades={totalTrades}
-        winRate={winRate}
-        winningTrades={winningTrades}
-        losingTrades={losingTrades}
-        profitFactor={profitFactor}
-        expectancy={expectancy}
-        currentFreeMargin={currentFreeMargin}
-      />
+        <div className="relative">
+          {/* Top Bar */}
+          <div className="flex items-center justify-between mb-6">
+            <Link
+              href="/dashboard"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-card/80 backdrop-blur border border-border text-sm text-muted-foreground hover:text-foreground hover:bg-card transition-all"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span className="hidden sm:inline">Dashboard</span>
+            </Link>
 
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        {/* Tabs compactos en móvil - solo iconos, texto completo en desktop */}
-        <TabsList className="bg-secondary/50 p-1 w-full grid grid-cols-4 md:inline-flex md:w-auto">
-          <TabsTrigger value="overview" className="data-[state=active]:bg-card px-2 md:px-4">
-            <BarChart3 className="h-4 w-4 md:mr-2" />
-            <span className="hidden md:inline">Resumen</span>
-          </TabsTrigger>
-          <TabsTrigger value="positions" className="data-[state=active]:bg-card px-2 md:px-4">
-            <CircleDot className="h-4 w-4 md:mr-2" />
-            <span className="hidden md:inline">Posiciones</span>
-            <span className="ml-1 text-xs">({positions.length})</span>
-          </TabsTrigger>
-          <TabsTrigger value="history" className="data-[state=active]:bg-card px-2 md:px-4">
-            <History className="h-4 w-4 md:mr-2" />
-            <span className="hidden md:inline">Historial</span>
-          </TabsTrigger>
-          <TabsTrigger value="eas" className="data-[state=active]:bg-card px-2 md:px-4">
-            <Bot className="h-4 w-4 md:mr-2" />
-            <span className="hidden md:inline">EAs</span>
-            <span className="ml-1 text-xs">({eas.length})</span>
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Overview Tab */}
-        <TabsContent value="overview" className="space-y-6">
-          {/* Equity Curve + Radar Chart */}
-          <div className="grid gap-4 md:gap-6 lg:grid-cols-3">
-            {/* Equity Curve (2 columns) */}
-            <Card className="border-border bg-card lg:col-span-3">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-foreground">Curva de Balance</CardTitle>
-                    <CardDescription>Crecimiento de la cuenta</CardDescription>
-                  </div>
-                  <div className="flex items-center gap-1 bg-secondary/30 p-1 rounded-lg">
-                    {(["1W", "1M", "3M", "YTD", "ALL"] as const).map((range) => (
-                      <button
-                        key={range}
-                        onClick={() => setChartRange(range)}
-                        className={cn(
-                          "px-3 py-1 text-xs font-medium rounded-md transition-all",
-                          chartRange === range
-                            ? "bg-background text-foreground shadow-sm"
-                            : "text-muted-foreground hover:text-foreground hover:bg-background/50"
-                        )}
-                      >
-                        {range}
-                      </button>
-                    ))}
-                  </div>
+            <div className="flex items-center gap-2">
+              {isLive && (
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-profit/10 border border-profit/20 text-xs font-medium text-profit">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-profit opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-profit" />
+                  </span>
+                  <span>Live</span>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[300px] outline-none focus:outline-none [&_.recharts-wrapper]:outline-none">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={dailyBalanceHistory}>
-                      <defs>
-                        <linearGradient id="balanceGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.3} />
-                          <stop offset="95%" stopColor="var(--chart-1)" stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                      <XAxis 
-                        dataKey="displayDate" 
-                        axisLine={false} 
-                        tickLine={false} 
-                        tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
-                        minTickGap={30}
-                      />
-                      <YAxis 
-                        axisLine={false} 
-                        tickLine={false} 
-                        tick={{ fill: "var(--muted-foreground)", fontSize: 12 }} 
-                        tickFormatter={(v) => `$${(v / 1000).toFixed(1)}k`} 
-                        domain={['auto', 'auto']} 
-                      />
-                      <Tooltip 
-                        contentStyle={{ backgroundColor: "var(--card)", border: "1px solid var(--border)", borderRadius: "8px" }}
-                        formatter={(value: number | undefined) => [`$${(value || 0).toLocaleString("en-US", {minimumFractionDigits: 2})}`, "Balance"]}
-                        labelFormatter={(label) => `Fecha: ${label}`}
-                      />
-                      <Area 
-                        type="monotone" 
-                        dataKey="balance" 
-                        stroke="var(--chart-1)" 
-                        strokeWidth={2} 
-                        fill="url(#balanceGradient)" 
-                        name="Balance" 
-                        animationDuration={500}
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
+              )}
 
-            
+              <AlertsDialog accountId={accountId} alerts={alerts} />
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={copyToken}
+                className={cn(
+                  "h-9 gap-2 rounded-xl transition-all",
+                  copiedToken
+                    ? "bg-profit/10 border-profit/30 text-profit"
+                    : "hover:bg-card"
+                )}
+              >
+                {copiedToken ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                <span className="hidden sm:inline">{copiedToken ? "Copiado" : "Token"}</span>
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => syncHistory()}
+                disabled={syncing}
+                className={cn(
+                  "h-9 gap-2 rounded-xl transition-all",
+                  syncing ? "bg-primary/10 border-primary/30 text-primary" : "hover:bg-card"
+                )}
+              >
+                <RefreshCw className={cn("h-4 w-4", syncing && "animate-spin")} />
+                <span className="hidden sm:inline">{syncing ? "Sync..." : "Sync"}</span>
+              </Button>
+            </div>
           </div>
 
-          {/* Stats Grid (4 cards) */}
-          <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-2 lg:grid-cols-4">
-            <Card className="border-border bg-card">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Profit Factor</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-bold font-mono text-foreground">{profitFactor === 0 ? "—" : profitFactor.toFixed(2)}</span>
-                  <span className={cn("text-xs", profitFactor >= 1.5 ? "text-profit" : profitFactor >= 1 ? "text-warning" : "text-loss")}>
-                    {profitFactor >= 1.5 ? "Excelente" : profitFactor >= 1 ? "Bueno" : "Mejorar"}
+          {/* Account Title */}
+          <div className="mb-6">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-2 tracking-tight">
+              {account.nickname || `Cuenta ${account.accountNumber}`}
+            </h1>
+            <div className="flex items-center gap-2 flex-wrap text-sm text-muted-foreground">
+              <span className="px-2.5 py-0.5 rounded-lg bg-secondary text-xs font-medium">{account.broker}</span>
+              <span className="text-foreground/40">•</span>
+              <span className="font-mono text-xs">#{account.accountNumber}</span>
+              <span className="text-foreground/40">•</span>
+              <span className="text-xs">{account.platform}</span>
+              <span className="text-foreground/40">•</span>
+              <span className="text-xs">{account.server}</span>
+            </div>
+          </div>
+
+          {/* Main Stats Display */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Left: Balance & Equity */}
+            <div className="lg:col-span-7 space-y-6">
+              {/* Balance Hero */}
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-2 tracking-wide uppercase">
+                  Balance
+                </p>
+                <div className="flex items-baseline gap-3 flex-wrap">
+                  <span className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tighter text-foreground tabular-nums">
+                    ${formatCurrency(currentBalance)}
                   </span>
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Avg Win: ${avgWin.toFixed(0)} | Avg Loss: ${avgLoss.toFixed(0)}
+              </div>
+
+              {/* Secondary Stats Row */}
+              <div className="flex flex-wrap gap-x-8 gap-y-4">
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wide">Equity</p>
+                  <p className="text-xl sm:text-2xl font-semibold text-foreground tabular-nums">
+                    ${formatCurrency(currentEquity)}
+                  </p>
+                </div>
+                <div className="w-px h-12 bg-border hidden sm:block" />
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wide">P/L Flotante</p>
+                  <div className="flex items-center gap-2">
+                    <p className={cn(
+                      "text-xl sm:text-2xl font-semibold tabular-nums",
+                      floatingPL >= 0 ? "text-profit" : "text-loss"
+                    )}>
+                      {floatingPL >= 0 ? "+" : ""}${formatCurrency(floatingPL)}
+                    </p>
+                    <span className={cn(
+                      "text-sm font-medium px-2 py-0.5 rounded-md",
+                      floatingPL >= 0 ? "bg-profit/10 text-profit" : "bg-loss/10 text-loss"
+                    )}>
+                      {floatingPL >= 0 ? "+" : ""}{currentBalance > 0 ? ((floatingPL / currentBalance) * 100).toFixed(2) : "0.00"}%
+                    </span>
+                  </div>
+                </div>
+                <div className="w-px h-12 bg-border hidden md:block" />
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wide">ROI</p>
+                  <div className="flex items-center gap-2">
+                    <p className={cn(
+                      "text-xl sm:text-2xl font-semibold tabular-nums",
+                      roi >= 0 ? "text-profit" : "text-loss"
+                    )}>
+                      {roi >= 0 ? "+" : ""}{roi.toFixed(2)}%
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Summary Cards */}
+            <div className="lg:col-span-5 grid grid-cols-2 gap-3">
+              {/* Max Drawdown - Most important risk metric */}
+              <div className="rounded-2xl bg-card/80 backdrop-blur border border-border p-4 hover:bg-card transition-colors">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="w-10 h-10 rounded-xl bg-loss/10 flex items-center justify-center">
+                    <TrendingDown className="h-5 w-5 text-loss" />
+                  </div>
+                </div>
+                <p className="text-2xl font-bold text-loss mb-1 tabular-nums">
+                  {maxDrawdownPercent.toFixed(1)}%
                 </p>
-              </CardContent>
-            </Card>
+                <p className="text-xs text-muted-foreground font-medium">Drawdown Máx</p>
+              </div>
 
-            <Card className="border-border bg-card">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Expectancy</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-baseline gap-2">
-                  <span className={cn("text-3xl font-bold font-mono", expectancy >= 0 ? "text-profit" : "text-loss")}>${expectancy.toFixed(2)}</span>
-                  <span className="text-xs text-muted-foreground">por trade</span>
-                </div>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Basado en {totalTrades} trades
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-border bg-card">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Rachas</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-4">
-                  <div>
-                    <span className="text-2xl font-bold font-mono text-profit">{maxWins}</span>
-                    <p className="text-xs text-muted-foreground">Wins seguidos</p>
-                  </div>
-                  <div>
-                    <span className="text-2xl font-bold font-mono text-loss">{maxLosses}</span>
-                    <p className="text-xs text-muted-foreground">Losses seguidos</p>
+              {/* Win Rate */}
+              <div className="rounded-2xl bg-card/80 backdrop-blur border border-border p-4 hover:bg-card transition-colors">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="w-10 h-10 rounded-xl bg-chart-1/10 flex items-center justify-center">
+                    <Target className="h-5 w-5 text-chart-1" />
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+                <p className="text-2xl font-bold text-foreground mb-1">{winRate.toFixed(1)}%</p>
+                <p className="text-xs text-muted-foreground font-medium">Win Rate</p>
+              </div>
 
-            <Card className="border-border bg-card">
-              <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Long vs Short</CardTitle>
-                <CardTitle className="text-sm font-medium text-muted-foreground">Winrate</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Long ({longTrades.length})</span>
-                    <span className="font-mono text-profit">{longWinRate.toFixed(0)}%</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Short ({shortTrades.length})</span>
-                    <span className="font-mono text-chart-3">{shortWinRate.toFixed(0)}%</span>
+              {/* Profit Factor */}
+              <div className="rounded-2xl bg-card/80 backdrop-blur border border-border p-4 hover:bg-card transition-colors">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
+                    <Scale className="h-5 w-5 text-muted-foreground" />
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+                <p className="text-2xl font-bold text-foreground mb-1">{profitFactor > 0 ? profitFactor.toFixed(2) : "—"}</p>
+                <p className="text-xs text-muted-foreground font-medium">Profit Factor</p>
+              </div>
+
+              {/* Total Trades */}
+              <div className="rounded-2xl bg-card/80 backdrop-blur border border-border p-4 hover:bg-card transition-colors">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
+                    <Activity className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                </div>
+                <p className="text-2xl font-bold text-foreground mb-1">{totalTrades}</p>
+                <p className="text-xs text-muted-foreground font-medium">Operaciones</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* === TAB NAVIGATION === */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-6 scrollbar-hide">
+        {[
+          { id: "overview", label: "Resumen", icon: BarChart3 },
+          { id: "positions", label: "Posiciones", icon: CircleDot, count: positions.length },
+          { id: "history", label: "Historial", icon: History },
+          { id: "eas", label: "EAs", icon: Bot, count: eas.length },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={cn(
+              "shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition-all",
+              activeTab === tab.id
+                ? "bg-foreground text-background"
+                : "bg-secondary/80 text-muted-foreground hover:text-foreground hover:bg-secondary"
+            )}
+          >
+            <tab.icon className="h-4 w-4" />
+            <span className="hidden sm:inline">{tab.label}</span>
+            {tab.count !== undefined && (
+              <span className={cn(
+                "text-xs",
+                activeTab === tab.id ? "opacity-70" : "opacity-60"
+              )}>
+                ({tab.count})
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* === TAB CONTENT === */}
+      {/* Overview Tab */}
+      {activeTab === "overview" && (
+        <div className="space-y-6">
+          {/* Equity Curve */}
+          <div className="rounded-2xl bg-card border border-border p-5 md:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+              <div>
+                <h3 className="text-lg font-semibold text-foreground">Curva de Balance</h3>
+                <p className="text-sm text-muted-foreground">Evolución de la cuenta</p>
+              </div>
+              <div className="flex items-center gap-1 bg-secondary/50 p-1 rounded-xl">
+                {(["1W", "1M", "3M", "YTD", "ALL"] as const).map((range) => (
+                  <button
+                    key={range}
+                    onClick={() => setChartRange(range)}
+                    className={cn(
+                      "px-3 py-1.5 text-xs font-medium rounded-lg transition-all",
+                      chartRange === range
+                        ? "bg-card text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {range}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="h-[300px] outline-none focus:outline-none [&_.recharts-wrapper]:outline-none">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={dailyBalanceHistory} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+                  <defs>
+                    <linearGradient id="balanceGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.15} />
+                      <stop offset="95%" stopColor="var(--chart-1)" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" strokeOpacity={0.5} vertical={false} />
+                  <XAxis
+                    dataKey="displayDate"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
+                    minTickGap={50}
+                    tickMargin={8}
+                  />
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
+                    tickFormatter={(v) => v >= 1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v}`}
+                    domain={['dataMin - 100', 'dataMax + 100']}
+                    width={55}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "var(--card)",
+                      border: "1px solid var(--border)",
+                      borderRadius: "8px",
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                      padding: "8px 12px"
+                    }}
+                    formatter={(value: number | undefined) => [`$${(value || 0).toLocaleString("en-US", {minimumFractionDigits: 2})}`, "Balance"]}
+                    labelFormatter={(label) => label}
+                    labelStyle={{ color: "var(--muted-foreground)", fontSize: 11, marginBottom: 4 }}
+                  />
+                  <Area
+                    type="linear"
+                    dataKey="balance"
+                    stroke="var(--chart-1)"
+                    strokeWidth={1}
+                    fill="url(#balanceGradient)"
+                    name="Balance"
+                    animationDuration={300}
+                    dot={false}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Stats Grid - Key Trading Metrics */}
+          <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
+            {/* Drawdown Actual */}
+            <div className="rounded-2xl bg-card border border-border p-4 md:p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium text-muted-foreground">Drawdown Actual</span>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className={cn("text-2xl md:text-3xl font-bold font-mono", currentDrawdownPercent > 5 ? "text-loss" : currentDrawdownPercent > 2 ? "text-warning" : "text-foreground")}>
+                  {currentDrawdownPercent.toFixed(1)}%
+                </span>
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                ${currentDrawdown.toFixed(0)} desde el pico
+              </p>
+            </div>
+
+            {/* Risk-Reward Ratio */}
+            <div className="rounded-2xl bg-card border border-border p-4 md:p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Scale className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium text-muted-foreground">Riesgo/Beneficio</span>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl md:text-3xl font-bold font-mono text-foreground">
+                  {riskRewardRatio > 0 ? `1:${riskRewardRatio.toFixed(1)}` : "—"}
+                </span>
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Win ${avgWin.toFixed(0)} / Loss ${avgLoss.toFixed(0)}
+              </p>
+            </div>
+
+            {/* Best & Worst Trade */}
+            <div className="rounded-2xl bg-card border border-border p-4 md:p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Award className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium text-muted-foreground">Mejor / Peor</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div>
+                  <span className="text-lg md:text-xl font-bold font-mono text-profit">+${bestTrade.toFixed(0)}</span>
+                  <p className="text-[10px] text-muted-foreground">Mejor</p>
+                </div>
+                <div className="w-px h-8 bg-border" />
+                <div>
+                  <span className="text-lg md:text-xl font-bold font-mono text-loss">${worstTrade.toFixed(0)}</span>
+                  <p className="text-[10px] text-muted-foreground">Peor</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Avg Duration */}
+            <div className="rounded-2xl bg-card border border-border p-4 md:p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Clock className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium text-muted-foreground">Duración Media</span>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl md:text-3xl font-bold font-mono text-foreground">
+                  {avgDurationHours < 1
+                    ? `${Math.round(avgDurationHours * 60)}m`
+                    : avgDurationHours < 24
+                    ? `${avgDurationHours.toFixed(1)}h`
+                    : `${(avgDurationHours / 24).toFixed(1)}d`}
+                </span>
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                {totalTrades} operaciones
+              </p>
+            </div>
+          </div>
+
+          {/* Secondary Stats Row */}
+          <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
+            {/* Expectancy */}
+            <div className="rounded-2xl bg-card border border-border p-4 md:p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium text-muted-foreground">Expectancy</span>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className={cn("text-2xl md:text-3xl font-bold font-mono", expectancy >= 0 ? "text-profit" : "text-loss")}>${expectancy.toFixed(2)}</span>
+                <span className="text-xs text-muted-foreground">por trade</span>
+              </div>
+            </div>
+
+            {/* Streaks */}
+            <div className="rounded-2xl bg-card border border-border p-4 md:p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Flame className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium text-muted-foreground">Rachas Máx</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <div>
+                  <span className="text-xl md:text-2xl font-bold font-mono text-profit">{maxWins}</span>
+                  <p className="text-[10px] text-muted-foreground">Wins</p>
+                </div>
+                <div className="w-px h-8 bg-border" />
+                <div>
+                  <span className="text-xl md:text-2xl font-bold font-mono text-loss">{maxLosses}</span>
+                  <p className="text-[10px] text-muted-foreground">Losses</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Win/Loss Trades */}
+            <div className="rounded-2xl bg-card border border-border p-4 md:p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Target className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium text-muted-foreground">Trades</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <div>
+                  <span className="text-xl md:text-2xl font-bold font-mono text-profit">{winningTrades}</span>
+                  <p className="text-[10px] text-muted-foreground">Ganados</p>
+                </div>
+                <div className="w-px h-8 bg-border" />
+                <div>
+                  <span className="text-xl md:text-2xl font-bold font-mono text-loss">{losingTrades}</span>
+                  <p className="text-[10px] text-muted-foreground">Perdidos</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Long vs Short */}
+            <div className="rounded-2xl bg-card border border-border p-4 md:p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <ChartLine className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium text-muted-foreground">Long vs Short</span>
+              </div>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Long ({longTrades.length})</span>
+                  <span className="font-mono font-medium text-profit">{longWinRate.toFixed(0)}%</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Short ({shortTrades.length})</span>
+                  <span className="font-mono font-medium text-chart-3">{shortWinRate.toFixed(0)}%</span>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Calendar View */}
           <CalendarPnL trades={allTrades} />
-        </TabsContent>
+        </div>
+      )}
 
-        {/* Positions Tab */}
-        <TabsContent value="positions" className="space-y-6">
-          {/* Real-time Charts for Open Positions */}
-          {positions.length > 0 && (
-            <PositionCharts accountId={accountId} positions={positions} />
+      {/* Positions Tab */}
+      {activeTab === "positions" && (
+        <div className="space-y-6">
+          {/* Error Banner */}
+          {tradeError && (
+            <div className="rounded-xl border border-loss/30 bg-loss/10 p-4 flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-loss shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="font-medium text-loss">Error en operación</p>
+                <p className="text-sm text-loss/80 mt-1">{tradeError}</p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setTradeError(null)}
+                className="text-loss/60 hover:text-loss hover:bg-loss/10 -mr-2 -mt-1"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           )}
-          
-          <Card className="border-border bg-card">
-            <CardHeader>
-              <div className="flex items-center justify-between">
+
+          <div className="rounded-2xl bg-card border border-border overflow-hidden">
+            <div className="p-5 md:p-6 border-b border-border">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <CardTitle className="text-foreground">Posiciones Abiertas</CardTitle>
-                  <CardDescription>
-                    {positions.length} posiciones | P&L Flotante:{" "}
+                  <h3 className="text-lg font-semibold text-foreground">Posiciones Abiertas</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {positions.length} posiciones | P&L:{" "}
                     <span className={cn("font-mono font-medium", totalFloatingPL >= 0 ? "text-profit" : "text-loss")}>
                       {totalFloatingPL >= 0 ? "+" : ""}${totalFloatingPL.toFixed(2)}
                     </span>
-                  </CardDescription>
+                  </p>
                 </div>
                 {positions.length > 0 && (
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         disabled={closingAll}
-                        className="border-loss/30 bg-loss/10 text-loss hover:bg-loss/20"
+                        className="border-loss/30 bg-loss/10 text-loss hover:bg-loss/20 rounded-xl"
                       >
                         {closingAll ? (
                           <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Cerrando...</>
@@ -980,38 +1346,43 @@ export default function AccountPage() {
                         )}
                       </Button>
                     </AlertDialogTrigger>
-                    <AlertDialogContent>
+                    <AlertDialogContent className="rounded-3xl">
                       <AlertDialogHeader>
-                        <AlertDialogTitle>¿Está seguro de cerrar todas las posiciones?</AlertDialogTitle>
+                        <AlertDialogTitle>¿Cerrar todas las posiciones?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Esta acción cerrará inmediatamente todas las posiciones abiertas. Esta acción no se puede deshacer.
+                          Se cerrarán inmediatamente todas las posiciones abiertas. Esta acción no se puede deshacer.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction onClick={closeAllPositions} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                          Sí, cerrar todo
+                        <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={closeAllPositions} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl">
+                          Cerrar todo
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
                 )}
               </div>
-            </CardHeader>
-            <CardContent className="h-[425px] flex flex-col p-0">
-              {positions.length === 0 ? (
-                <div className="flex flex-1 items-center justify-center text-muted-foreground">
-                  No hay posiciones abiertas
+            </div>
+
+            {positions.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <div className="w-16 h-16 rounded-2xl bg-secondary/80 flex items-center justify-center mb-4">
+                  <CircleDot className="h-8 w-8 text-muted-foreground" />
                 </div>
-              ) : (
-                <div className="flex-1 overflow-auto">
+                <p className="text-muted-foreground">No hay posiciones abiertas</p>
+              </div>
+            ) : (
+              <>
+                {/* Desktop Table */}
+                <div className="hidden md:block overflow-x-auto">
                   <Table>
                     <TableHeader>
-                      <TableRow className="border-border hover:bg-transparent min-h-full">
-                        <TableHead className="text-muted-foreground hidden md:table-cell">Ticket</TableHead>
+                      <TableRow className="border-border hover:bg-transparent">
+                        <TableHead className="text-muted-foreground">Ticket</TableHead>
                         <TableHead className="text-muted-foreground">Símbolo</TableHead>
                         <TableHead className="text-muted-foreground">Tipo</TableHead>
-                        <TableHead className="text-muted-foreground hidden sm:table-cell">Vol</TableHead>
+                        <TableHead className="text-muted-foreground">Vol</TableHead>
                         <TableHead className="text-muted-foreground hidden lg:table-cell">Apertura</TableHead>
                         <TableHead className="text-muted-foreground hidden lg:table-cell">Actual</TableHead>
                         <TableHead className="text-muted-foreground hidden xl:table-cell">SL</TableHead>
@@ -1022,15 +1393,15 @@ export default function AccountPage() {
                     </TableHeader>
                     <TableBody>
                       {paginatedPositions.map((p) => (
-                        <TableRow key={p.ticket} className="border-border hover:bg-secondary/50">
-                          <TableCell className="font-mono text-sm text-muted-foreground hidden md:table-cell">#{p.ticket}</TableCell>
+                        <TableRow key={p.ticket} className="border-border hover:bg-secondary/30">
+                          <TableCell className="font-mono text-sm text-muted-foreground">#{p.ticket}</TableCell>
                           <TableCell className="font-medium text-foreground text-sm">{p.symbol}</TableCell>
                           <TableCell>
                             <Badge variant="outline" className={cn("font-medium uppercase text-xs", p.type === "buy" ? "bg-profit/20 text-profit border-profit/30" : "bg-loss/20 text-loss border-loss/30")}>
-                              {p.type === "buy" ? "B" : "S"}
+                              {p.type === "buy" ? "BUY" : "SELL"}
                             </Badge>
                           </TableCell>
-                          <TableCell className="font-mono text-sm hidden sm:table-cell">{p.volume}</TableCell>
+                          <TableCell className="font-mono text-sm">{p.volume}</TableCell>
                           <TableCell className="font-mono text-sm hidden lg:table-cell">{p.open_price.toFixed(5)}</TableCell>
                           <TableCell className="font-mono text-sm hidden lg:table-cell">{p.current_price.toFixed(5)}</TableCell>
                           <TableCell className="font-mono text-sm text-loss hidden xl:table-cell">{p.sl > 0 ? p.sl.toFixed(5) : "—"}</TableCell>
@@ -1039,109 +1410,185 @@ export default function AccountPage() {
                             {p.profit >= 0 ? "+" : ""}${p.profit.toFixed(2)}
                           </TableCell>
                           <TableCell className="text-right p-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => closePosition(p.ticket)}
-                              disabled={closingTickets.has(p.ticket) || closingAll}
-                              className="text-loss hover:text-loss hover:bg-loss/10 h-7 w-7 p-0"
-                            >
-                              {closingTickets.has(p.ticket) ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <X className="h-4 w-4" />
-                              )}
-                            </Button>
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setEditingPositionTicket(p.ticket)}
+                                className="text-muted-foreground hover:text-foreground hover:bg-secondary h-8 w-8 p-0 rounded-lg"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => closePosition(p.ticket)}
+                                disabled={closingTickets.has(p.ticket) || closingAll}
+                                className="text-loss hover:text-loss hover:bg-loss/10 h-8 w-8 p-0 rounded-lg"
+                              >
+                                {closingTickets.has(p.ticket) ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <X className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+
+                {/* Mobile Cards */}
+                <div className="md:hidden divide-y divide-border">
+                  {paginatedPositions.map((p) => (
+                    <div key={p.ticket} className="p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-semibold text-foreground">{p.symbol}</span>
+                            <Badge variant="outline" className={cn("text-xs", p.type === "buy" ? "bg-profit/20 text-profit border-profit/30" : "bg-loss/20 text-loss border-loss/30")}>
+                              {p.type === "buy" ? "BUY" : "SELL"}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground font-mono">#{p.ticket} • {p.volume} lots</p>
+                        </div>
+                        <div className="text-right">
+                          <p className={cn("font-mono font-semibold", p.profit >= 0 ? "text-profit" : "text-loss")}>
+                            {p.profit >= 0 ? "+" : ""}${p.profit.toFixed(2)}
+                          </p>
+                          <p className="text-xs text-muted-foreground font-mono">{p.open_price.toFixed(5)}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                          {p.sl > 0 && <span>SL: <span className="text-loss font-mono">{p.sl.toFixed(5)}</span></span>}
+                          {p.tp > 0 && <span>TP: <span className="text-profit font-mono">{p.tp.toFixed(5)}</span></span>}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setEditingPositionTicket(p.ticket)}
+                            className="text-muted-foreground hover:text-foreground h-8 px-3 rounded-lg text-xs"
+                          >
+                            <Pencil className="h-3 w-3 mr-1" />
+                            SL/TP
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => closePosition(p.ticket)}
+                            disabled={closingTickets.has(p.ticket) || closingAll}
+                            className="text-loss hover:text-loss hover:bg-loss/10 h-8 px-3 rounded-lg text-xs"
+                          >
+                            {closingTickets.has(p.ticket) ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              "Cerrar"
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
 
           {/* Margin Info */}
           {liveData && (
-            <div className="grid gap-4 md:grid-cols-3">
-              <Card className="border-border bg-card">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Margen Usado</span>
-                    <span className="font-mono font-medium text-foreground">${liveData.account.margin.toLocaleString()}</span>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="border-border bg-card">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Margen Libre</span>
-                    <span className="font-mono font-medium text-foreground">${liveData.account.free_margin.toLocaleString()}</span>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="border-border bg-card">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Nivel de Margen</span>
-                    <span className="font-mono font-medium text-profit">{liveData.account.margin_level.toFixed(2)}%</span>
-                  </div>
-                </CardContent>
-              </Card>
+            <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
+              <div className="rounded-2xl bg-card border border-border p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Margen Usado</span>
+                  <span className="font-mono font-medium text-foreground">${liveData.account.margin.toLocaleString()}</span>
+                </div>
+              </div>
+              <div className="rounded-2xl bg-card border border-border p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Margen Libre</span>
+                  <span className="font-mono font-medium text-foreground">${liveData.account.free_margin.toLocaleString()}</span>
+                </div>
+              </div>
+              <div className="rounded-2xl bg-card border border-border p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Nivel de Margen</span>
+                  <span className="font-mono font-medium text-profit">{liveData.account.margin_level.toFixed(2)}%</span>
+                </div>
+              </div>
             </div>
           )}
-        </TabsContent>
+        </div>
+      )}
 
-        {/* History Tab */}
-        <TabsContent value="history" className="space-y-6">
-            <AccountHistoryTab trades={allTrades} />
-        </TabsContent>
+      {/* History Tab */}
+      {activeTab === "history" && (
+        <AccountHistoryTab trades={allTrades} />
+      )}
 
-        {/* EAs Content */}
-        <TabsContent value="eas" className="space-y-4">
-            <div className="flex justify-between items-center bg-card p-4 rounded-lg border border-border">
-                <div>
-                   <h3 className="text-lg font-semibold flex items-center gap-2">
-                       <Bot className="h-5 w-5 text-primary" />
-                       Expert Advisors
-                   </h3>
-                   <p className="text-sm text-muted-foreground">Gestiona tus EAs y monitorea su rendimiento individual por Magic Number.</p>
+      {/* EAs Tab */}
+      {activeTab === "eas" && (
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 md:p-6 rounded-2xl bg-card border border-border">
+            <div>
+              <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground">
+                <Bot className="h-5 w-5 text-chart-1" />
+                Expert Advisors
+              </h3>
+              <p className="text-sm text-muted-foreground mt-1">Gestiona tus EAs y monitorea su rendimiento por Magic Number.</p>
+            </div>
+
+            <CreateEADialog accountId={accountId} onSuccess={handleEAAdded} />
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {eas.map(ea => {
+              const stats = statsByEA[ea.id] || { totalTrades: 0, profit: 0, winRate: 0 };
+              const eaPositions = liveData?.positions?.filter((p: any) => p.magic_number == ea.magicNumber) || [];
+
+              return (
+                <EAStatsCard
+                  key={ea.id}
+                  ea={ea}
+                  accountId={accountId}
+                  stats={stats}
+                  eaPositions={eaPositions}
+                  onDelete={deleteEA}
+                />
+              );
+            })}
+
+            {eas.length === 0 && (
+              <div className="col-span-full flex flex-col items-center justify-center py-16 rounded-2xl border-2 border-dashed border-border text-center">
+                <div className="w-16 h-16 rounded-2xl bg-secondary/80 flex items-center justify-center mb-4">
+                  <Bot className="h-8 w-8 text-muted-foreground" />
                 </div>
-                
-                <CreateEADialog accountId={accountId} onSuccess={handleEAAdded} />
-            </div>
+                <p className="text-muted-foreground mb-1">No tienes EAs registrados.</p>
+                <p className="text-sm text-muted-foreground">Añade uno para ver sus estadísticas por separado.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {eas.map(ea => {
-                    const stats = statsByEA[ea.id] || { totalTrades: 0, profit: 0, winRate: 0 };
-                    
-                    const eaPositions = liveData?.positions?.filter((p: any) => p.magic_number == ea.magicNumber) || [];
-                    
-                    return (
-                        <EAStatsCard 
-                            key={ea.id} 
-                            ea={ea} 
-                            accountId={accountId} 
-                            stats={stats} 
-                            eaPositions={eaPositions} 
-                            onDelete={deleteEA} 
-                        />
-                    );
-                })}
-                
-                {eas.length === 0 && (
-                    <div className="col-span-full flex flex-col items-center justify-center p-8 border border-dashed border-border rounded-lg text-muted-foreground">
-                        <Bot className="h-10 w-10 mb-2 opacity-50" />
-                        <p>No tienes EAs registrados.</p>
-                        <p className="text-sm">Añade uno para ver sus estadísticas por separado.</p>
-                    </div>
-                )}
-            </div>
-        </TabsContent>
-
-        
-      </Tabs>
+      {/* Edit Position Dialog */}
+      <EditPositionDialog
+        position={editingPosition}
+        accountId={accountId}
+        open={!!editingPositionTicket}
+        onOpenChange={(open) => !open && setEditingPositionTicket(null)}
+        onSuccess={() => {
+          // Refresh live data after modification
+          fetch(`/api/accounts/${accountId}/live`)
+            .then(res => res.json())
+            .then(data => {
+              if (data.data) setLiveData(data.data);
+            });
+        }}
+      />
     </div>
   );
 }

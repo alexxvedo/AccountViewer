@@ -63,7 +63,7 @@ export default function DashboardLayout({
 
   useEffect(() => {
       if (!session?.user?.id) return;
-      
+
       const fetchSidebarData = async () => {
           try {
               const [accRes, easRes] = await Promise.all([
@@ -74,8 +74,11 @@ export default function DashboardLayout({
               if (easRes.ok) setEas(await easRes.json());
           } catch(e) { console.error(e); }
       };
-      
+
       fetchSidebarData();
+      // Poll every 5 seconds to catch new accounts/EAs
+      const interval = setInterval(fetchSidebarData, 5000);
+      return () => clearInterval(interval);
   }, [session?.user?.id]);
 
   useEffect(() => {
@@ -148,7 +151,7 @@ export default function DashboardLayout({
         </div>
 
         {/* Main Navigation */}
-        <nav className="flex-1 space-y-1 p-3 overflow-y-auto">
+        <nav className="flex-1 min-h-0 space-y-1 p-3 overflow-y-auto">
            {/* Section: Overview (Expandable) */}
            <div>
                <button 

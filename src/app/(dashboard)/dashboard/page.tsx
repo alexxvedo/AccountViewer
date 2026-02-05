@@ -7,16 +7,6 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -50,12 +40,15 @@ import {
   TrendingDown,
   Pencil,
   Trash2,
-  DollarSign,
-  Activity,
-  MoreHorizontal,
+  MoreVertical,
   ExternalLink,
-  ChevronLeft,
   ChevronRight,
+  Wifi,
+  WifiOff,
+  LayoutGrid,
+  List,
+  Filter,
+  Layers,
 } from "lucide-react";
 import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton";
 
@@ -85,8 +78,8 @@ interface TradingAccount {
   accountTypeId: string | null;
   accountType?: AccountType | null;
   liveData: LiveData | null;
-  balance: number,
-  equity: number,
+  balance: number;
+  equity: number;
   stats?: {
     winRate: number;
     trades: number;
@@ -105,17 +98,16 @@ interface Section {
   accounts: TradingAccount[];
 }
 
-// Colores predefinidos para secciones
 const SECTION_COLORS = [
-  { name: "Gris", value: "#71717A" },
-  { name: "Rojo", value: "#EF4444" },
-  { name: "Naranja", value: "#F97316" },
-  { name: "Amarillo", value: "#EAB308" },
-  { name: "Verde", value: "#22C55E" },
-  { name: "Cyan", value: "#06B6D4" },
-  { name: "Azul", value: "#3B82F6" },
-  { name: "Violeta", value: "#8B5CF6" },
-  { name: "Rosa", value: "#EC4899" },
+  { name: "Slate", value: "#64748b" },
+  { name: "Red", value: "#ef4444" },
+  { name: "Orange", value: "#f97316" },
+  { name: "Amber", value: "#f59e0b" },
+  { name: "Emerald", value: "#10b981" },
+  { name: "Cyan", value: "#06b6d4" },
+  { name: "Blue", value: "#3b82f6" },
+  { name: "Violet", value: "#8b5cf6" },
+  { name: "Pink", value: "#ec4899" },
 ];
 
 export default function DashboardPage() {
@@ -135,8 +127,7 @@ export default function DashboardPage() {
   const [deletingAccountId, setDeletingAccountId] = useState<string | null>(null);
   const [selectedSection, setSelectedSection] = useState<string>("all");
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
-  const [hasOverflow, setHasOverflow] = useState(false);
-  const sectionsContainerRef = useRef<HTMLDivElement>(null);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   const [accountForm, setAccountForm] = useState({
     accountNumber: "",
@@ -147,16 +138,13 @@ export default function DashboardPage() {
     sectionId: "",
     accountTypeId: "",
   });
-  const [sectionForm, setSectionForm] = useState({ name: "", color: "#71717A" });
+  const [sectionForm, setSectionForm] = useState({ name: "", color: "#64748b" });
   const [newAccountTypeName, setNewAccountTypeName] = useState("");
-  const [newAccountTypeColor, setNewAccountTypeColor] = useState("#71717A");
-  const [creatingAccountType, setCreatingAccountType] = useState(false);
+  const [newAccountTypeColor, setNewAccountTypeColor] = useState("#64748b");
   const [editingAccountType, setEditingAccountType] = useState<AccountType | null>(null);
   const [showAccountTypesModal, setShowAccountTypesModal] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
 
-  // Fetch structure
-  // Fetch structure
   useEffect(() => {
     if (session?.user?.id) {
       fetchStructure();
@@ -165,7 +153,6 @@ export default function DashboardPage() {
     }
   }, [session?.user?.id]);
 
-  // Fetch live data
   useEffect(() => {
     if (session?.user?.id) {
       const fetchFastLive = async () => {
@@ -184,19 +171,6 @@ export default function DashboardPage() {
     }
   }, [session?.user?.id]);
 
-  // Detect overflow in sections container
-  useEffect(() => {
-    const checkOverflow = () => {
-      const container = sectionsContainerRef.current;
-      if (container) {
-        setHasOverflow(container.scrollWidth > container.clientWidth);
-      }
-    };
-    checkOverflow();
-    window.addEventListener('resize', checkOverflow);
-    return () => window.removeEventListener('resize', checkOverflow);
-  }, [sections, unsectionedAccounts]);
-
   const fetchStructure = async () => {
     if (!session?.user?.id) return;
     try {
@@ -207,19 +181,18 @@ export default function DashboardPage() {
       ]);
       const sectionsData = await sectionsRes.json();
       const accountsData = await accountsRes.json();
-
       const typesData = await typesRes.json();
-      
+
       const accountsMap = new Map<string, TradingAccount>();
       accountsData.forEach((acc: TradingAccount) => accountsMap.set(acc.id, acc));
-      
+
       const enrichedSections = sectionsData.map((section: Section) => ({
         ...section,
-        accounts: section.accounts.map((acc: TradingAccount) => 
+        accounts: section.accounts.map((acc: TradingAccount) =>
           accountsMap.get(acc.id) || acc
-        )
+        ),
       }));
-      
+
       setSections(enrichedSections);
       setAccountTypes(typesData);
       setUnsectionedAccounts(accountsData.filter((a: TradingAccount) => !a.sectionId));
@@ -230,7 +203,6 @@ export default function DashboardPage() {
     }
   };
 
-  // Funciones de fetch separadas para recargas selectivas (más rápidas)
   const fetchAccountTypes = async () => {
     if (!session?.user?.id) return;
     const res = await fetch(`/api/users/${session.user.id}/account-types`, { cache: "no-store" });
@@ -241,53 +213,66 @@ export default function DashboardPage() {
     if (!session?.user?.id) return;
     const res = await fetch(`/api/users/${session.user.id}/sections`, { cache: "no-store" });
     const data = await res.json();
-    // Mantener datos de cuentas existentes
     const currentMap = new Map<string, TradingAccount>();
-    [...sections.flatMap(s => s.accounts), ...unsectionedAccounts].forEach(a => currentMap.set(a.id, a));
-    setSections(data.map((s: Section) => ({ ...s, accounts: s.accounts.map((a: TradingAccount) => currentMap.get(a.id) || a) })));
+    [...sections.flatMap((s) => s.accounts), ...unsectionedAccounts].forEach((a) =>
+      currentMap.set(a.id, a)
+    );
+    setSections(
+      data.map((s: Section) => ({
+        ...s,
+        accounts: s.accounts.map((a: TradingAccount) => currentMap.get(a.id) || a),
+      }))
+    );
   };
 
-  const allAccounts = useMemo(() => 
-    [...sections.flatMap(s => s.accounts), ...unsectionedAccounts],
+  const allAccounts = useMemo(
+    () => [...sections.flatMap((s) => s.accounts), ...unsectionedAccounts],
     [sections, unsectionedAccounts]
   );
 
-  const getAccountData = useCallback((acc: TradingAccount) => {
-    return liveDataMap[acc.id] || acc.liveData;
-  }, [liveDataMap]);
+  const getAccountData = useCallback(
+    (acc: TradingAccount) => {
+      return liveDataMap[acc.id] || acc.liveData;
+    },
+    [liveDataMap]
+  );
 
-  // Filtered accounts based on selected section
   const filteredAccounts = useMemo(() => {
     if (selectedSection === "all") return allAccounts;
     if (selectedSection === "unsectioned") return unsectionedAccounts;
-    const section = sections.find(s => s.id === selectedSection);
+    const section = sections.find((s) => s.id === selectedSection);
     return section?.accounts || [];
   }, [selectedSection, allAccounts, unsectionedAccounts, sections]);
 
-  // Stats
   const stats = useMemo(() => {
     const accounts = selectedSection === "all" ? allAccounts : filteredAccounts;
-    const connected = accounts.filter(a => a.isConnected || liveDataMap[a.id]);
+    const connected = accounts.filter((a) => a.isConnected || liveDataMap[a.id]);
     const totalBalance = connected.reduce((sum, a) => sum + (getAccountData(a)?.balance || 0), 0);
+    const totalEquity = connected.reduce((sum, a) => sum + (getAccountData(a)?.equity || 0), 0);
     const totalPL = connected.reduce((sum, a) => sum + (getAccountData(a)?.floatingPL || 0), 0);
     return {
       total: accounts.length,
       connected: connected.length,
       balance: totalBalance,
+      equity: totalEquity,
       floatingPL: totalPL,
     };
   }, [selectedSection, allAccounts, filteredAccounts, liveDataMap, getAccountData]);
 
-  // Section stats for filter
-  const getSectionStats = useCallback((accounts: TradingAccount[]) => {
-    const connected = accounts.filter(a => a.isConnected || liveDataMap[a.id]);
-    return {
-      count: accounts.length,
-      balance: connected.reduce((s, a) => s + (getAccountData(a)?.balance || 0), 0),
-    };
-  }, [liveDataMap, getAccountData]);
+  const getSectionStats = useCallback(
+    (accounts: TradingAccount[]) => {
+      const connected = accounts.filter((a) => a.isConnected || liveDataMap[a.id]);
+      return {
+        count: accounts.length,
+        connected: connected.length,
+        balance: connected.reduce((s, a) => s + (getAccountData(a)?.balance || 0), 0),
+        pl: connected.reduce((s, a) => s + (getAccountData(a)?.floatingPL || 0), 0),
+      };
+    },
+    [liveDataMap, getAccountData]
+  );
 
-  // CRUD handlers
+  // CRUD handlers (same as before)
   const handleCreateAccount = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!session?.user?.id) return;
@@ -314,7 +299,6 @@ export default function DashboardPage() {
         server: accountForm.server.trim(),
         platform: accountForm.platform,
       };
-      // Solo incluir campos opcionales si tienen valor
       if (accountForm.nickname) payload.nickname = accountForm.nickname;
       if (accountForm.sectionId) payload.sectionId = accountForm.sectionId;
       if (accountForm.accountTypeId) payload.accountTypeId = accountForm.accountTypeId;
@@ -332,7 +316,15 @@ export default function DashboardPage() {
       }
 
       setShowAccountModal(false);
-      setAccountForm({ accountNumber: "", broker: "", server: "", platform: "MT5", nickname: "", sectionId: "", accountTypeId: "" });
+      setAccountForm({
+        accountNumber: "",
+        broker: "",
+        server: "",
+        platform: "MT5",
+        nickname: "",
+        sectionId: "",
+        accountTypeId: "",
+      });
       fetchStructure();
     } catch (error) {
       console.error("Error creating account:", error);
@@ -345,43 +337,52 @@ export default function DashboardPage() {
   const handleCreateSection = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!session?.user?.id) return;
-    
-    // Optimistic: Añadir sección y cerrar modal inmediatamente
+
     const tempId = `temp-${Date.now()}`;
-    const newSection: Section = { id: tempId, name: sectionForm.name, color: sectionForm.color, accounts: [] };
-    setSections(prev => [...prev, newSection]);
+    const newSection: Section = {
+      id: tempId,
+      name: sectionForm.name,
+      color: sectionForm.color,
+      accounts: [],
+    };
+    setSections((prev) => [...prev, newSection]);
     setShowSectionModal(false);
-    setSectionForm({ name: "", color: "#71717A" });
-    setFormLoading(false);
-    
+    setSectionForm({ name: "", color: "#64748b" });
+
     try {
       await fetch("/api/sections", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: session.user.id, name: newSection.name, color: newSection.color }),
+        body: JSON.stringify({
+          userId: session.user.id,
+          name: newSection.name,
+          color: newSection.color,
+        }),
       });
-      await fetchSectionsOnly(); // Obtener ID real
+      await fetchSectionsOnly();
     } catch (error) {
       console.error("Error creating section:", error);
-      setSections(prev => prev.filter(s => s.id !== tempId)); // Rollback
+      setSections((prev) => prev.filter((s) => s.id !== tempId));
     }
   };
 
   const handleCreateAccountType = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!session?.user?.id || !newAccountTypeName.trim()) return;
-    
-    // Optimistic: Añadir tipo inmediatamente
+
     const tempId = `temp-${Date.now()}`;
-    const newType: AccountType = { id: tempId, name: newAccountTypeName, color: newAccountTypeColor };
-    setAccountTypes(prev => [...prev, newType]);
-    setAccountForm(prev => ({ ...prev, accountTypeId: tempId }));
+    const newType: AccountType = {
+      id: tempId,
+      name: newAccountTypeName,
+      color: newAccountTypeColor,
+    };
+    setAccountTypes((prev) => [...prev, newType]);
+    setAccountForm((prev) => ({ ...prev, accountTypeId: tempId }));
     const typeName = newAccountTypeName;
     const typeColor = newAccountTypeColor;
     setNewAccountTypeName("");
-    setNewAccountTypeColor("#71717A");
-    setCreatingAccountType(false);
-    
+    setNewAccountTypeColor("#64748b");
+
     try {
       const res = await fetch("/api/account-types", {
         method: "POST",
@@ -390,37 +391,38 @@ export default function DashboardPage() {
       });
       const data = await res.json();
       if (data.id) {
-        setAccountTypes(prev => prev.map(t => t.id === tempId ? { ...t, id: data.id } : t));
-        setAccountForm(prev => prev.accountTypeId === tempId ? { ...prev, accountTypeId: data.id } : prev);
+        setAccountTypes((prev) => prev.map((t) => (t.id === tempId ? { ...t, id: data.id } : t)));
+        setAccountForm((prev) =>
+          prev.accountTypeId === tempId ? { ...prev, accountTypeId: data.id } : prev
+        );
       }
     } catch (error) {
       console.error("Error creating account type:", error);
-      setAccountTypes(prev => prev.filter(t => t.id !== tempId));
+      setAccountTypes((prev) => prev.filter((t) => t.id !== tempId));
     }
   };
 
   const handleDeleteAccountType = async (id: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
-    const backup = accountTypes.find(t => t.id === id);
-    setAccountTypes(prev => prev.filter(t => t.id !== id));
-    
+    const backup = accountTypes.find((t) => t.id === id);
+    setAccountTypes((prev) => prev.filter((t) => t.id !== id));
+
     try {
       await fetch(`/api/account-types/${id}`, { method: "DELETE" });
     } catch (error) {
       console.error("Error deleting account type:", error);
-      if (backup) setAccountTypes(prev => [...prev, backup]);
+      if (backup) setAccountTypes((prev) => [...prev, backup]);
     }
   };
 
   const handleUpdateAccountType = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingAccountType) return;
-    
-    // Optimistic: Actualizar inmediatamente
+
     const updatedType = { ...editingAccountType };
-    setAccountTypes(prev => prev.map(t => t.id === updatedType.id ? updatedType : t));
+    setAccountTypes((prev) => prev.map((t) => (t.id === updatedType.id ? updatedType : t)));
     setEditingAccountType(null);
-    
+
     try {
       await fetch(`/api/account-types/${updatedType.id}`, {
         method: "PUT",
@@ -436,13 +438,14 @@ export default function DashboardPage() {
   const handleUpdateSection = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingSection) return;
-    
-    // Optimistic: Actualizar inmediatamente
+
     const updatedData = { name: sectionForm.name, color: sectionForm.color };
-    setSections(prev => prev.map(s => s.id === editingSection.id ? { ...s, ...updatedData } : s));
+    setSections((prev) =>
+      prev.map((s) => (s.id === editingSection.id ? { ...s, ...updatedData } : s))
+    );
     setEditingSection(null);
-    setSectionForm({ name: "", color: "#71717A" });
-    
+    setSectionForm({ name: "", color: "#64748b" });
+
     try {
       await fetch(`/api/sections/${editingSection.id}`, {
         method: "PUT",
@@ -451,15 +454,14 @@ export default function DashboardPage() {
       });
     } catch (error) {
       console.error("Error updating section:", error);
-      await fetchSectionsOnly(); // Rollback
+      await fetchSectionsOnly();
     }
   };
 
   const handleUpdateAccount = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingAccount) return;
-    
-    // Optimistic: Actualizar inmediatamente
+
     const updatedData = {
       nickname: accountForm.nickname || null,
       broker: accountForm.broker,
@@ -468,27 +470,81 @@ export default function DashboardPage() {
       sectionId: accountForm.sectionId || null,
       accountTypeId: accountForm.accountTypeId || null,
     };
-    const matchedType = accountTypes.find(t => t.id === accountForm.accountTypeId);
-    
-    const updateFn = (acc: TradingAccount) => acc.id === editingAccount.id 
-      ? { ...acc, ...updatedData, accountType: matchedType || null } 
-      : acc;
-    
-    setSections(prev => prev.map(s => ({ ...s, accounts: s.accounts.map(updateFn) })));
-    setUnsectionedAccounts(prev => prev.map(updateFn));
+    const matchedType = accountTypes.find((t) => t.id === accountForm.accountTypeId);
+    const oldSectionId = editingAccount.sectionId;
+    const newSectionId = accountForm.sectionId || null;
+
+    // Create updated account object
+    const updatedAccount: TradingAccount = {
+      ...editingAccount,
+      ...updatedData,
+      accountType: matchedType || null,
+    };
+
+    // Optimistic update: move account between sections if needed
+    if (oldSectionId !== newSectionId) {
+      // Remove from old location
+      if (oldSectionId) {
+        setSections((prev) =>
+          prev.map((s) =>
+            s.id === oldSectionId
+              ? { ...s, accounts: s.accounts.filter((a) => a.id !== editingAccount.id) }
+              : s
+          )
+        );
+      } else {
+        setUnsectionedAccounts((prev) => prev.filter((a) => a.id !== editingAccount.id));
+      }
+
+      // Add to new location
+      if (newSectionId) {
+        setSections((prev) =>
+          prev.map((s) =>
+            s.id === newSectionId
+              ? { ...s, accounts: [...s.accounts, updatedAccount] }
+              : s
+          )
+        );
+      } else {
+        setUnsectionedAccounts((prev) => [...prev, updatedAccount]);
+      }
+    } else {
+      // Same section, just update the account data
+      const updateFn = (acc: TradingAccount) =>
+        acc.id === editingAccount.id ? updatedAccount : acc;
+
+      if (oldSectionId) {
+        setSections((prev) =>
+          prev.map((s) =>
+            s.id === oldSectionId ? { ...s, accounts: s.accounts.map(updateFn) } : s
+          )
+        );
+      } else {
+        setUnsectionedAccounts((prev) => prev.map(updateFn));
+      }
+    }
+
     setEditingAccount(null);
-    setAccountForm({ accountNumber: "", broker: "", server: "", platform: "MT5", nickname: "", sectionId: "", accountTypeId: "" });
-    
+    setAccountForm({
+      accountNumber: "",
+      broker: "",
+      server: "",
+      platform: "MT5",
+      nickname: "",
+      sectionId: "",
+      accountTypeId: "",
+    });
+
     try {
       const res = await fetch(`/api/accounts/${editingAccount.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedData),
       });
-      
+
       if (!res.ok) {
         alert("Error al actualizar la cuenta.");
-        await fetchStructure(); // Rollback
+        await fetchStructure();
       }
     } catch (error) {
       console.error("Error updating account:", error);
@@ -498,35 +554,39 @@ export default function DashboardPage() {
 
   const handleDeleteSection = async () => {
     if (!deletingSectionId) return;
-    
-    // Optimistic: Quitar inmediatamente
-    const backup = sections.find(s => s.id === deletingSectionId);
-    setSections(prev => prev.filter(s => s.id !== deletingSectionId));
-    if (backup) setUnsectionedAccounts(prev => [...prev, ...backup.accounts.map(a => ({ ...a, sectionId: null }))]);
+
+    const backup = sections.find((s) => s.id === deletingSectionId);
+    setSections((prev) => prev.filter((s) => s.id !== deletingSectionId));
+    if (backup)
+      setUnsectionedAccounts((prev) => [
+        ...prev,
+        ...backup.accounts.map((a) => ({ ...a, sectionId: null })),
+      ]);
     setSelectedSection("all");
     setDeletingSectionId(null);
-    
+
     try {
       await fetch(`/api/sections/${deletingSectionId}`, { method: "DELETE", credentials: "include" });
     } catch (error) {
       console.error("Error deleting section:", error);
-      await fetchStructure(); // Rollback completo
+      await fetchStructure();
     }
   };
 
   const handleDeleteAccount = async () => {
     if (!deletingAccountId) return;
-    
-    // Optimistic: Quitar inmediatamente
-    setSections(prev => prev.map(s => ({ ...s, accounts: s.accounts.filter(a => a.id !== deletingAccountId) })));
-    setUnsectionedAccounts(prev => prev.filter(a => a.id !== deletingAccountId));
+
+    setSections((prev) =>
+      prev.map((s) => ({ ...s, accounts: s.accounts.filter((a) => a.id !== deletingAccountId) }))
+    );
+    setUnsectionedAccounts((prev) => prev.filter((a) => a.id !== deletingAccountId));
     setDeletingAccountId(null);
-    
+
     try {
       await fetch(`/api/accounts/${deletingAccountId}`, { method: "DELETE", credentials: "include" });
     } catch (error) {
       console.error("Error deleting account:", error);
-      await fetchStructure(); // Rollback
+      await fetchStructure();
     }
   };
 
@@ -557,501 +617,583 @@ export default function DashboardPage() {
     router.push(`/accounts/${accountId}`);
   };
 
-  // Status config
-  const getStatusConfig = (account: TradingAccount) => {
-    if (!account.isConnected) {
-      return { label: "Offline", className: "bg-muted text-muted-foreground border-border" };
-    }
-    return { label: "Online", className: "bg-profit/20 text-profit border-profit/30" };
-  };
-
   if (loading) {
     return <DashboardSkeleton />;
   }
 
+  const formatCurrency = (value: number, compact = false) => {
+    if (compact) {
+      if (Math.abs(value) >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
+      if (Math.abs(value) >= 1000) return `${(value / 1000).toFixed(1)}K`;
+    }
+    return value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-foreground">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">
-            Última actualización: {lastUpdate.toLocaleTimeString()}
-          </p>
+    <div className="min-h-screen">
+      {/* === MASSIVE HERO STATS === */}
+      <div className="relative mb-8 -mx-3 md:-mx-6 -mt-3 md:-mt-6 px-3 md:px-6 pt-6 pb-8 bg-gradient-to-b from-secondary/50 via-secondary/20 to-transparent">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 opacity-[0.015] dark:opacity-[0.03]" style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+        }} />
+
+        <div className="relative">
+          {/* Top Bar */}
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-card/80 backdrop-blur border border-border text-xs text-muted-foreground">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-profit opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-profit" />
+                </span>
+                <span className="font-medium">Live</span>
+                <span className="text-foreground/40">•</span>
+                <span>{lastUpdate.toLocaleTimeString()}</span>
+              </div>
+            </div>
+            <Button
+              onClick={() => setShowAccountModal(true)}
+              className="h-9 gap-2 bg-foreground text-background hover:bg-foreground/90 font-medium"
+            >
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">Nueva Cuenta</span>
+            </Button>
+          </div>
+
+          {/* Main Stats Display */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Left: Primary Metrics */}
+            <div className="lg:col-span-7 space-y-6">
+              {/* Balance Hero */}
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-2 tracking-wide uppercase">
+                  Balance Total
+                </p>
+                <div className="flex items-baseline gap-3 flex-wrap">
+                  <span className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tighter text-foreground tabular-nums">
+                    ${formatCurrency(stats.balance)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Secondary Stats Row */}
+              <div className="flex flex-wrap gap-x-8 gap-y-4">
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wide">Equity</p>
+                  <p className="text-2xl font-semibold text-foreground tabular-nums">
+                    ${formatCurrency(stats.equity)}
+                  </p>
+                </div>
+                <div className="w-px h-12 bg-border hidden sm:block" />
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wide">P/L Flotante</p>
+                  <div className="flex items-center gap-2">
+                    <p className={cn(
+                      "text-2xl font-semibold tabular-nums",
+                      stats.floatingPL >= 0 ? "text-profit" : "text-loss"
+                    )}>
+                      {stats.floatingPL >= 0 ? "+" : ""}${formatCurrency(stats.floatingPL)}
+                    </p>
+                    <span className={cn(
+                      "text-sm font-medium px-2 py-0.5 rounded-md",
+                      stats.floatingPL >= 0 ? "bg-profit/10 text-profit" : "bg-loss/10 text-loss"
+                    )}>
+                      {stats.floatingPL >= 0 ? "+" : ""}{stats.balance > 0 ? ((stats.floatingPL / stats.balance) * 100).toFixed(2) : "0.00"}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Account Summary Cards */}
+            <div className="lg:col-span-5 grid grid-cols-2 gap-3">
+              {/* Total Accounts */}
+              <div className="rounded-2xl bg-card/80 backdrop-blur border border-border p-4 hover:bg-card transition-colors">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
+                    <Layers className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                </div>
+                <p className="text-3xl font-bold text-foreground mb-1">{stats.total}</p>
+                <p className="text-xs text-muted-foreground font-medium">Cuentas totales</p>
+              </div>
+
+              {/* Connected */}
+              <div className="rounded-2xl bg-card/80 backdrop-blur border border-border p-4 hover:bg-card transition-colors">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="w-10 h-10 rounded-xl bg-profit/10 flex items-center justify-center">
+                    <Wifi className="h-5 w-5 text-profit" />
+                  </div>
+                </div>
+                <p className="text-3xl font-bold text-foreground mb-1">{stats.connected}</p>
+                <p className="text-xs text-muted-foreground font-medium">Conectadas</p>
+              </div>
+
+              {/* Sections */}
+              <div className="rounded-2xl bg-card/80 backdrop-blur border border-border p-4 hover:bg-card transition-colors">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
+                    <LayoutGrid className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                </div>
+                <p className="text-3xl font-bold text-foreground mb-1">{sections.length}</p>
+                <p className="text-xs text-muted-foreground font-medium">Secciones</p>
+              </div>
+
+              {/* Disconnected */}
+              <div className="rounded-2xl bg-card/80 backdrop-blur border border-border p-4 hover:bg-card transition-colors">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
+                    <WifiOff className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                </div>
+                <p className="text-3xl font-bold text-foreground mb-1">{stats.total - stats.connected}</p>
+                <p className="text-xs text-muted-foreground font-medium">Desconectadas</p>
+              </div>
+            </div>
+          </div>
         </div>
-        
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="relative overflow-hidden border-border bg-card p-5">
-          <div className="flex items-start justify-between">
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-muted-foreground">Balance Total</p>
-              <p className="text-2xl font-bold tracking-tight text-foreground">
-                ${stats.balance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </p>
-              <span className="text-xs text-muted-foreground">{stats.connected} cuentas conectadas</span>
-            </div>
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10">
-              <DollarSign className="h-5 w-5 text-profit" />
-            </div>
-          </div>
-        </Card>
-
-        <Card className="relative overflow-hidden border-border bg-card p-5">
-          <div className="flex items-start justify-between">
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-muted-foreground">P/L Flotante</p>
-              <p className={cn("text-2xl font-bold tracking-tight", stats.floatingPL >= 0 ? "text-profit" : "text-loss")}>
-                {stats.floatingPL >= 0 ? "+" : ""}${stats.floatingPL.toFixed(2)}
-              </p>
-              <span className={cn("flex items-center gap-1 text-xs font-medium", stats.floatingPL >= 0 ? "text-profit" : "text-loss")}>
-                {stats.floatingPL >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                {stats.balance > 0 ? ((stats.floatingPL / stats.balance) * 100).toFixed(2) : 0}%
-              </span>
-            </div>
-            <div className={cn("flex h-10 w-10 items-center justify-center rounded-lg", stats.floatingPL >= 0 ? "bg-profit/10" : "bg-loss/10")}>
-              {stats.floatingPL >= 0 ? <TrendingUp className="h-5 w-5 text-profit" /> : <TrendingDown className="h-5 w-5 text-loss" />}
-            </div>
-          </div>
-        </Card>
-
-        <Card className="relative overflow-hidden border-border bg-card p-5">
-          <div className="flex items-start justify-between">
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-muted-foreground">Cuentas Totales</p>
-              <p className="text-2xl font-bold tracking-tight text-foreground">{stats.total}</p>
-              <span className="text-xs text-muted-foreground">{sections.length} secciones</span>
-            </div>
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-              <Activity className="h-5 w-5 text-muted-foreground" />
-            </div>
-          </div>
-        </Card>
-
-        <Card className="relative overflow-hidden border-border bg-card p-5">
-          <div className="flex items-start justify-between">
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-muted-foreground">Conectadas</p>
-              <p className="text-2xl font-bold tracking-tight text-foreground">{stats.connected}</p>
-              <span className="text-xs text-muted-foreground">
-                {stats.total > 0 ? Math.round((stats.connected / stats.total) * 100) : 0}% activas
-              </span>
-            </div>
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-profit/10">
-              <Activity className="h-5 w-5 text-profit" />
-            </div>
-          </div>
-        </Card>
-      </div>
-
-    
-
-      {/* Section Filter */}
-      <section>
-        
-        <div className="relative group/scroll">
-          {/* Flecha izquierda - solo si hay overflow */}
-          {hasOverflow && (
-            <button
-              onClick={() => {
-                sectionsContainerRef.current?.scrollBy({ left: -200, behavior: 'smooth' });
-              }}
-              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-background/90 border border-border shadow-md text-muted-foreground hover:text-foreground hover:bg-background transition-all opacity-0 group-hover/scroll:opacity-100"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-          )}
-          
-          {/* Flecha derecha - solo si hay overflow */}
-          {hasOverflow && (
-            <button
-              onClick={() => {
-                sectionsContainerRef.current?.scrollBy({ left: 200, behavior: 'smooth' });
-              }}
-              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-background/90 border border-border shadow-md text-muted-foreground hover:text-foreground hover:bg-background transition-all opacity-0 group-hover/scroll:opacity-100"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          )}
-          
-          <div ref={sectionsContainerRef} className="flex items-center gap-2 overflow-x-auto px-1 pb-2 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-          {/* All */}
-          <Button
-            variant="outline"
+      {/* === FILTER BAR === */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        {/* Section Pills */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0 scrollbar-thin">
+          <button
             onClick={() => setSelectedSection("all")}
             className={cn(
-              "flex h-auto shrink-0 flex-col items-start gap-1 border-border px-4 py-3 text-left transition-all",
+              "shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all",
               selectedSection === "all"
-                ? "border-accent bg-accent/10 text-foreground"
-                : "bg-card text-muted-foreground hover:border-accent/50 hover:bg-secondary"
+                ? "bg-foreground text-background"
+                : "bg-secondary/80 text-muted-foreground hover:text-foreground hover:bg-secondary"
             )}
           >
-            <div className="flex w-full items-center gap-2">
-              <div className={cn(
-                "flex h-7 w-7 items-center justify-center rounded-md text-xs font-bold",
-                selectedSection === "all" ? "bg-accent text-accent-foreground" : "bg-secondary text-foreground"
-              )}>
-                ★
-              </div>
-              <span className="font-medium">Todas</span>
-            </div>
-            <div className="flex w-full items-center justify-between gap-4 text-xs">
-              <span className="text-muted-foreground">{allAccounts.length} cuentas</span>
-            </div>
-          </Button>
+            Todas ({allAccounts.length})
+          </button>
 
-          {/* Sections */}
           {sections.map((section) => {
-            const sectionStats = getSectionStats(section.accounts);
-            const isSelected = selectedSection === section.id;
+            const sStats = getSectionStats(section.accounts);
             return (
-              <div
-                key={section.id}
-                className={cn(
-                  "group relative flex h-auto shrink-0 flex-col items-start gap-1 rounded-lg border px-4 py-3 text-left transition-all cursor-pointer",
-                  isSelected
-                    ? "border-accent bg-accent/10 text-foreground"
-                    : "border-border bg-card text-muted-foreground hover:border-accent/50 hover:bg-secondary"
-                )}
-                onClick={() => setSelectedSection(section.id)}
-              >
-                
-                <div className="flex w-full items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="flex h-7 w-7 items-center justify-center rounded-md text-xs font-bold text-primary-foreground"
-                      style={{ backgroundColor: section.color || "#71717A" }}
-                    >
-                      {section.name[0]?.toUpperCase()}
-                    </div>
-                    <span className="font-medium">{section.name}</span>
-                  </div>
-                  {/* Botones editar/eliminar */}
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      onClick={() => {
-                        setEditingSection(section);
-                        setSectionForm({ name: section.name, color: section.color || "#71717A" });
-                      }}
-                      className="p-1 rounded hover:bg-background/50 text-muted-foreground hover:text-foreground"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      onClick={() => setDeletingSectionId(section.id)}
-                      className="p-1 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                </div>
-                <div className="flex w-full items-center justify-between gap-4 text-xs">
-                  <span className="text-muted-foreground">{sectionStats.count} cuentas</span>
-                  <span className="font-mono text-foreground">${(sectionStats.balance / 1000).toFixed(0)}K</span>
-                </div>
-              </div>
+              <DropdownMenu key={section.id}>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className={cn(
+                      "group shrink-0 flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all",
+                      selectedSection === section.id
+                        ? "bg-foreground text-background"
+                        : "bg-secondary/80 text-muted-foreground hover:text-foreground hover:bg-secondary"
+                    )}
+                  >
+                    <span
+                      className="w-2.5 h-2.5 rounded-full"
+                      style={{ backgroundColor: section.color || "#64748b" }}
+                    />
+                    <span>{section.name}</span>
+                    <span className="opacity-60">({sStats.count})</span>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-40">
+                  <DropdownMenuItem onClick={() => setSelectedSection(section.id)}>
+                    <Filter className="mr-2 h-4 w-4" />
+                    Filtrar
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => {
+                    setEditingSection(section);
+                    setSectionForm({ name: section.name, color: section.color || "#64748b" });
+                  }}>
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Editar
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="text-loss focus:text-loss"
+                    onClick={() => setDeletingSectionId(section.id)}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Eliminar
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             );
           })}
 
-          {/* Unsectioned */}
           {unsectionedAccounts.length > 0 && (
-            <Button
-              variant="outline"
+            <button
               onClick={() => setSelectedSection("unsectioned")}
               className={cn(
-                "flex h-auto shrink-0 flex-col items-start gap-1 border-border px-4 py-3 text-left transition-all",
+                "shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all",
                 selectedSection === "unsectioned"
-                  ? "border-accent bg-accent/10 text-foreground"
-                  : "bg-card text-muted-foreground hover:border-accent/50 hover:bg-secondary"
+                  ? "bg-foreground text-background"
+                  : "bg-secondary/80 text-muted-foreground hover:text-foreground hover:bg-secondary"
               )}
             >
-              <div className="flex w-full items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-md bg-secondary text-xs font-bold text-foreground">
-                  ?
-                </div>
-                <span className="font-medium">Sin Sección</span>
-              </div>
-              <div className="flex w-full items-center justify-between gap-4 text-xs">
-                <span className="text-muted-foreground">{unsectionedAccounts.length} cuentas</span>
-              </div>
-            </Button>
+              Sin sección ({unsectionedAccounts.length})
+            </button>
           )}
 
-          {/* Add Section Button */}
-          <Button
-            variant="outline"
+          <button
             onClick={() => setShowSectionModal(true)}
-            className="flex h-auto shrink-0 items-center gap-2 border-dashed border-border px-4 py-5 text-muted-foreground hover:border-accent/50 hover:bg-secondary hover:text-foreground"
+            className="shrink-0 w-9 h-9 rounded-full border-2 border-dashed border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
           >
             <Plus className="h-4 w-4" />
-            <span>Nueva</span>
-          </Button>
-          </div>
-        </div>
-      </section>
-
-      {/* Accounts Table */}
-      <Card className="border-border bg-card">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-border p-5">
-          <div>
-            <h3 className="text-lg font-semibold text-foreground">
-              {selectedSection === "all" ? "Todas las Cuentas" : 
-               selectedSection === "unsectioned" ? "Cuentas Sin Sección" :
-               sections.find(s => s.id === selectedSection)?.name || "Cuentas"}
-            </h3>
-            
-          </div>
-          <Button onClick={() => setShowAccountModal(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Nueva Cuenta
-          </Button>
+          </button>
         </div>
 
-        {filteredAccounts.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 p-4">
+        {/* View Toggle & Actions */}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center rounded-lg bg-secondary/80 p-1">
+            <button
+              onClick={() => setViewMode("grid")}
+              className={cn(
+                "p-2 rounded-md transition-colors",
+                viewMode === "grid" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setViewMode("list")}
+              className={cn(
+                "p-2 rounded-md transition-colors",
+                viewMode === "list" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <List className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* === ACCOUNTS DISPLAY === */}
+      {filteredAccounts.length > 0 ? (
+        viewMode === "grid" ? (
+          // Grid View
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
             {filteredAccounts.map((account) => {
-
               const data = getAccountData(account);
-
-              
               const profit = data?.floatingPL || 0;
               const balance = data?.balance || account.balance || 0;
-              const equity = data?.equity || account.equity ;
+              const equity = data?.equity || account.equity;
               const profitPercent = balance > 0 ? (profit / balance) * 100 : 0;
-              
-              const matchedType = accountTypes.find(t => t.id === account.accountTypeId);
+              const matchedType = accountTypes.find((t) => t.id === account.accountTypeId);
               const typeName = matchedType?.name || account.accountType?.name;
-              const typeColor = matchedType?.color || account.accountType?.color || "#71717A";
-
+              const typeColor = matchedType?.color || account.accountType?.color || "#64748b";
               const winRate = account.stats?.winRate ?? 0;
               const trades = account.stats?.trades ?? 0;
-              const pFactor = account.stats?.profitFactor ?? 0;
-
-              // Simular drawdown (puedes conectar con datos reales después)
-              const drawdownPercent = balance > 0 ? Math.min(((balance - equity) / balance) * 100, 10) : 0;
 
               return (
                 <div
                   key={account.id}
-                  className="rounded-xl border border-border bg-card p-4 hover:border-accent/50 transition-all cursor-pointer group"
                   onClick={() => navigateToAccount(account.id)}
+                  className="group relative bg-card hover:bg-card/80 border border-border hover:border-foreground/20 rounded-2xl p-5 cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5"
                 >
                   {/* Header */}
-                  <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary text-lg font-bold text-foreground">
-                        {account.broker[0]?.toUpperCase()}
-                      </div>
-                      <div>
-                        <p className="font-semibold text-foreground">
-                          {account.nickname || `Cuenta ${account.accountNumber}`}
-                        </p>
-                        <p className="text-xs text-muted-foreground">{account.broker}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center gap-1.5">
+                      <div className="relative">
+                        <div
+                          className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg"
+                          style={{
+                            background: `linear-gradient(135deg, ${typeColor} 0%, ${typeColor}99 100%)`,
+                          }}
+                        >
+                          {account.broker[0]?.toUpperCase()}
+                        </div>
                         <div
                           className={cn(
-                            "h-2 w-2 rounded-full",
-                            account.isConnected ? "bg-profit animate-pulse" : "bg-loss/50"
+                            "absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-card",
+                            (liveDataMap[account.id] || account.isConnected) ? "bg-profit" : "bg-muted-foreground/40"
                           )}
                         />
-                        <span className={cn("text-xs", account.isConnected ? "text-profit" : "text-muted-foreground")}>
-                          {account.isConnected ? "Conectado" : "Desconectado"}
-                        </span>
                       </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-40">
-                          <DropdownMenuItem onClick={() => navigateToAccount(account.id)}>
-                            <ExternalLink className="mr-2 h-4 w-4" />
-                            Ver detalles
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={(e) => copyToken(account.connectionToken, e)}>
-                            <Copy className="mr-2 h-4 w-4" />
-                            Copiar token
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => openEditAccount(account)}>
-                            <Pencil className="mr-2 h-4 w-4" />
-                            Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-loss" onClick={() => setDeletingAccountId(account.id)}>
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Eliminar
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </div>
-
-                  {/* Badges */}
-                  <div className="flex flex-wrap gap-1.5 mb-4">
-                    {typeName && (
-                      <Badge 
-                        variant="outline" 
-                        className="text-xs"
-                        style={{ 
-                          borderColor: `${typeColor}60`, 
-                          color: typeColor,
-                          backgroundColor: `${typeColor}15` 
-                        }}
-                      >
-                        {typeName}
-                      </Badge>
-                    )}
-                    
-                    <Badge variant="outline" className="text-xs border-muted-foreground/30 text-muted-foreground">
-                      {account.platform}
-                    </Badge>
-                  </div>
-
-                  {/* Balance & Profit/Loss */}
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Balance</p>
-                      <p className="text-xl font-bold text-foreground font-mono">
-                        ${balance.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 3 })}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Beneficio/Pérdida</p>
-                      <div className="flex items-center gap-1">
-                        {profit >= 0 ? (
-                          <TrendingUp className="h-4 w-4 text-profit" />
-                        ) : (
-                          <TrendingDown className="h-4 w-4 text-loss" />
-                        )}
-                        <p className={cn("text-xl font-bold font-mono", profit >= 0 ? "text-profit" : "text-loss")}>
-                          {profit >= 0 ? "+" : ""}${Math.abs(profit).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 3 })}
-                          <span className="text-xs ml-1 font-normal opacity-80">({profitPercent.toFixed(2)}%)</span>
+                      <div className="min-w-0">
+                        <h3 className="font-semibold text-foreground truncate">
+                          {account.nickname || `#${account.accountNumber}`}
+                        </h3>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {account.broker} • {account.platform}
                         </p>
                       </div>
                     </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                        <button className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-secondary transition-all">
+                          <MoreVertical className="h-4 w-4 text-muted-foreground" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-44">
+                        <DropdownMenuItem onClick={() => navigateToAccount(account.id)}>
+                          <ExternalLink className="mr-2 h-4 w-4" />
+                          Ver detalles
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); copyToken(account.connectionToken, e); }}>
+                          {copiedToken === account.connectionToken ? <Check className="mr-2 h-4 w-4 text-profit" /> : <Copy className="mr-2 h-4 w-4" />}
+                          Copiar token
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openEditAccount(account); }}>
+                          <Pencil className="mr-2 h-4 w-4" />
+                          Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-loss" onClick={(e) => { e.stopPropagation(); setDeletingAccountId(account.id); }}>
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Eliminar
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
 
-                  {/* Drawdown Bars */}
-                  <div className="space-y-2 mb-4">
+                  {/* Type Badge */}
+                  {typeName && (
+                    <div className="mb-4">
+                      <span
+                        className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium"
+                        style={{ backgroundColor: `${typeColor}15`, color: typeColor }}
+                      >
+                        {typeName}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Balance */}
+                  <div className="mb-4">
+                    <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wide font-medium">Balance</p>
+                    <p className="text-2xl font-bold text-foreground tabular-nums">
+                      ${formatCurrency(balance)}
+                    </p>
+                  </div>
+
+                  {/* P/L */}
+                  <div className="flex items-center justify-between py-3 border-t border-border">
+                    <div className="flex items-center gap-2">
+                      {profit >= 0 ? (
+                        <TrendingUp className="h-4 w-4 text-profit" />
+                      ) : (
+                        <TrendingDown className="h-4 w-4 text-loss" />
+                      )}
+                      <span className={cn("font-semibold tabular-nums", profit >= 0 ? "text-profit" : "text-loss")}>
+                        {profit >= 0 ? "+" : ""}${formatCurrency(Math.abs(profit))}
+                      </span>
+                    </div>
+                    <span
+                      className={cn(
+                        "text-xs font-medium px-2 py-1 rounded-md",
+                        profit >= 0 ? "bg-profit/10 text-profit" : "bg-loss/10 text-loss"
+                      )}
+                    >
+                      {profitPercent >= 0 ? "+" : ""}{profitPercent.toFixed(2)}%
+                    </span>
+                  </div>
+
+                  {/* Quick Stats */}
+                  <div className="grid grid-cols-2 gap-3 pt-3 border-t border-border">
                     <div>
-                      <div className="flex justify-between text-xs mb-1">
-                        <span className="text-muted-foreground">Drawdown</span>
-                        <span className={cn(drawdownPercent > 5 ? "text-warning" : "text-muted-foreground")}>
-                          {drawdownPercent.toFixed(1)}% / 10%
-                        </span>
-                      </div>
-                      <div className="h-1.5 w-full rounded-full bg-secondary overflow-hidden">
-                        <div 
-                          className={cn("h-full rounded-full transition-all", drawdownPercent > 5 ? "bg-warning" : "bg-muted-foreground/50")}
-                          style={{ width: `${Math.min(drawdownPercent * 10, 100)}%` }} 
-                        />
-                      </div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Win Rate</p>
+                      <p className={cn("text-sm font-semibold", winRate >= 50 ? "text-profit" : "text-warning")}>{winRate}%</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Trades</p>
+                      <p className="text-sm font-semibold text-foreground">{trades}</p>
                     </div>
                   </div>
 
-                  {/* Stats Row */}
-                  <div className="grid grid-cols-3 gap-2 pt-3 border-t border-border">
-                    <div className="text-center">
-                      <p className="text-xs text-muted-foreground">Tasa Acierto</p>
-                      <p className={cn("text-sm font-bold", winRate >= 50 ? "text-foreground" : "text-warning")}>{winRate}%</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xs text-muted-foreground">Operaciones</p>
-                      <p className="text-sm font-bold text-foreground">{trades}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xs text-muted-foreground">F. Beneficio</p>
-                      <p className="text-sm font-bold text-foreground">{pFactor > 0 ? pFactor.toFixed(2) : "—"}</p>
-                    </div>
+                  {/* Hover Arrow */}
+                  <div className="absolute bottom-5 right-5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
                   </div>
                 </div>
               );
             })}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-12">
-            <p className="text-muted-foreground mb-4">No hay cuentas en esta sección</p>
-            <Button onClick={() => setShowAccountModal(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Añadir Cuenta
-            </Button>
-          </div>
-        )}
-      </Card>
+          // List View
+          <div className="bg-card rounded-2xl border border-border overflow-hidden">
+            <div className="grid grid-cols-12 gap-4 px-5 py-3 bg-secondary/50 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              <div className="col-span-4">Cuenta</div>
+              <div className="col-span-2 text-right">Balance</div>
+              <div className="col-span-2 text-right">P/L</div>
+              <div className="col-span-1 text-center">Win Rate</div>
+              <div className="col-span-1 text-center">Trades</div>
+              <div className="col-span-1 text-center">Status</div>
+              <div className="col-span-1" />
+            </div>
+            {filteredAccounts.map((account, i) => {
+              const data = getAccountData(account);
+              const profit = data?.floatingPL || 0;
+              const balance = data?.balance || account.balance || 0;
+              const profitPercent = balance > 0 ? (profit / balance) * 100 : 0;
+              const matchedType = accountTypes.find((t) => t.id === account.accountTypeId);
+              const typeColor = matchedType?.color || account.accountType?.color || "#64748b";
+              const winRate = account.stats?.winRate ?? 0;
+              const trades = account.stats?.trades ?? 0;
 
+              return (
+                <div
+                  key={account.id}
+                  onClick={() => navigateToAccount(account.id)}
+                  className={cn(
+                    "grid grid-cols-12 gap-4 px-5 py-4 items-center cursor-pointer hover:bg-secondary/30 transition-colors",
+                    i !== filteredAccounts.length - 1 && "border-b border-border"
+                  )}
+                >
+                  <div className="col-span-4 flex items-center gap-3">
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold"
+                      style={{ background: `linear-gradient(135deg, ${typeColor} 0%, ${typeColor}99 100%)` }}
+                    >
+                      {account.broker[0]?.toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-medium text-foreground truncate">
+                        {account.nickname || `#${account.accountNumber}`}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{account.broker}</p>
+                    </div>
+                  </div>
+                  <div className="col-span-2 text-right">
+                    <p className="font-semibold text-foreground tabular-nums">${formatCurrency(balance)}</p>
+                  </div>
+                  <div className="col-span-2 text-right">
+                    <p className={cn("font-semibold tabular-nums", profit >= 0 ? "text-profit" : "text-loss")}>
+                      {profit >= 0 ? "+" : ""}${formatCurrency(Math.abs(profit))}
+                    </p>
+                    <p className={cn("text-xs", profit >= 0 ? "text-profit/70" : "text-loss/70")}>
+                      {profitPercent >= 0 ? "+" : ""}{profitPercent.toFixed(2)}%
+                    </p>
+                  </div>
+                  <div className="col-span-1 text-center">
+                    <span className={cn("font-medium", winRate >= 50 ? "text-profit" : "text-warning")}>{winRate}%</span>
+                  </div>
+                  <div className="col-span-1 text-center">
+                    <span className="text-foreground">{trades}</span>
+                  </div>
+                  <div className="col-span-1 flex justify-center">
+                    <span
+                      className={cn(
+                        "w-2.5 h-2.5 rounded-full",
+                        (liveDataMap[account.id] || account.isConnected) ? "bg-profit" : "bg-muted-foreground/40"
+                      )}
+                    />
+                  </div>
+                  <div className="col-span-1 flex justify-end" onClick={(e) => e.stopPropagation()}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="p-1.5 rounded-lg hover:bg-secondary transition-all">
+                          <MoreVertical className="h-4 w-4 text-muted-foreground" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-44">
+                        <DropdownMenuItem onClick={() => navigateToAccount(account.id)}>
+                          <ExternalLink className="mr-2 h-4 w-4" />
+                          Ver detalles
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={(e) => copyToken(account.connectionToken, e)}>
+                          {copiedToken === account.connectionToken ? <Check className="mr-2 h-4 w-4 text-profit" /> : <Copy className="mr-2 h-4 w-4" />}
+                          Copiar token
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => openEditAccount(account)}>
+                          <Pencil className="mr-2 h-4 w-4" />
+                          Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-loss" onClick={() => setDeletingAccountId(account.id)}>
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Eliminar
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )
+      ) : (
+        // Empty State
+        <div className="flex flex-col items-center justify-center py-24 text-center">
+          <div className="w-20 h-20 rounded-3xl bg-secondary/80 flex items-center justify-center mb-6">
+            <Layers className="h-10 w-10 text-muted-foreground" />
+          </div>
+          <h3 className="text-xl font-semibold text-foreground mb-2">Sin cuentas</h3>
+          <p className="text-muted-foreground mb-6 max-w-sm">
+            No hay cuentas en esta sección. Añade tu primera cuenta para comenzar.
+          </p>
+          <Button onClick={() => setShowAccountModal(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Nueva Cuenta
+          </Button>
+        </div>
+      )}
+
+      {/* === MODALS === */}
       {/* Create Account Modal */}
       {showAccountModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setShowAccountModal(false)}>
-          <div className="w-full max-w-md rounded-lg border border-border bg-card p-6" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold text-foreground">Nueva Cuenta</h2>
-              <button onClick={() => setShowAccountModal(false)} className="text-muted-foreground hover:text-foreground">
-                <X className="h-5 w-5" />
-              </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setShowAccountModal(false)} />
+          <div className="relative w-full max-w-lg bg-card border border-border rounded-3xl shadow-2xl overflow-hidden">
+            <div className="p-6 border-b border-border">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-foreground">Nueva Cuenta</h2>
+                <button onClick={() => setShowAccountModal(false)} className="p-2 rounded-xl hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
             </div>
-            <form onSubmit={handleCreateAccount} className="space-y-4">
-              <div>
-                <Label className="text-muted-foreground">Sección</Label>
-                <Select value={accountForm.sectionId} onValueChange={(v) => setAccountForm({ ...accountForm, sectionId: v === "none" ? "" : v })}>
-                  <SelectTrigger className="mt-1 w-full">
-                    <SelectValue placeholder="Sin sección" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Sin sección</SelectItem>
-                    {sections.map(s => (
-                      <SelectItem key={s.id} value={s.id}>
-                        <div className="flex items-center gap-2">
-                          <div className="h-2 w-2 rounded-full" style={{ backgroundColor: s.color || ""}} />
-                          {s.name}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-muted-foreground">Nombre (opcional)</Label>
-                <Input className="mt-1" placeholder="Mi cuenta principal" value={accountForm.nickname} onChange={(e) => setAccountForm({ ...accountForm, nickname: e.target.value })} />
-              </div>
-              <div>
-                <Label className="text-muted-foreground">Estado de Cuenta</Label>
-                <div className="flex gap-2 mt-1">
-                  <Select value={accountForm.accountTypeId || "none"} onValueChange={(v) => setAccountForm({ ...accountForm, accountTypeId: v === "none" ? "" : v })}>
-                    <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Sin asignar" />
+            <form onSubmit={handleCreateAccount} className="p-6 space-y-5">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <Label className="text-sm font-medium text-foreground">Nombre (opcional)</Label>
+                  <Input className="mt-2 h-11 rounded-xl" placeholder="Mi cuenta principal" value={accountForm.nickname} onChange={(e) => setAccountForm({ ...accountForm, nickname: e.target.value })} />
+                </div>
+                <div className="col-span-2">
+                  <Label className="text-sm font-medium text-foreground">Sección</Label>
+                  <Select value={accountForm.sectionId || "none"} onValueChange={(v) => setAccountForm({ ...accountForm, sectionId: v === "none" ? "" : v })}>
+                    <SelectTrigger className="mt-2 h-11 rounded-xl">
+                      <SelectValue placeholder="Sin sección" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">Sin asignar</SelectItem>
-                      {accountTypes.map(t => (
-                        <SelectItem key={t.id} value={t.id}>
+                      <SelectItem value="none">Sin sección</SelectItem>
+                      {sections.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
                           <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 rounded-full" style={{ backgroundColor: t.color }} />
-                            {t.name}
+                            <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: s.color || "#64748b" }} />
+                            {s.name}
                           </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  <Button type="button" variant="outline" size="sm" className="h-9 px-3" onClick={() => setShowAccountTypesModal(true)}>
-                    <Pencil className="h-4 w-4 mr-1" /> Gestionar
-                  </Button>
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-muted-foreground">Número de cuenta</Label>
-                  <Input className="mt-1" type="number" placeholder="12345678" value={accountForm.accountNumber} onChange={(e) => setAccountForm({ ...accountForm, accountNumber: e.target.value })} required />
+                <div className="col-span-2">
+                  <Label className="text-sm font-medium text-foreground">Tipo de Cuenta</Label>
+                  <div className="flex gap-2 mt-2">
+                    <Select value={accountForm.accountTypeId || "none"} onValueChange={(v) => setAccountForm({ ...accountForm, accountTypeId: v === "none" ? "" : v })}>
+                      <SelectTrigger className="flex-1 h-11 rounded-xl">
+                        <SelectValue placeholder="Sin tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Sin tipo</SelectItem>
+                        {accountTypes.map((t) => (
+                          <SelectItem key={t.id} value={t.id}>
+                            <div className="flex items-center gap-2">
+                              <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: t.color }} />
+                              {t.name}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button type="button" variant="outline" className="h-11 w-11 rounded-xl p-0" onClick={() => setShowAccountTypesModal(true)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Plataforma</Label>
+                  <Label className="text-sm font-medium text-foreground">Número de cuenta</Label>
+                  <Input className="mt-2 h-11 rounded-xl" type="number" placeholder="12345678" value={accountForm.accountNumber} onChange={(e) => setAccountForm({ ...accountForm, accountNumber: e.target.value })} required />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-foreground">Plataforma</Label>
                   <Select value={accountForm.platform} onValueChange={(v) => setAccountForm({ ...accountForm, platform: v })}>
-                    <SelectTrigger className="mt-1 w-full">
+                    <SelectTrigger className="mt-2 h-11 rounded-xl">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -1060,18 +1202,20 @@ export default function DashboardPage() {
                     </SelectContent>
                   </Select>
                 </div>
+                <div>
+                  <Label className="text-sm font-medium text-foreground">Broker</Label>
+                  <Input className="mt-2 h-11 rounded-xl" placeholder="ICMarkets" value={accountForm.broker} onChange={(e) => setAccountForm({ ...accountForm, broker: e.target.value })} required />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-foreground">Servidor</Label>
+                  <Input className="mt-2 h-11 rounded-xl" placeholder="ICMarkets-Demo" value={accountForm.server} onChange={(e) => setAccountForm({ ...accountForm, server: e.target.value })} required />
+                </div>
               </div>
-              <div>
-                <Label className="text-muted-foreground">Broker</Label>
-                <Input className="mt-1" placeholder="ICMarkets" value={accountForm.broker} onChange={(e) => setAccountForm({ ...accountForm, broker: e.target.value })} required />
-              </div>
-              <div>
-                <Label className="text-muted-foreground">Servidor</Label>
-                <Input className="mt-1" placeholder="ICMarkets-Demo" value={accountForm.server} onChange={(e) => setAccountForm({ ...accountForm, server: e.target.value })} required />
-              </div>
-              <div className="flex gap-3 pt-2">
-                <Button type="button" variant="outline" onClick={() => setShowAccountModal(false)} className="flex-1">Cancelar</Button>
-                <Button type="submit" disabled={formLoading} className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90">
+              <div className="flex gap-3 pt-4">
+                <Button type="button" variant="outline" onClick={() => setShowAccountModal(false)} className="flex-1 h-11 rounded-xl">
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={formLoading} className="flex-1 h-11 rounded-xl bg-foreground text-background hover:bg-foreground/90">
                   {formLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Crear Cuenta"}
                 </Button>
               </div>
@@ -1082,37 +1226,45 @@ export default function DashboardPage() {
 
       {/* Create/Edit Section Modal */}
       {(showSectionModal || editingSection) && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => { setShowSectionModal(false); setEditingSection(null); }}>
-          <div className="w-full max-w-sm rounded-lg border border-border bg-card p-6" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold text-foreground">{editingSection ? "Editar Sección" : "Nueva Sección"}</h2>
-              <button onClick={() => { setShowSectionModal(false); setEditingSection(null); setSectionForm({ name: "", color: "#71717A" }); }} className="text-muted-foreground hover:text-foreground">
-                <X className="h-5 w-5" />
-              </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => { setShowSectionModal(false); setEditingSection(null); }} />
+          <div className="relative w-full max-w-sm bg-card border border-border rounded-3xl shadow-2xl overflow-hidden">
+            <div className="p-6 border-b border-border">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-foreground">{editingSection ? "Editar Sección" : "Nueva Sección"}</h2>
+                <button onClick={() => { setShowSectionModal(false); setEditingSection(null); setSectionForm({ name: "", color: "#64748b" }); }} className="p-2 rounded-xl hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
             </div>
-            <form onSubmit={editingSection ? handleUpdateSection : handleCreateSection} className="space-y-4">
+            <form onSubmit={editingSection ? handleUpdateSection : handleCreateSection} className="p-6 space-y-5">
               <div>
-                <Label className="text-muted-foreground">Nombre</Label>
-                <Input className="mt-1" placeholder="FTMO, AXI..." value={sectionForm.name} onChange={(e) => setSectionForm({ ...sectionForm, name: e.target.value })} required />
+                <Label className="text-sm font-medium text-foreground">Nombre</Label>
+                <Input className="mt-2 h-11 rounded-xl" placeholder="FTMO, Fondeo..." value={sectionForm.name} onChange={(e) => setSectionForm({ ...sectionForm, name: e.target.value })} required />
               </div>
               <div>
-                <Label className="text-muted-foreground">Color</Label>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {SECTION_COLORS.map(c => (
+                <Label className="text-sm font-medium text-foreground">Color</Label>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {SECTION_COLORS.map((c) => (
                     <button
                       key={c.value}
                       type="button"
                       onClick={() => setSectionForm({ ...sectionForm, color: c.value })}
-                      className={cn("h-8 w-8 rounded-full border-2 transition-all", sectionForm.color === c.value ? "border-foreground scale-110" : "border-transparent")}
+                      className={cn(
+                        "w-10 h-10 rounded-xl transition-all",
+                        sectionForm.color === c.value ? "ring-2 ring-foreground ring-offset-2 ring-offset-card scale-105" : "hover:scale-105"
+                      )}
                       style={{ backgroundColor: c.value }}
                     />
                   ))}
                 </div>
               </div>
-              <div className="flex gap-3 pt-2">
-                <Button type="button" variant="outline" onClick={() => { setShowSectionModal(false); setEditingSection(null); }} className="flex-1">Cancelar</Button>
-                <Button type="submit" disabled={formLoading} className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90">
-                  {formLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : (editingSection ? "Guardar" : "Crear")}
+              <div className="flex gap-3 pt-4">
+                <Button type="button" variant="outline" onClick={() => { setShowSectionModal(false); setEditingSection(null); }} className="flex-1 h-11 rounded-xl">
+                  Cancelar
+                </Button>
+                <Button type="submit" className="flex-1 h-11 rounded-xl bg-foreground text-background hover:bg-foreground/90">
+                  {editingSection ? "Guardar" : "Crear"}
                 </Button>
               </div>
             </form>
@@ -1122,76 +1274,88 @@ export default function DashboardPage() {
 
       {/* Edit Account Modal */}
       {editingAccount && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setEditingAccount(null)}>
-          <div className="w-full max-w-md rounded-lg border border-border bg-card p-6" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold text-foreground">Editar Cuenta</h2>
-              <button onClick={() => setEditingAccount(null)} className="text-muted-foreground hover:text-foreground">
-                <X className="h-5 w-5" />
-              </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setEditingAccount(null)} />
+          <div className="relative w-full max-w-lg bg-card border border-border rounded-3xl shadow-2xl overflow-hidden">
+            <div className="p-6 border-b border-border">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold text-foreground">Editar Cuenta</h2>
+                  <p className="text-sm text-muted-foreground mt-0.5">#{editingAccount.accountNumber}</p>
+                </div>
+                <button onClick={() => setEditingAccount(null)} className="p-2 rounded-xl hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
             </div>
-            <form onSubmit={handleUpdateAccount} className="space-y-4">
-              <div>
-                <Label className="text-muted-foreground">Sección</Label>
-                <Select value={accountForm.sectionId || "none"} onValueChange={(v) => setAccountForm({ ...accountForm, sectionId: v === "none" ? "" : v })}>
-                  <SelectTrigger className="mt-1 w-full">
-                    <SelectValue placeholder="Sin sección" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Sin sección</SelectItem>
-                    {sections.map(s => (
-                      <SelectItem key={s.id} value={s.id}>
-                        <div className="flex items-center gap-2">
-                          <div className="h-2 w-2 rounded-full" style={{ backgroundColor: s.color || "#71717A" }} />
-                          {s.name}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-muted-foreground">Nombre</Label>
-                <Input className="mt-1" value={accountForm.nickname} onChange={(e) => setAccountForm({ ...accountForm, nickname: e.target.value })} />
-              </div>
-              <div>
-                <Label className="text-muted-foreground">Estado de Cuenta</Label>
-                <div className="flex gap-2 mt-1">
-                  <Select value={accountForm.accountTypeId || "none"} onValueChange={(v) => setAccountForm({ ...accountForm, accountTypeId: v === "none" ? "" : v })}>
-                    <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Sin asignar" />
+            <form onSubmit={handleUpdateAccount} className="p-6 space-y-5">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <Label className="text-sm font-medium text-foreground">Nombre</Label>
+                  <Input className="mt-2 h-11 rounded-xl" value={accountForm.nickname} onChange={(e) => setAccountForm({ ...accountForm, nickname: e.target.value })} />
+                </div>
+                <div className="col-span-2">
+                  <Label className="text-sm font-medium text-foreground">Sección</Label>
+                  <Select value={accountForm.sectionId || "none"} onValueChange={(v) => setAccountForm({ ...accountForm, sectionId: v === "none" ? "" : v })}>
+                    <SelectTrigger className="mt-2 h-11 rounded-xl">
+                      <SelectValue placeholder="Sin sección" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">Sin asignar</SelectItem>
-                      {accountTypes.map(t => (
-                        <SelectItem key={t.id} value={t.id}>
+                      <SelectItem value="none">Sin sección</SelectItem>
+                      {sections.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
                           <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 rounded-full" style={{ backgroundColor: t.color }} />
-                            {t.name}
+                            <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: s.color || "#64748b" }} />
+                            {s.name}
                           </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  <Button type="button" variant="outline" size="sm" className="h-9 px-3" onClick={() => setShowAccountTypesModal(true)}>
-                    <Pencil className="h-4 w-4 mr-1" /> Gestionar
-                  </Button>
+                </div>
+                <div className="col-span-2">
+                  <Label className="text-sm font-medium text-foreground">Tipo de Cuenta</Label>
+                  <div className="flex gap-2 mt-2">
+                    <Select value={accountForm.accountTypeId || "none"} onValueChange={(v) => setAccountForm({ ...accountForm, accountTypeId: v === "none" ? "" : v })}>
+                      <SelectTrigger className="flex-1 h-11 rounded-xl">
+                        <SelectValue placeholder="Sin tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Sin tipo</SelectItem>
+                        {accountTypes.map((t) => (
+                          <SelectItem key={t.id} value={t.id}>
+                            <div className="flex items-center gap-2">
+                              <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: t.color }} />
+                              {t.name}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button type="button" variant="outline" className="h-11 w-11 rounded-xl p-0" onClick={() => setShowAccountTypesModal(true)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-foreground">Broker</Label>
+                  <Input className="mt-2 h-11 rounded-xl" value={accountForm.broker} onChange={(e) => setAccountForm({ ...accountForm, broker: e.target.value })} required />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-foreground">Servidor</Label>
+                  <Input className="mt-2 h-11 rounded-xl" value={accountForm.server} onChange={(e) => setAccountForm({ ...accountForm, server: e.target.value })} required />
                 </div>
               </div>
-              <div>
-                <Label className="text-muted-foreground">Broker</Label>
-                <Input className="mt-1" value={accountForm.broker} onChange={(e) => setAccountForm({ ...accountForm, broker: e.target.value })} required />
-              </div>
-              <div>
-                <Label className="text-muted-foreground">Servidor</Label>
-                <Input className="mt-1" value={accountForm.server} onChange={(e) => setAccountForm({ ...accountForm, server: e.target.value })} required />
-              </div>
-              <div className="flex gap-3 pt-2">
-                <Button type="button" variant="ghost" onClick={() => setDeletingAccountId(editingAccount.id)} className="text-loss hover:bg-loss/10">
+              <div className="flex gap-3 pt-4">
+                <Button type="button" variant="ghost" onClick={() => setDeletingAccountId(editingAccount.id)} className="text-loss hover:bg-loss/10 hover:text-loss rounded-xl">
+                  <Trash2 className="h-4 w-4 mr-2" />
                   Eliminar
                 </Button>
-                <Button type="button" variant="outline" onClick={() => setEditingAccount(null)} className="flex-1">Cancelar</Button>
-                <Button type="submit" disabled={formLoading} className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90">
+                <div className="flex-1" />
+                <Button type="button" variant="outline" onClick={() => setEditingAccount(null)} className="h-11 px-6 rounded-xl">
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={formLoading} className="h-11 px-6 rounded-xl bg-foreground text-background hover:bg-foreground/90">
                   {formLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Guardar"}
                 </Button>
               </div>
@@ -1200,134 +1364,126 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Delete Section Dialog */}
-      <AlertDialog open={!!deletingSectionId} onOpenChange={(open) => !open && setDeletingSectionId(null)}>
-        <AlertDialogContent className="border-border bg-card">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-foreground">¿Eliminar sección?</AlertDialogTitle>
-            <AlertDialogDescription className="text-muted-foreground">
-              Las cuentas pasarán a "Sin sección". Esta acción no se puede deshacer.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="border-border bg-secondary text-foreground hover:bg-secondary/80">Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteSection} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Eliminar</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Delete Account Dialog */}
-      <AlertDialog open={!!deletingAccountId} onOpenChange={(open) => !open && setDeletingAccountId(null)}>
-        <AlertDialogContent className="border-border bg-card">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-foreground">¿Eliminar cuenta?</AlertDialogTitle>
-            <AlertDialogDescription className="text-muted-foreground">
-              Esta acción no se puede deshacer.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="border-border bg-secondary text-foreground hover:bg-secondary/80">Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteAccount} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Eliminar</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Account Types Management Modal */}
+      {/* Account Types Modal */}
       {showAccountTypesModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => { setShowAccountTypesModal(false); setEditingAccountType(null); }}>
-          <div className="w-full max-w-md rounded-lg border border-border bg-card p-6" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold text-foreground">Gestionar Estados</h2>
-              <button onClick={() => { setShowAccountTypesModal(false); setEditingAccountType(null); }} className="text-muted-foreground hover:text-foreground">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            
-            {/* Create new type */}
-            <div className="mb-4 p-3 rounded-lg bg-secondary/30 border border-border">
-              <Label className="text-sm text-foreground/80 mb-2 block font-medium">Nombre del estado</Label>
-              <div className="flex gap-2 mb-4">
-                 <Input 
-                   placeholder="Ej: Aprobada, En revisión..." 
-                   value={newAccountTypeName} 
-                   onChange={(e) => setNewAccountTypeName(e.target.value)} 
-                   className="h-10 text-sm flex-1 bg-background"
-                 />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => { setShowAccountTypesModal(false); setEditingAccountType(null); }} />
+          <div className="relative w-full max-w-md bg-card border border-border rounded-3xl shadow-2xl overflow-hidden">
+            <div className="p-6 border-b border-border">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-foreground">Tipos de Cuenta</h2>
+                <button onClick={() => { setShowAccountTypesModal(false); setEditingAccountType(null); }} className="p-2 rounded-xl hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
+                  <X className="h-5 w-5" />
+                </button>
               </div>
-              
-              <Label className="text-sm text-foreground/80 mb-2 block font-medium">Color identificativo</Label>
-              <div className="flex gap-2 flex-wrap mb-6 bg-secondary/20 p-3 rounded-lg border border-border/50">
-                  {SECTION_COLORS.map(c => (
+            </div>
+            <div className="p-6">
+              <div className="mb-6 p-4 rounded-2xl bg-secondary/50">
+                <Label className="text-sm font-medium text-foreground mb-3 block">Nuevo tipo</Label>
+                <div className="flex gap-2 mb-4">
+                  <Input placeholder="Ej: Fondeada, Demo..." value={newAccountTypeName} onChange={(e) => setNewAccountTypeName(e.target.value)} className="h-10 rounded-xl flex-1" />
+                </div>
+                <div className="flex gap-2 flex-wrap mb-4">
+                  {SECTION_COLORS.map((c) => (
                     <button
                       key={c.value}
                       type="button"
                       onClick={() => setNewAccountTypeColor(c.value)}
-                      className={cn("h-8 w-8 rounded-full transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 ring-offset-background", newAccountTypeColor === c.value ? "ring-2 ring-foreground scale-110" : "")}
+                      className={cn(
+                        "w-8 h-8 rounded-lg transition-all",
+                        newAccountTypeColor === c.value ? "ring-2 ring-foreground ring-offset-2 ring-offset-card scale-105" : "hover:scale-105"
+                      )}
                       style={{ backgroundColor: c.value }}
                     />
                   ))}
-              </div>
-              
-              <Button type="button" onClick={handleCreateAccountType} disabled={!newAccountTypeName.trim()} className="w-full">
-                  <Plus className="h-4 w-4 mr-2" /> Crear Estado
-              </Button>
-            </div>
-
-            {/* List of types */}
-            <div className="space-y-2 max-h-60 overflow-y-auto">
-              {accountTypes.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">No hay estados creados</p>
-              )}
-              {accountTypes.map(type => (
-                <div key={type.id} className="flex items-center gap-3 p-2 rounded-lg bg-secondary/20 hover:bg-secondary/40 transition-colors">
-                  {editingAccountType?.id === type.id ? (
-                    <>
-                      <div className="flex gap-1">
-                        {SECTION_COLORS.slice(0, 6).map(c => (
-                          <button
-                            key={c.value}
-                            type="button"
-                            onClick={() => setEditingAccountType({ ...editingAccountType, color: c.value })}
-                            className={cn("h-5 w-5 rounded-full border-2 transition-all", editingAccountType.color === c.value ? "border-foreground" : "border-transparent")}
-                            style={{ backgroundColor: c.value }}
-                          />
-                        ))}
-                      </div>
-                      <Input 
-                        value={editingAccountType.name} 
-                        onChange={(e) => setEditingAccountType({ ...editingAccountType, name: e.target.value })}
-                        className="h-7 text-sm flex-1"
-                        autoFocus
-                      />
-                      <Button size="sm" variant="ghost" onClick={handleUpdateAccountType} className="h-7 px-2">
-                        <Check className="h-4 w-4" />
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => setEditingAccountType(null)} className="h-7 px-2 text-muted-foreground">
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <div className="h-4 w-4 rounded-full shrink-0" style={{ backgroundColor: type.color }} />
-                      <span className="text-sm text-foreground flex-1">{type.name}</span>
-                      <Button size="sm" variant="ghost" onClick={() => setEditingAccountType(type)} className="h-7 px-2 text-muted-foreground hover:text-foreground">
-                        <Pencil className="h-3 w-3" />
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={(e) => handleDeleteAccountType(type.id, e)} className="h-7 px-2 text-muted-foreground hover:text-loss">
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </>
-                  )}
                 </div>
-              ))}
-            </div>
-            
-            <div className="mt-4 pt-4 border-t border-border">
-              <Button variant="outline" onClick={() => setShowAccountTypesModal(false)} className="w-full">Cerrar</Button>
+                <Button type="button" onClick={handleCreateAccountType} disabled={!newAccountTypeName.trim()} className="w-full h-10 rounded-xl">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Crear
+                </Button>
+              </div>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {accountTypes.length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-6">Sin tipos creados</p>
+                )}
+                {accountTypes.map((type) => (
+                  <div key={type.id} className="flex items-center gap-3 p-3 rounded-xl bg-secondary/30 hover:bg-secondary/50 transition-colors">
+                    {editingAccountType?.id === type.id ? (
+                      <>
+                        <div className="flex gap-1">
+                          {SECTION_COLORS.slice(0, 6).map((c) => (
+                            <button
+                              key={c.value}
+                              type="button"
+                              onClick={() => setEditingAccountType({ ...editingAccountType, color: c.value })}
+                              className={cn("w-5 h-5 rounded-md border-2 transition-all", editingAccountType.color === c.value ? "border-foreground" : "border-transparent")}
+                              style={{ backgroundColor: c.value }}
+                            />
+                          ))}
+                        </div>
+                        <Input value={editingAccountType.name} onChange={(e) => setEditingAccountType({ ...editingAccountType, name: e.target.value })} className="h-8 text-sm flex-1 rounded-lg" autoFocus />
+                        <Button size="sm" variant="ghost" onClick={handleUpdateAccountType} className="h-8 w-8 p-0 rounded-lg">
+                          <Check className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setEditingAccountType(null)} className="h-8 w-8 p-0 rounded-lg text-muted-foreground">
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <span className="w-5 h-5 rounded-md shrink-0" style={{ backgroundColor: type.color }} />
+                        <span className="text-sm text-foreground flex-1 font-medium">{type.name}</span>
+                        <Button size="sm" variant="ghost" onClick={() => setEditingAccountType(type)} className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:text-foreground">
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={(e) => handleDeleteAccountType(type.id, e)} className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:text-loss">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className="mt-6 pt-4 border-t border-border">
+                <Button variant="outline" onClick={() => setShowAccountTypesModal(false)} className="w-full h-10 rounded-xl">
+                  Cerrar
+                </Button>
+              </div>
             </div>
           </div>
         </div>
       )}
+
+      {/* Delete Dialogs */}
+      <AlertDialog open={!!deletingSectionId} onOpenChange={(open) => !open && setDeletingSectionId(null)}>
+        <AlertDialogContent className="rounded-3xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar sección?</AlertDialogTitle>
+            <AlertDialogDescription>Las cuentas pasarán a "Sin sección".</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteSection} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl">
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!deletingAccountId} onOpenChange={(open) => !open && setDeletingAccountId(null)}>
+        <AlertDialogContent className="rounded-3xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar cuenta?</AlertDialogTitle>
+            <AlertDialogDescription>Se eliminarán todos los datos asociados.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteAccount} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl">
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
